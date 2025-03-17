@@ -1,4 +1,5 @@
-import { CircleNotch, PaperPlaneRight } from "@phosphor-icons/react";
+import { IoMdArrowUp } from "react-icons/io";
+import { RxCross2 } from "react-icons/rx";
 import React, { useState, useRef, useEffect } from "react";
 
 export default function PromptInput({
@@ -7,6 +8,8 @@ export default function PromptInput({
   onChange,
   inputDisabled,
   buttonDisabled,
+  replyProduct,
+  setReplyProduct
 }) {
   const formRef = useRef(null);
   const textareaRef = useRef(null);
@@ -46,18 +49,47 @@ export default function PromptInput({
   };
 
   return (
-    <div className="allm-w-full allm-sticky allm-bottom-0 allm-z-10 allm-flex allm-justify-center allm-items-center allm-bg-white">
+    <div className="allm-w-full allm-sticky allm-bottom-0 allm-z-10 allm-flex allm-justify-center allm-items-center allm-bg-[#282828]">
       <form
         onSubmit={handleSubmit}
-        className="allm-flex allm-flex-col allm-gap-y-1 allm-rounded-t-lg allm-w-full allm-items-center allm-justify-center"
+        className="allm-flex allm-flex-col allm-gap-y-1 allm-rounded-t-lg allm-w-full allm-items-center allm-justify-center "
       >
-        <div className="allm-flex allm-items-center allm-w-full">
-          <div className="allm-bg-white allm-flex allm-flex-col allm-px-4 allm-overflow-hidden allm-w-full">
+        <div className="allm-flex allm-items-center allm-w-full allm-border-t-8">
+          <div className="allm-flex allm-flex-col allm-px-3 allm-py-3 allm-overflow-hidden allm-w-full">
+            {replyProduct?.id && (
+              <div className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2 allm-bg-[#2f2f2f] allm-rounded-t-lg ">
+                <div className="allm-flex allm-items-center allm-justify-center allm-p-[10px] allm-w-[60px] allm-h-[50px] allm-bg-[#1d1d1d] allm-rounded-[10px] overflow-hidden">
+                  <img
+                    src={replyProduct.image_url}
+                    alt={replyProduct.title}
+                    className="allm-w-[60px] allm-h-[50px] allm-rounded-[10px] allm-object-cover"
+                  />
+                </div>
+                <div className="allm-flex allm-flex-col allm-gap-1 allm-text-white">
+                  <span className="allm-font-semibold allm-text-lg allm-line-clamp-1">
+                    {replyProduct.title}
+                  </span>
+                  <span className="allm-text-xs allm-text-[#a4a4a4] allm-line-clamp-2">
+                    {replyProduct.product_description}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-1 allm-rounded-full allm-mr-1 allm-outline-none allm-border-0 allm-absolute allm-top-2 allm-right-0 allm-bg-[#5A5A5A]`}
+                  aria-label="Cross message"
+                  onClick={()=>{setReplyProduct(null)}}
+                >
+                  <RxCross2 size={17} color="#fff" />
+                </button>
+              </div>
+            )}
+
             <div
               style={{ border: "1.5px solid #22262833" }}
-              className="allm-flex allm-items-center allm-w-full allm-rounded-2xl"
+              className={`allm-flex  allm-w-full allm-items-center allm-bg-[#1d1d1d] allm-rounded-[10px]  allm-py-2 ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
             >
-              <textarea
+              <input
                 ref={textareaRef}
                 onKeyUp={adjustTextArea}
                 onKeyDown={captureEnter}
@@ -70,28 +102,20 @@ export default function PromptInput({
                   adjustTextArea(e);
                 }}
                 value={message}
-                className="allm-font-sans allm-border-none allm-cursor-text allm-max-h-[100px] allm-text-[14px] allm-mx-2 allm-py-2 allm-w-full allm-text-black allm-bg-transparent placeholder:allm-text-slate-800/60 allm-resize-none active:allm-outline-none focus:allm-outline-none allm-flex-grow"
-                placeholder={"Send a message"}
+                className=" allm-border-none allm-cursor-text allm-text-[16px] allm-mx-2 allm-w-full allm-text-white allm-bg-transparent placeholder:allm-text-[#fff]/20 allm-resize-none active:allm-outline-none focus:allm-outline-none allm-flex-grow"
+                placeholder={"Ask me anything..."}
                 id="message-input"
               />
               <button
                 ref={formRef}
                 type="submit"
-                disabled={buttonDisabled}
-                className="allm-bg-transparent allm-border-none allm-inline-flex allm-justify-center allm-rounded-2xl allm-cursor-pointer allm-text-black group"
+                className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-1 allm-rounded-full allm-mr-3 allm-outline-none allm-border-0 ${
+                  message ? "allm-bg-[#1E60FB]" : "allm-bg-[#5A5A5A]"
+                }`}
                 id="send-message-button"
                 aria-label="Send message"
               >
-                {buttonDisabled ? (
-                  <CircleNotch className="allm-w-4 allm-h-4 allm-animate-spin" />
-                ) : (
-                  <PaperPlaneRight
-                    size={24}
-                    className="allm-my-3 allm-text-[#22262899]/60 group-hover:allm-text-[#22262899]/90"
-                    weight="fill"
-                  />
-                )}
-                <span className="allm-sr-only">Send message</span>
+                <IoMdArrowUp size={17} color="#fff" />
               </button>
             </div>
           </div>

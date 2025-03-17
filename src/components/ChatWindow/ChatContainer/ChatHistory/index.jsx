@@ -6,7 +6,12 @@ import { embedderSettings } from "@/main";
 import debounce from "lodash.debounce";
 import { SEND_TEXT_EVENT } from "..";
 
-export default function ChatHistory({ settings = {}, history = [] }) {
+export default function ChatHistory({
+  settings = {},
+  history = [],
+  handlePrompt,
+  setReplyProduct
+}) {
   const replyRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const chatHistoryRef = useRef(null);
@@ -50,7 +55,7 @@ export default function ChatHistory({ settings = {}, history = [] }) {
     return (
       <div className="allm-pb-[100px] allm-pt-[5px] allm-rounded-lg allm-px-2 allm-h-full allm-mt-2 allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll">
         <div className="allm-flex allm-h-full allm-flex-col allm-items-center allm-justify-center">
-          <p className="allm-text-slate-400 allm-text-sm allm-font-sans allm-py-4 allm-text-center">
+          <p className="allm-text-slate-400 allm-text-sm  allm-py-4 allm-text-center">
             {settings?.greeting ?? "Send a chat to get started."}
           </p>
           <SuggestedMessages settings={settings} />
@@ -61,7 +66,7 @@ export default function ChatHistory({ settings = {}, history = [] }) {
 
   return (
     <div
-      className="allm-pb-[30px] allm-pt-[5px] allm-rounded-lg allm-px-2 allm-h-full allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll allm-md:max-h-[500px]"
+      className="allm-pb-[30px] allm-pt-[5px] allm-rounded-3xl allm-px-2 allm-h-full allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll allm-md:max-h-[500px] allm-overflow-hidden"
       id="chat-history"
       ref={chatHistoryRef}
     >
@@ -97,10 +102,17 @@ export default function ChatHistory({ settings = {}, history = [] }) {
             feedbackScore={props.feedbackScore}
             error={props.error}
             errorMsg={props.errorMsg}
+            isLastBotReply={
+              index === history.length - 1 && props.role === "assistant"
+            }
+            handlePrompt={handlePrompt}
+            setReplyProduct={setReplyProduct}
           />
         );
       })}
-      {!isAtBottom && (
+
+      {/* arrow to go down */}
+      {/* {!isAtBottom && (
         <div className="allm-fixed allm-bottom-[10rem] allm-right-[50px] allm-z-50 allm-cursor-pointer allm-animate-pulse">
           <div className="allm-flex allm-flex-col allm-items-center">
             <div className="allm-p-1 allm-rounded-full allm-border allm-border-white/10 allm-bg-black/20 hover:allm-bg-black/50">
@@ -114,7 +126,7 @@ export default function ChatHistory({ settings = {}, history = [] }) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

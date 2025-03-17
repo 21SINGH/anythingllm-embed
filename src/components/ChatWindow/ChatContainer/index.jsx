@@ -11,6 +11,7 @@ export default function ChatContainer({
   knownHistory = [],
 }) {
   const [message, setMessage] = useState("");
+  const [replyProduct, setReplyProduct] = useState();
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
 
@@ -30,14 +31,62 @@ export default function ChatContainer({
 
     if (!message || message === "") return false;
 
+    if (replyProduct) {
+      const replied_product = JSON.stringify(replyProduct);
+      const replyText = `->REPLY START-> ${replied_product} ->REPLY END-> ${message}`;
+      const prevChatHistory = [
+        ...chatHistory,
+        {
+          content: replyText,
+          role: "user",
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+        {
+          content: "",
+          role: "assistant",
+          pending: true,
+          userMessage: replyText,
+          animate: true,
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+      setChatHistory(prevChatHistory);
+    } else {
+      const prevChatHistory = [
+        ...chatHistory,
+        {
+          content: message,
+          role: "user",
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+        {
+          content: "",
+          role: "assistant",
+          pending: true,
+          userMessage: message,
+          animate: true,
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+      setChatHistory(prevChatHistory);
+    }
+    setReplyProduct(null);
+    setMessage("");
+    setLoadingResponse(true);
+  };
+
+  //sending suggested question
+  const handlePrompt = async (prompt) => {
+    if (!prompt || prompt === "") return false;
+
     const prevChatHistory = [
       ...chatHistory,
-      { content: message, role: "user", sentAt: Math.floor(Date.now() / 1000) },
+      { content: prompt, role: "user", sentAt: Math.floor(Date.now() / 1000) },
       {
         content: "",
         role: "assistant",
         pending: true,
-        userMessage: message,
+        userMessage: prompt,
         animate: true,
         sentAt: Math.floor(Date.now() / 1000),
       },
@@ -129,10 +178,19 @@ export default function ChatContainer({
     };
   }, []);
 
+  useEffect(() => {
+    console.log("replyProduct", replyProduct);
+  }, [replyProduct]);
+
   return (
     <div className="allm-h-full allm-w-full allm-flex allm-flex-col">
       <div className="allm-flex-grow allm-overflow-y-auto">
-        <ChatHistory settings={settings} history={chatHistory} />
+        <ChatHistory
+          settings={settings}
+          history={chatHistory}
+          handlePrompt={handlePrompt}
+          setReplyProduct={setReplyProduct}
+        />
       </div>
       <PromptInput
         message={message}
@@ -140,6 +198,8 @@ export default function ChatContainer({
         onChange={handleMessageChange}
         inputDisabled={loadingResponse}
         buttonDisabled={loadingResponse}
+        replyProduct={replyProduct}
+        setReplyProduct={setReplyProduct}
       />
     </div>
   );

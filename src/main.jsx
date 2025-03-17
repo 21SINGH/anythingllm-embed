@@ -21,11 +21,11 @@ export const embedderSettings = {
   settings: scriptSettings,
   stylesSrc: parseStylesSrc(document?.currentScript?.src),
   USER_STYLES: {
-    msgBg: scriptSettings?.userBgColor ?? "#3DBEF5",
-    base: `allm-text-white allm-rounded-t-[18px] allm-rounded-bl-[18px] allm-rounded-br-[4px] allm-mx-[20px]`,
+    msgBg: scriptSettings?.userBgColor ?? "#1E60FB",
+    base: `allm-text-white allm-rounded-t-[18px] allm-rounded-bl-[18px] allm-rounded-br-[4px] allm-mx-[20px] allm-mb-1`,
   },
   ASSISTANT_STYLES: {
-    msgBg: scriptSettings?.assistantBgColor ?? "#FFFFFF",
-    base: `allm-text-[#222628] allm-rounded-t-[18px] allm-rounded-br-[18px] allm-rounded-bl-[4px] allm-mr-[37px] allm-ml-[9px]`,
+    msgBg: scriptSettings?.assistantBgColor ?? "#1B1B1B",
+    base: `allm-text-[#fff] allm-rounded-t-[18px] allm-rounded-br-[18px] allm-rounded-bl-[4px] allm-mr-[37px] allm-ml-[9px] allm-mb-1`,
   },
 };

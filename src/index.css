@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import url("https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap");
 
 .msg-suggestion {
   animation-name: fadeIn;
@@ -8,6 +9,11 @@
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
+
+* {
+  font-family: "Lexend", sans-serif;
+}
+
 
 @keyframes fadeIn {
   0% {

@@ -1,113 +1,243 @@
-import React, { memo, forwardRef } from "react";
+import React, { memo, forwardRef, useEffect } from "react";
 import { Warning } from "@phosphor-icons/react";
 import renderMarkdown from "@/utils/chat/markdown";
 import { embedderSettings } from "@/main";
 import { v4 } from "uuid";
 import createDOMPurify from "dompurify";
-import AnythingLLMIcon from "@/assets/anything-llm-icon.svg";
-import { formatDate } from "@/utils/date";
+import { ChatTeardropDots } from "@phosphor-icons/react";
 
 const DOMPurify = createDOMPurify(window);
 
-const parseMessageWithSuggestions = (message) => {
-  if (!message || typeof message !== 'string' || !message.includes('@@SUGGESTIONS')) {
-    return { textContent: message, suggestions: null };
+const parseMessageWithProductByUser = (message) => {
+  if (!message || typeof message !== "string")
+    return { product: null, textAfterProduct: message };
+  const productRegex = /->REPLY START->\s*([\s\S]*?)\s*->REPLY END->/;
+  const productMatch = message.match(productRegex);
+
+  if (!productMatch) return { product: null, textAfterProduct: message };
+
+  let product = null;
+  try {
+    product = JSON.parse(productMatch[1]);
+  } catch (e) {
+    console.error("Failed to parse product JSON:", e);
+    product = null;
   }
 
-  const regex = /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/;
-  const match = message.match(regex);
-  
-  if (!match) {
-    return { textContent: message, suggestions: null };
-  }
-  
-  const beforeSuggestions = message.substring(0, match.index);
-  const afterSuggestions = message.substring(match.index + match[0].length);
-  
-  const textContent = beforeSuggestions + afterSuggestions;
-  
-  try {
-    const suggestionsJson = JSON.parse(match[1]);
-    return { textContent, suggestions: suggestionsJson };
-  } catch (e) {
-    console.error("Failed to parse suggestions JSON:", e);
-    return { 
-      textContent,
-      suggestions: { 
-        products: []
-      } 
+  return {
+    product,
+    textAfterProduct: message
+      .substring(productMatch.index + productMatch[0].length)
+      .trim(),
+  };
+};
+
+const parseMessageWithSuggestionsAndPrompts = (message) => {
+  if (!message || typeof message !== "string") {
+    return {
+      textBeforeSuggestions: message,
+      suggestions: null,
+      textAfterSuggestionsBeforePrompts: "",
+      prompts: null,
+      textAfterPrompts: "",
     };
+  }
+
+  let textBeforeSuggestions = "";
+  let textAfterSuggestions = "";
+  let suggestions = null;
+  let prompts = null;
+
+  // Check for suggestions
+  const suggestionsRegex =
+    /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/;
+  const suggestionsMatch = message.match(suggestionsRegex);
+
+  if (suggestionsMatch) {
+    textBeforeSuggestions = message.substring(0, suggestionsMatch.index);
+    textAfterSuggestions = message.substring(
+      suggestionsMatch.index + suggestionsMatch[0].length
+    );
+
+    try {
+      suggestions = JSON.parse(suggestionsMatch[1]);
+    } catch (e) {
+      console.error("Failed to parse suggestions JSON:", e);
+      suggestions = { products: [] };
+    }
+  } else {
+    textBeforeSuggestions = message;
+    textAfterSuggestions = message; // Assign the whole message if no suggestions
+  }
+
+  // Check for prompts
+  const promptsRegex = /@@PROMPTS START@@\s*([\s\S]*?)\s*@@PROMPTS END@@/;
+  let promptsMatch;
+
+  if (suggestionsMatch) {
+    promptsMatch = textAfterSuggestions.match(promptsRegex);
+  } else {
+    promptsMatch = textBeforeSuggestions.match(promptsRegex);
+  }
+
+  if (promptsMatch) {
+    if (suggestionsMatch) {
+      const textAfterSuggestionsBeforePrompts = textAfterSuggestions.substring(
+        0,
+        promptsMatch.index
+      );
+      const textAfterPrompts = textAfterSuggestions.substring(
+        promptsMatch.index + promptsMatch[0].length
+      );
+
+      try {
+        prompts = JSON.parse(promptsMatch[1]);
+      } catch (e) {
+        console.error("Failed to parse prompts JSON:", e);
+        prompts = null;
+      }
+
+      return {
+        textBeforeSuggestions,
+        suggestions,
+        textAfterSuggestionsBeforePrompts,
+        prompts,
+        textAfterPrompts,
+      };
+    } else {
+      const textBeforePrompts = textBeforeSuggestions.substring(
+        0,
+        promptsMatch.index
+      );
+      const textAfterPrompts = textBeforeSuggestions.substring(
+        promptsMatch.index + promptsMatch[0].length
+      );
+
+      try {
+        prompts = JSON.parse(promptsMatch[1]);
+      } catch (e) {
+        console.error("Failed to parse prompts JSON:", e);
+        prompts = null;
+      }
+
+      return {
+        textBeforeSuggestions: textBeforePrompts,
+        suggestions: null,
+        textAfterSuggestionsBeforePrompts: "",
+        prompts,
+        textAfterPrompts,
+      };
+    }
+  } else {
+    if (suggestionsMatch) {
+      return {
+        textBeforeSuggestions,
+        suggestions,
+        textAfterSuggestionsBeforePrompts: textAfterSuggestions,
+        prompts: null,
+        textAfterPrompts: "",
+      };
+    } else {
+      return {
+        textBeforeSuggestions,
+        suggestions: null,
+        textAfterSuggestionsBeforePrompts: "",
+        prompts: null,
+        textAfterPrompts: textBeforeSuggestions,
+      };
+    }
   }
 };
 
-const ProductSuggestions = ({ suggestions }) => {
+const ProductSuggestions = ({ suggestions, setReplyProduct }) => {
   if (!suggestions) return null;
-  
-  if (!suggestions.products || suggestions.products.length === 0) {
+
+  if (!suggestions.products) {
     return (
       <div className="allm-mt-4 allm-border-t allm-pt-3 allm-border-gray-200">
-        <div className="allm-text-sm allm-font-medium allm-mb-3">Product suggestions available</div>
+        <div className="allm-text-sm allm-font-medium allm-mb-3">
+          Product suggestions available
+        </div>
         <div className="allm-text-xs allm-text-gray-500">
-          We have product suggestions for you, but they couldn't be displayed properly.
+          We have product suggestions for you, but they couldn't be displayed
+          properly.
         </div>
       </div>
     );
   }
-  
+
   return (
-    <div className="allm-mt-4 allm-border-t allm-pt-3 allm-border-gray-200">
-      <div className="allm-text-sm allm-font-medium allm-mb-3">Suggesting products for you:</div>
-      <div className="allm-grid allm-grid-cols-2 allm-gap-3">
-        {suggestions.products.map(product => (
-          <ProductCard key={product.id || Math.random().toString()} product={product} />
+    <div className="allm-mt-3">
+      <div className="allm-flex allm-space-x-3 allm-overflow-x-auto allm-no-scroll">
+        {suggestions.products.map((product) => (
+          <ProductCard
+            key={product.id || Math.random().toString()}
+            product={product}
+            setReplyProduct={setReplyProduct}
+          />
         ))}
       </div>
     </div>
   );
 };
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, setReplyProduct }) => {
   const [imageError, setImageError] = React.useState(false);
 
+  const handleButtonClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setReplyProduct(product);
+  };
+
   return (
-    <div className="allm-border allm-rounded-lg allm-overflow-hidden allm-shadow-md allm-mb-3">
-      {product.image_url && !imageError ? (
-        <div className="allm-flex allm-justify-center allm-bg-white allm-p-2 allm-h-32">
-          <img 
-            src={product.image_url} 
-            alt={product.title}
-            className="allm-max-h-28 allm-max-w-full allm-object-contain"
-            onError={() => setImageError(true)}
-            loading="lazy"
-          />
-        </div>
-      ) : (
-        <div className="allm-flex allm-justify-center allm-items-center allm-bg-gray-100 allm-h-32">
-          <span className="allm-text-gray-400 allm-text-xs">Product image</span>
-        </div>
-      )}
-      <div className="allm-p-3">
-        <h4 className="allm-font-medium allm-text-sm allm-mb-2">{product.title}</h4>
-        <div className="allm-flex allm-items-center allm-mb-2">
-          <span className="allm-text-green-600 allm-font-medium">{product.discounted_price}</span>
-          {product.original_price && (
-            <span className="allm-ml-2 allm-text-gray-400 allm-line-through allm-text-xs">
-              {product.original_price}
+    <a
+      href={product.buy_link}
+      rel="noopener noreferrer"
+      className="allm-border allm-rounded-lg allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[190px] allm-min-w-[190px] "
+      style={{ textDecoration: "none" }}
+    >
+      <div>
+        {product.image_url && !imageError ? (
+          <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[160px]">
+            <img
+              src={product.image_url}
+              alt={product.title}
+              className="allm-h-full allm-w-full allm-object-cover"
+              onError={() => setImageError(true)}
+              loading="lazy"
+            />
+          </div>
+        ) : (
+          <div className="allm-flex allm-justify-center allm-items-center allm-bg-[#1B1B1B] allm-h-40">
+            <span className="allm-text-gray-400 allm-text-xs">
+              Product image
             </span>
-          )}
-        </div>
-        {product.buy_link && (
-          <a 
-            href={product.buy_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="allm-block allm-w-full allm-bg-blue-600 allm-text-white allm-py-1 allm-rounded allm-text-center allm-text-sm hover:allm-bg-blue-700"
-          >
-            Buy Now
-          </a>
+          </div>
         )}
       </div>
-    </div>
+      <div className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2 allm-bg-[#1d1d1d]">
+        <div className="allm-font-semibold allm-text-white allm-w-full allm-text-[13px] allm-line-clamp-1">
+          {product.title}
+        </div>
+        <div className="allm-flex allm-w-full allm-justify-between allm-items-center">
+          <div>
+            <div className="allm-text-white allm-font-bold allm-mr-2 allm-text-[18px] allm-mb-1">
+              {product.discounted_price}
+            </div>
+            <div className="allm-line-through allm-font-medium allm-text-[#A4A4A4] allm-mr-2 allm-text-[12px]">
+              {product.original_price}
+            </div>
+          </div>
+          <div
+            onClick={handleButtonClick} // Handle button click separately
+            className="allm-w-[30px] allm-z-50 allm-h-[30px] allm-rounded-lg allm-bg-white allm-flex allm-items-center allm-justify-center"
+          >
+            <ChatTeardropDots size={20} />
+          </div>
+        </div>
+      </div>
+    </a>
   );
 };
 
@@ -121,6 +251,9 @@ const HistoricalMessage = forwardRef(
       error = false,
       errorMsg = null,
       sentAt,
+      isLastBotReply,
+      handlePrompt,
+      setReplyProduct,
     },
     ref
   ) => {
@@ -129,16 +262,32 @@ const HistoricalMessage = forwardRef(
       : "allm-text-sm";
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
 
-    const { textContent, suggestions } = parseMessageWithSuggestions(message);
+    console.log(message);
+    
+
+    // Parse message based on role
+    let parsedData;
+    if (role === "user") {
+      parsedData = parseMessageWithProductByUser(message);
+    } else {
+      parsedData = parseMessageWithSuggestionsAndPrompts(message);
+    }
+
+    const { product, textAfterProduct } = parsedData;
+    const {
+      textBeforeSuggestions,
+      suggestions,
+      textAfterSuggestionsBeforePrompts,
+      prompts,
+      textAfterPrompts,
+    } = parsedData;
 
     return (
       <div className="py-[5px]">
-        {role === "assistant" && (
-          <div
-            className={`allm-text-[10px] allm-text-gray-400 allm-ml-[54px] allm-mr-6 allm-mb-2 allm-text-left allm-font-sans`}
-          >
-            {embedderSettings.settings.assistantName ||
-              "Anything LLM Chat Assistant"}
+        {/* Render Product Card if exists */}
+        {role === "user" && product && (
+          <div className="allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end allm-my-2">
+            <ProductCard product={product} setReplyProduct={setReplyProduct} />
           </div>
         )}
         <div
@@ -148,14 +297,6 @@ const HistoricalMessage = forwardRef(
             role === "user" ? "allm-justify-end" : "allm-justify-start"
           }`}
         >
-          {role === "assistant" && (
-            <img
-              src={embedderSettings.settings.assistantIcon || AnythingLLMIcon}
-              alt="Anything LLM Icon"
-              className="allm-w-9 allm-h-9 allm-flex-shrink-0 allm-ml-2 allm-mt-2"
-              id="anything-llm-icon"
-            />
-          )}
           <div
             style={{
               wordBreak: "break-word",
@@ -163,14 +304,15 @@ const HistoricalMessage = forwardRef(
                 role === "user"
                   ? embedderSettings.USER_STYLES.msgBg
                   : embedderSettings.ASSISTANT_STYLES.msgBg,
+              marginRight: role === "user" && "5px",
             }}
-            className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col allm-font-sans ${
+            className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col  allm-max-w-[70%] ${
               error
                 ? "allm-bg-red-200 allm-rounded-lg allm-mr-[37px] allm-ml-[9px]"
                 : role === "user"
                   ? `${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`
                   : `${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message`
-            } allm-shadow-[0_4px_14px_rgba(0,0,0,0.25)]`}
+            }`}
           >
             <div className="allm-flex allm-flex-col">
               {error ? (
@@ -185,24 +327,63 @@ const HistoricalMessage = forwardRef(
                 </div>
               ) : (
                 <>
-                  <span
-                    className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 ${textSize} allm-leading-[20px]`}
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(renderMarkdown(textContent)),
-                    }}
-                  />
-                  {suggestions && <ProductSuggestions suggestions={suggestions} />}
+                  {/* Render the text after product for user */}
+                  {role === "user" && textAfterProduct && (
+                    <span
+                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 ${textSize} allm-leading-[20px]`}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(
+                          renderMarkdown(textAfterProduct)
+                        ),
+                      }}
+                    />
+                  )}
+
+                  {/* Assistant rendering logic */}
+                  {role !== "user" && (
+                    <span
+                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 ${textSize} allm-leading-[20px]`}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(
+                          renderMarkdown(textBeforeSuggestions)
+                        ),
+                      }}
+                    />
+                  )}
                 </>
               )}
             </div>
           </div>
         </div>
 
-        {sentAt && (
-          <div
-            className={`allm-font-sans allm-text-[10px] allm-text-gray-400 allm-ml-[54px] allm-mr-6 allm-mt-2 ${role === "user" ? "allm-text-right" : "allm-text-left"}`}
-          >
-            {formatDate(sentAt)}
+        {/* Display suggestions if available */}
+        <div className="allm-pl-4">
+          {suggestions && (
+            <ProductSuggestions
+              suggestions={suggestions}
+              setReplyProduct={setReplyProduct}
+            />
+          )}
+        </div>
+
+        {/* Display prompts if available */}
+        {isLastBotReply && prompts?.length > 0 && (
+          <div className="allm-my-4 allm-flex allm-flex-col allm-gap-y-2 allm-self-end allm-items-end  ">
+            {prompts.slice(0, 3).map((prompt, index) => (
+              <div
+                key={index}
+                style={{
+                  border: "1px solid rgba(30, 96, 251, 0.5)",
+                  maxWidth: "80%",
+                }}
+                onClick={() => {
+                  handlePrompt(prompt);
+                }}
+                className="allm-bg-[#1E60FB]/40 allm-rounded-3xl allm-px-4 allm-py-2 allm-text-sm allm-text-white allm-cursor-pointer"
+              >
+                {prompt}
+              </div>
+            ))}
           </div>
         )}
       </div>

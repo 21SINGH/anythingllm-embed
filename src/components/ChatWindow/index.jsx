@@ -2,9 +2,7 @@ import ChatWindowHeader from "./Header";
 import SessionId from "../SessionId";
 import useChatHistory from "@/hooks/chat/useChatHistory";
 import ChatContainer from "./ChatContainer";
-import Sponsor from "../Sponsor";
 import { ChatHistoryLoading } from "./ChatContainer/ChatHistory";
-import ResetChat from "../ResetChat";
 
 export default function ChatWindow({ closeChat, settings, sessionId }) {
   const { chatHistory, setChatHistory, loading } = useChatHistory(
@@ -25,7 +23,6 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
         <ChatHistoryLoading />
         <div className="allm-pt-4 allm-pb-2 allm-h-fit allm-gap-y-1">
           <SessionId />
-          <Sponsor settings={settings} />
         </div>
       </div>
     );
@@ -34,27 +31,19 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
   setEventDelegatorForCodeSnippets();
 
   return (
-    <div className="allm-flex allm-flex-col allm-h-full">
-      <ChatWindowHeader
-        sessionId={sessionId}
-        settings={settings}
-        iconUrl={settings.brandImageUrl}
-        closeChat={closeChat}
-        setChatHistory={setChatHistory}
-      />
-      <div className="allm-flex-grow allm-overflow-y-auto">
+    <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-3xl allm-overflow-hidden bg-[#000]">
+        <ChatWindowHeader
+          sessionId={sessionId}
+          settings={settings}
+          iconUrl={settings.brandImageUrl}
+          closeChat={closeChat}
+          setChatHistory={setChatHistory}
+        />
+      <div className="allm-flex-grow allm-overflow-y-auto allm-bg-[#282828]">
         <ChatContainer
           sessionId={sessionId}
           settings={settings}
           knownHistory={chatHistory}
-        />
-      </div>
-      <div className="allm-mt-4 allm-pb-4 allm-h-fit allm-gap-y-2 allm-z-10">
-        <Sponsor settings={settings} />
-        <ResetChat
-          setChatHistory={setChatHistory}
-          settings={settings}
-          sessionId={sessionId}
         />
       </div>
     </div>

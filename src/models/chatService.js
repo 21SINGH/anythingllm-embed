@@ -33,6 +33,8 @@ const ChatService = {
   },
   streamChat: async function (sessionId, embedSettings, message, handleChat) {
     const { baseApiUrl, embedId, username } = embedSettings;
+    console.log('embeding setting',embedSettings);
+    
     const overrides = {
       prompt: embedSettings?.prompt ?? null,
       model: embedSettings?.model ?? null,
