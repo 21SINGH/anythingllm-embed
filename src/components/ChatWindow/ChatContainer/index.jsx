@@ -4,6 +4,7 @@ import PromptInput from "./PromptInput";
 import handleChat from "@/utils/chat";
 import ChatService from "@/models/chatService";
 export const SEND_TEXT_EVENT = "anythingllm-embed-send-prompt";
+import BrandAnalytics from "@/models/brandAnalytics";
 
 export default function ChatContainer({
   sessionId,
@@ -70,6 +71,11 @@ export default function ChatContainer({
       ];
       setChatHistory(prevChatHistory);
     }
+    await BrandAnalytics.sendAnalytics(
+      settings,
+      sessionId,
+      "sent_message"
+    );
     setReplyProduct(null);
     setMessage("");
     setLoadingResponse(true);
@@ -91,6 +97,11 @@ export default function ChatContainer({
         sentAt: Math.floor(Date.now() / 1000),
       },
     ];
+    await BrandAnalytics.sendAnalytics(
+      settings,
+      sessionId,
+      "sent_message"
+    );
     setChatHistory(prevChatHistory);
     setMessage("");
     setLoadingResponse(true);

@@ -5,6 +5,7 @@ import Head from "@/components/Head";
 import OpenButton from "@/components/OpenButton";
 import ChatWindow from "./components/ChatWindow";
 import { useEffect, useState } from "react";
+import BrandAnalytics from "@/models/brandAnalytics";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
@@ -24,8 +25,28 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (embedSettings.openOnLoad === "on") {
+    const sendBrandView = async () => {
+      await BrandAnalytics.sendAnalytics(
+        embedSettings,
+        sessionId,
+        "brand_view"
+      );
+    };
+    const sendWidgetClick = async () => {
       toggleOpenChat(true);
+      await BrandAnalytics.sendAnalytics(
+        embedSettings,
+        sessionId,
+        "tap_widget"
+      );
+    };
+    if (embedSettings.openOnLoad === "on") {
+      sendWidgetClick();
+    }
+    if (isChatOpen) sendWidgetClick();
+
+    if (embedSettings.loaded) {
+      sendBrandView();
     }
   }, [embedSettings.loaded]);
 
@@ -41,6 +62,11 @@ export default function App() {
   const position = embedSettings.position || "bottom-right";
   const windowWidth = embedSettings.windowWidth ?? "450px";
   const windowHeight = embedSettings.windowHeight ?? "85%";
+
+  const openBot = async () => {
+    toggleOpenChat(true);
+    await BrandAnalytics.sendAnalytics(embedSettings, sessionId, "tap_widget");
+  };
 
   return (
     <>
@@ -83,7 +109,7 @@ export default function App() {
             <OpenButton
               settings={embedSettings}
               isOpen={isChatOpen}
-              toggleOpen={() => toggleOpenChat(true)}
+              toggleOpen={openBot}
             />
           </div>
         </>

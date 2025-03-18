@@ -5,6 +5,8 @@ import { embedderSettings } from "@/main";
 import { v4 } from "uuid";
 import createDOMPurify from "dompurify";
 import { ChatTeardropDots } from "@phosphor-icons/react";
+import BrandAnalytics from "@/models/brandAnalytics";
+import useSessionId from "@/hooks/useSessionId";
 
 const DOMPurify = createDOMPurify(window);
 
@@ -171,7 +173,7 @@ const ProductSuggestions = ({ suggestions, setReplyProduct }) => {
       <div className="allm-flex allm-space-x-3 allm-overflow-x-auto allm-no-scroll">
         {suggestions.products.map((product) => (
           <ProductCard
-            key={product.id || Math.random().toString()}
+            key={product?.id || Math.random().toString()}
             product={product}
             setReplyProduct={setReplyProduct}
           />
@@ -183,6 +185,7 @@ const ProductSuggestions = ({ suggestions, setReplyProduct }) => {
 
 const ProductCard = ({ product, setReplyProduct }) => {
   const [imageError, setImageError] = React.useState(false);
+  const sessionId = useSessionId();
 
   const handleButtonClick = (e) => {
     e.stopPropagation();
@@ -190,19 +193,40 @@ const ProductCard = ({ product, setReplyProduct }) => {
     setReplyProduct(product);
   };
 
+  const handleAnchorClick = async (e) => {
+    e.preventDefault(); // Prevent anchor's default behavior (navigation)
+
+    console.log("Anchor clicked for product:", product);
+
+    // Send analytics
+    await BrandAnalytics.sendAnalytics(
+      embedderSettings?.settings,
+      sessionId,
+      "tap_product",
+      product
+    );
+
+    // After the analytics is sent, you can now navigate if needed
+    if (product?.buy_link || product?.purchase_link) {
+      window.location.href = product?.buy_link || product?.purchase_link;
+    }
+  };
+
   return (
     <a
-      href={product.buy_link}
+      href={product?.buy_link || product?.purchase_link}
+      // target="blank"
       rel="noopener noreferrer"
       className="allm-border allm-rounded-lg allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[190px] allm-min-w-[190px] "
       style={{ textDecoration: "none" }}
+      onClick={handleAnchorClick}
     >
       <div>
-        {product.image_url && !imageError ? (
+        {(product?.image_url || product?.product_images[0]) && !imageError ? (
           <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[160px]">
             <img
-              src={product.image_url}
-              alt={product.title}
+              src={product?.image_url || product?.product_images[0]}
+              alt={product?.title || product?.product_name}
               className="allm-h-full allm-w-full allm-object-cover"
               onError={() => setImageError(true)}
               loading="lazy"
@@ -218,15 +242,17 @@ const ProductCard = ({ product, setReplyProduct }) => {
       </div>
       <div className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2 allm-bg-[#1d1d1d]">
         <div className="allm-font-semibold allm-text-white allm-w-full allm-text-[13px] allm-line-clamp-1">
-          {product.title}
+          {product?.title || product?.product_name}
         </div>
         <div className="allm-flex allm-w-full allm-justify-between allm-items-center">
           <div>
             <div className="allm-text-white allm-font-bold allm-mr-2 allm-text-[18px] allm-mb-1">
-              {product.discounted_price}
+              {product?.discounted_price ||
+                product?.product_prices?.Discounted_price}
             </div>
             <div className="allm-line-through allm-font-medium allm-text-[#A4A4A4] allm-mr-2 allm-text-[12px]">
-              {product.original_price}
+              {product?.original_price ||
+                product?.product_prices?.Original_price}
             </div>
           </div>
           <div
@@ -261,9 +287,6 @@ const HistoricalMessage = forwardRef(
       ? `allm-text-[${embedderSettings.settings.textSize}px]`
       : "allm-text-sm";
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
-
-    console.log(message);
-    
 
     // Parse message based on role
     let parsedData;
