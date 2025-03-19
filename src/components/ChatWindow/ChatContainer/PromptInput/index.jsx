@@ -56,21 +56,21 @@ export default function PromptInput({
       >
         <div className="allm-flex allm-items-center allm-w-full allm-border-t-8">
           <div className="allm-flex allm-flex-col allm-px-3 allm-py-3 allm-overflow-hidden allm-w-full">
-            {replyProduct?.id && (
+            {replyProduct && (
               <div className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2 allm-bg-[#2f2f2f] allm-rounded-t-lg ">
                 <div className="allm-flex allm-items-center allm-justify-center allm-p-[10px] allm-w-[60px] allm-h-[50px] allm-bg-[#1d1d1d] allm-rounded-[10px] overflow-hidden">
                   <img
-                    src={replyProduct.image_url}
-                    alt={replyProduct.title}
+                    src={replyProduct?.image_url || replyProduct?.product_images[0]}
+                    alt={replyProduct?.title || replyProduct?.product_name}
                     className="allm-w-[60px] allm-h-[50px] allm-rounded-[10px] allm-object-cover"
                   />
                 </div>
                 <div className="allm-flex allm-flex-col allm-gap-1 allm-text-white">
                   <span className="allm-font-semibold allm-text-lg allm-line-clamp-1">
-                    {replyProduct.title}
+                    {replyProduct?.title || replyProduct?.product_name}
                   </span>
                   <span className="allm-text-xs allm-text-[#a4a4a4] allm-line-clamp-2">
-                    {replyProduct.product_description}
+                    {replyProduct?.product_description}
                   </span>
                 </div>
 
