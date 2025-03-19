@@ -259,7 +259,7 @@ const ProductCard = ({ product, setReplyProduct }) => {
             onClick={handleButtonClick} // Handle button click separately
             className="allm-w-[30px] allm-z-50 allm-h-[30px] allm-rounded-lg allm-bg-white allm-flex allm-items-center allm-justify-center"
           >
-            <ChatTeardropDots size={20} />
+            <ChatTeardropDots size={20} color="black"/>
           </div>
         </div>
       </div>
