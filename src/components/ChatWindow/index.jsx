@@ -3,13 +3,14 @@ import SessionId from "../SessionId";
 import useChatHistory from "@/hooks/chat/useChatHistory";
 import ChatContainer from "./ChatContainer";
 import { ChatHistoryLoading } from "./ChatContainer/ChatHistory";
+import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 
 export default function ChatWindow({ closeChat, settings, sessionId }) {
   const { chatHistory, setChatHistory, loading } = useChatHistory(
     settings,
     sessionId
   );
-
+  const embedSettings = useGetScriptAttributes();
   if (loading) {
     return (
       <div className="allm-flex allm-flex-col allm-h-full">
@@ -32,14 +33,17 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
 
   return (
     <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-3xl allm-overflow-hidden bg-[#000]">
-        <ChatWindowHeader
-          sessionId={sessionId}
-          settings={settings}
-          iconUrl={settings.brandImageUrl}
-          closeChat={closeChat}
-          setChatHistory={setChatHistory}
-        />
-      <div className="allm-flex-grow allm-overflow-y-auto allm-bg-[#282828]">
+      <ChatWindowHeader
+        sessionId={sessionId}
+        settings={settings}
+        iconUrl={settings.brandImageUrl}
+        closeChat={closeChat}
+        setChatHistory={setChatHistory}
+      />
+      <div
+        className="allm-flex-grow allm-overflow-y-auto "
+        style={{ backgroundColor: embedSettings.bgColor }}
+      >
         <ChatContainer
           sessionId={sessionId}
           settings={settings}

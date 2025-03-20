@@ -15,14 +15,19 @@ const DEFAULT_SETTINGS = {
   brandImageUrl: null, // will be forced into 100x50px container
   greeting: null, // empty chat window greeting.
   buttonColor: "#262626", // must be hex color code
-  userBgColor: "#000", // user text bubble color
-  assistantBgColor: "#2563eb", // assistant text bubble color
+  userBgColor: "#2563eb", // user text bubble color
+  assistantBgColor: "#1B1B1B", // assistant text bubble color
   position: "bottom-right", // position of chat button/window
   assistantName: "AnythingLLM Chat Assistant", // default assistant name
   assistantIcon: null, // default assistant icon
   windowHeight: null, // height of chat window in number:css-prefix
   windowWidth: null, // width of chat window in number:css-prefix
   textSize: null, // text size in px (number only)
+  headerColor: "#222222",
+  textHeaderColor:'#fff',
+  bgColor:'#282828',
+  inputbarColor:'#1d1d1d',
+  cardBgColor:'#1d1d1d',
 
   // behaviors
   openOnLoad: "off", // or "on"
@@ -56,6 +61,9 @@ export default function useGetScriptAttributes() {
     }
     fetchAttribs();
   }, [document]);
+
+  console.log(settings.headerColor);
+  
 
   return settings;
 }

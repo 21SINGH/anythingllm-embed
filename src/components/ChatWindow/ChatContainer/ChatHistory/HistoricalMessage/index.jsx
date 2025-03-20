@@ -7,6 +7,7 @@ import createDOMPurify from "dompurify";
 import { ChatTeardropDots } from "@phosphor-icons/react";
 import BrandAnalytics from "@/models/brandAnalytics";
 import useSessionId from "@/hooks/useSessionId";
+import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 
 const DOMPurify = createDOMPurify(window);
 
@@ -186,6 +187,7 @@ const ProductSuggestions = ({ suggestions, setReplyProduct }) => {
 const ProductCard = ({ product, setReplyProduct }) => {
   const [imageError, setImageError] = React.useState(false);
   const sessionId = useSessionId();
+  const embedSettings = useGetScriptAttributes();
 
   const handleButtonClick = (e) => {
     e.stopPropagation();
@@ -240,7 +242,10 @@ const ProductCard = ({ product, setReplyProduct }) => {
           </div>
         )}
       </div>
-      <div className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2 allm-bg-[#1d1d1d]">
+      <div
+        style={{ backgroundColor: embedSettings.cardBgColor }}
+        className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2"
+      >
         <div className="allm-font-semibold allm-text-white allm-w-full allm-text-[13px] allm-line-clamp-1">
           {product?.title || product?.product_name}
         </div>
@@ -259,7 +264,7 @@ const ProductCard = ({ product, setReplyProduct }) => {
             onClick={handleButtonClick} // Handle button click separately
             className="allm-w-[30px] allm-z-50 allm-h-[30px] allm-rounded-lg allm-bg-white allm-flex allm-items-center allm-justify-center"
           >
-            <ChatTeardropDots size={20} color="black"/>
+            <ChatTeardropDots size={20} color="black" />
           </div>
         </div>
       </div>

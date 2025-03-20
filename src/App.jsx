@@ -73,14 +73,14 @@ export default function App() {
       <Head />
       <div
         id="anything-llm-embed-chat-container"
-        className={`allm-fixed allm-inset-0 allm-z-[9999] ${isChatOpen ? "allm-block" : "allm-hidden"}`}
+        // className={`allm-fixed allm-inset-0 ${isChatOpen ? "allm-block" : "allm-hidden"}`}
       >
         <div
           style={{
             maxWidth: isLargeScreen ? windowWidth : "100%",
             maxHeight: isLargeScreen ? windowHeight : "100%",
           }}
-          className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 allm-right-0 ${isLargeScreen ? "allm-mb-4" : ""}  allm-md:mr-4 allm-rounded-2xl  ${isLargeScreen ? positionClasses[position] : ""}`}
+          className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 allm-right-0 ${isChatOpen ? "allm-block" : "allm-hidden"} ${isLargeScreen ? "allm-mb-4" : ""}  allm-md:mr-4 allm-rounded-2xl  ${isLargeScreen ? positionClasses[position] : ""}`}
           id="anything-llm-chat"
         >
           {isChatOpen && (

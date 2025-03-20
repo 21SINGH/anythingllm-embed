@@ -1,4 +1,5 @@
 import AnythingLLMIcon from "@/assets/anything-llm-icon.svg";
+import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 import ChatService from "@/models/chatService";
 import BrandService from "@/models/brandService";
 import { RxCross2 } from "react-icons/rx";
@@ -21,6 +22,7 @@ export default function ChatWindowHeader({
 }) {
   const [showingOptions, setShowOptions] = useState(false);
   const [brandDetails, setBrandDetails] = useState(null);
+  const embedSettings = useGetScriptAttributes();
   const menuRef = useRef();
   const buttonRef = useRef();
 
@@ -64,7 +66,8 @@ export default function ChatWindowHeader({
   return (
     <div
       // style={{ borderBottom: "1px solid #E9E9E9" }}
-      className="allm-flex allm-items-center  allm-bg-[#222222]"
+      style={{ backgroundColor: embedSettings.headerColor }}
+      className={`allm-flex allm-items-center`}
       id="anything-llm-header"
     >
       <div className="allm-flex allm-pl-3 allm-items-center allm-w-full allm-h-[76px]">
@@ -74,7 +77,10 @@ export default function ChatWindowHeader({
           // {iconUrl ?? AnythingLLMIcon}
           alt={brandDetails?.logo ? "Brand" : "AnythingLLM Logo"}
         />
-        <div className="allm-text-[21px] allm-font-semibold allm-ml-3 ">
+        <div
+          className="allm-text-[21px] allm-font-semibold allm-ml-3 "
+          style={{ color: embedSettings.textHeaderColor }}
+        >
           {brandDetails?.name}
         </div>
       </div>
@@ -96,7 +102,7 @@ export default function ChatWindowHeader({
           onClick={closeChat}
           className="hover:allm-cursor-pointer allm-border-none allm-bg-[#5C5C5C]/50 allm-rounded-full allm-p-1  allm-flex allm-items-center allm-justify-center"
         >
-          <RxCross2 size={18} color="#FAFAFA"/>
+          <RxCross2 size={18} color="#FAFAFA" />
         </button>
       </div>
       {/* <OptionsMenu

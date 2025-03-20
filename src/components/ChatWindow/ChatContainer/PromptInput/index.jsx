@@ -1,6 +1,7 @@
 import { IoMdArrowUp } from "react-icons/io";
 import { RxCross2 } from "react-icons/rx";
 import React, { useState, useRef, useEffect } from "react";
+import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 
 export default function PromptInput({
   message,
@@ -9,11 +10,12 @@ export default function PromptInput({
   inputDisabled,
   buttonDisabled,
   replyProduct,
-  setReplyProduct
+  setReplyProduct,
 }) {
   const formRef = useRef(null);
   const textareaRef = useRef(null);
   const [_, setFocused] = useState(false);
+  const embedSettings = useGetScriptAttributes();
 
   useEffect(() => {
     if (!inputDisabled && textareaRef.current) {
@@ -49,7 +51,10 @@ export default function PromptInput({
   };
 
   return (
-    <div className="allm-w-full allm-sticky allm-bottom-0 allm-z-10 allm-flex allm-justify-center allm-items-center allm-bg-[#282828]">
+    <div
+      className="allm-w-full allm-sticky allm-bottom-0 allm-z-10 allm-flex allm-justify-center allm-items-center "
+      style={{ backgroundColor: embedSettings.bgColor }}
+    >
       <form
         onSubmit={handleSubmit}
         className="allm-flex allm-flex-col allm-gap-y-1 allm-rounded-t-lg allm-w-full allm-items-center allm-justify-center "
@@ -60,7 +65,9 @@ export default function PromptInput({
               <div className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2 allm-bg-[#2f2f2f] allm-rounded-t-lg ">
                 <div className="allm-flex allm-items-center allm-justify-center allm-p-[10px] allm-w-[60px] allm-h-[50px] allm-bg-[#1d1d1d] allm-rounded-[10px] overflow-hidden">
                   <img
-                    src={replyProduct?.image_url || replyProduct?.product_images[0]}
+                    src={
+                      replyProduct?.image_url || replyProduct?.product_images[0]
+                    }
                     alt={replyProduct?.title || replyProduct?.product_name}
                     className="allm-w-[60px] allm-h-[50px] allm-rounded-[10px] allm-object-cover"
                   />
@@ -78,7 +85,9 @@ export default function PromptInput({
                   type="button"
                   className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-1 allm-rounded-full allm-mr-1 allm-outline-none allm-border-0 allm-absolute allm-top-2 allm-right-0 allm-bg-[#5A5A5A]`}
                   aria-label="Cross message"
-                  onClick={()=>{setReplyProduct(null)}}
+                  onClick={() => {
+                    setReplyProduct(null);
+                  }}
                 >
                   <RxCross2 size={17} color="#fff" />
                 </button>
@@ -86,8 +95,11 @@ export default function PromptInput({
             )}
 
             <div
-              style={{ border: "1.5px solid #22262833" }}
-              className={`allm-flex  allm-w-full allm-items-center allm-bg-[#1d1d1d] allm-rounded-[10px]  allm-py-2 ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
+              style={{
+                border: "1.5px solid #22262833",
+                backgroundColor: embedSettings.inputbarColor,
+              }}
+              className={`allm-flex  allm-w-full allm-items-center allm-rounded-[10px]  allm-py-2 ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
             >
               <input
                 ref={textareaRef}
@@ -102,16 +114,24 @@ export default function PromptInput({
                   adjustTextArea(e);
                 }}
                 value={message}
-                className=" allm-border-none allm-cursor-text allm-text-[16px] allm-mx-2 allm-w-full allm-text-white allm-bg-transparent placeholder:allm-text-[#fff]/20 allm-resize-none active:allm-outline-none focus:allm-outline-none allm-flex-grow"
+                className=" allm-border-none allm-cursor-text allm-text-[16px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-none focus:allm-outline-none allm-flex-grow"
+                style={{
+                  color: message
+                    ? embedSettings.textHeaderColor
+                    : embedSettings.textHeaderColor / 50,
+                }}
                 placeholder={"Ask me anything..."}
                 id="message-input"
               />
               <button
                 ref={formRef}
                 type="submit"
-                className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-1 allm-rounded-full allm-mr-3 allm-outline-none allm-border-0 ${
-                  message ? "allm-bg-[#1E60FB]" : "allm-bg-[#5A5A5A]"
-                }`}
+                className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-1 allm-rounded-full allm-mr-3 allm-outline-none allm-border-0`}
+                style={{
+                  backgroundColor: message
+                    ? embedSettings.userBgColor
+                    : "#5a5a5a",
+                }}
                 id="send-message-button"
                 aria-label="Send message"
               >
