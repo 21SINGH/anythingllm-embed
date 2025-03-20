@@ -96,7 +96,6 @@ export default function PromptInput({
 
             <div
               style={{
-                border: "1.5px solid #22262833",
                 backgroundColor: embedSettings.inputbarColor,
               }}
               className={`allm-flex  allm-w-full allm-items-center allm-rounded-[10px]  allm-py-2 ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
