@@ -59,24 +59,26 @@ export default function PromptInput({
         onSubmit={handleSubmit}
         className="allm-flex allm-flex-col allm-gap-y-1 allm-rounded-t-lg allm-w-full allm-items-center allm-justify-center "
       >
-        <div className="allm-flex allm-items-center allm-w-full allm-border-t-8">
+        <div className="allm-flex allm-items-center allm-w-full ">
           <div className="allm-flex allm-flex-col allm-px-3 allm-py-3 allm-overflow-hidden allm-w-full">
             {replyProduct && (
-              <div className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2 allm-bg-[#2f2f2f] allm-rounded-t-lg ">
-                <div className="allm-flex allm-items-center allm-justify-center allm-p-[10px] allm-w-[60px] allm-h-[50px] allm-bg-[#1d1d1d] allm-rounded-[10px] overflow-hidden">
+              <div style={{
+                backgroundColor:embedSettings.cardBgColor
+              }} className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2  allm-rounded-t-lg ">
+                <div className="allm-flex allm-items-center allm-justify-center  allm-w-[70px] allm-h-[70px]  allm-rounded-[10px] overflow-hidden">
                   <img
                     src={
                       replyProduct?.image_url || replyProduct?.product_images[0]
                     }
                     alt={replyProduct?.title || replyProduct?.product_name}
-                    className="allm-w-[60px] allm-h-[50px] allm-rounded-[10px] allm-object-cover"
+                    className="allm-w-[70px] allm-h-[70px] allm-rounded-[10px] allm-object-cover"
                   />
                 </div>
-                <div className="allm-flex allm-flex-col allm-gap-1 allm-text-white">
-                  <span className="allm-font-semibold allm-text-lg allm-line-clamp-1">
+                <div className="allm-flex allm-flex-col allm-gap-1 ">
+                  <span style={{color:embedSettings.cardTextColor}} className="allm-font-semibold allm-text-lg allm-line-clamp-1">
                     {replyProduct?.title || replyProduct?.product_name}
                   </span>
-                  <span className="allm-text-xs allm-text-[#a4a4a4] allm-line-clamp-2">
+                  <span style={{color:embedSettings.cardTextSubColour}} className="allm-text-xs allm-line-clamp-2">
                     {replyProduct?.product_description}
                   </span>
                 </div>
@@ -115,9 +117,7 @@ export default function PromptInput({
                 value={message}
                 className=" allm-border-none allm-cursor-text allm-text-[16px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-none focus:allm-outline-none allm-flex-grow"
                 style={{
-                  color: message
-                    ? embedSettings.textHeaderColor
-                    : embedSettings.textHeaderColor / 50,
+                  color : getContrastColor(embedSettings.inputbarColor)
                 }}
                 placeholder={"Ask me anything..."}
                 id="message-input"
@@ -143,3 +143,15 @@ export default function PromptInput({
     </div>
   );
 }
+
+
+const getContrastColor = (hex) => {
+  let r = parseInt(hex.substring(1, 3), 16);
+  let g = parseInt(hex.substring(3, 5), 16);
+  let b = parseInt(hex.substring(5, 7), 16);
+
+  // Calculate luminance (Y) using the relative luminance formula
+  let luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  return luminance > 0.5 ? "#000000" : "#FFFFFF"; // Black for light BG, White for dark BG
+};

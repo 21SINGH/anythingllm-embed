@@ -6,6 +6,7 @@ import OpenButton from "@/components/OpenButton";
 import ChatWindow from "./components/ChatWindow";
 import { useEffect, useState } from "react";
 import BrandAnalytics from "@/models/brandAnalytics";
+// import BrandBotConfigure from "./models/brandBotConfigure";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
@@ -40,6 +41,11 @@ export default function App() {
         "tap_widget"
       );
     };
+    // const getBotDetailes = async () =>{
+    //   const res = await BrandBotConfigure.getBotDetails(embedSettings)
+    //   console.log('result for bot details',res);
+      
+    // }
     if (embedSettings.openOnLoad === "on") {
       sendWidgetClick();
     }
@@ -47,6 +53,7 @@ export default function App() {
 
     if (embedSettings.loaded) {
       sendBrandView();
+      // getBotDetailes()
     }
   }, [embedSettings.loaded]);
 

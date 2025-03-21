@@ -5,6 +5,7 @@ import { ArrowDown, CircleNotch } from "@phosphor-icons/react";
 import { embedderSettings } from "@/main";
 import debounce from "lodash.debounce";
 import { SEND_TEXT_EVENT } from "..";
+import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 
 export default function ChatHistory({
   settings = {},
@@ -148,7 +149,7 @@ export function ChatHistoryLoading() {
 
 function SuggestedMessages({ settings }) {
   if (!settings?.defaultMessages?.length) return null;
-
+const embedSettings = useGetScriptAttributes();
   return (
     <div className="allm-flex allm-flex-col allm-gap-y-2 allm-w-[75%]">
       {settings.defaultMessages.map((content, i) => (
@@ -157,7 +158,9 @@ function SuggestedMessages({ settings }) {
           style={{
             opacity: 0,
             wordBreak: "break-word",
-            backgroundColor: embedderSettings.USER_STYLES.msgBg,
+            backgroundColor: embedSettings.userBgColor,
+            // embedderSettings.USER_STYLES.msgBg,
+
             fontSize: settings.textSize,
           }}
           type="button"

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { embedderSettings } from "../main";
+import { useQuery } from "@tanstack/react-query";
+import BrandBotConfigure from "@/models/brandBotConfigure";
 
 const DEFAULT_SETTINGS = {
   embedId: null, //required
@@ -24,10 +26,16 @@ const DEFAULT_SETTINGS = {
   windowWidth: null, // width of chat window in number:css-prefix
   textSize: null, // text size in px (number only)
   headerColor: "#222222",
-  textHeaderColor:'#fff',
-  bgColor:'#282828',
-  inputbarColor:'#1d1d1d',
-  cardBgColor:'#1d1d1d',
+  textHeaderColor: "#fff",
+  userTextColor: "#fff",
+  botTextColor: "#fff",
+  cardTextColor: "#fff",
+  cardTextSubColour: "#a4a4a4",
+  prompotBgColor: "#1E60FB66",
+  promptBorderColor: "#1E60FBBB",
+  bgColor: "#282828",
+  inputbarColor: "#1d1d1d",
+  cardBgColor: "#1d1d1d",
 
   // behaviors
   openOnLoad: "off", // or "on"
@@ -48,25 +56,138 @@ export default function useGetScriptAttributes() {
       if (
         !embedderSettings.settings.baseApiUrl ||
         !embedderSettings.settings.embedId
-      )
+      ) {
         throw new Error(
           "[AnythingLLM Embed Module::Abort] - Invalid script tag setup detected. Missing required parameters for boot!"
         );
+      }
 
-      setSettings({
+      setSettings((prevSettings) => ({
+        ...prevSettings,
         ...DEFAULT_SETTINGS,
         ...parseAndValidateEmbedSettings(embedderSettings.settings),
         loaded: true,
-      });
+      }));
     }
+
     fetchAttribs();
-  }, [document]);
+  }, []);
 
-  console.log(settings.headerColor);
+  // Use TanStack Query to fetch bot details
+  const { data, error } = useQuery({
+    queryKey: ["botDetails", settings],
+    queryFn: () => BrandBotConfigure.getBotDetails(settings),
+    enabled: settings.loaded, // Only run when settings.loaded is true
+    retry: 2, // Optional: Retry failed requests
+  });
+
+  useEffect(() => {
+    if (data) {
+      setSettings((prevSettings) => ({
+        ...prevSettings,
+        ...data,
+      }));
+    }
+  }, [data]);
+
+  if (error) {
+    console.error("Error fetching bot details:", error);
+  }
   
-
   return settings;
 }
+// export default function useGetScriptAttributes() {
+//   const [settings, setSettings] = useState({
+//     loaded: false,
+//     ...DEFAULT_SETTINGS,
+//   });useEffect(() => {
+//   function fetchAttribs() {
+//     if (!document) return false;
+//     if (
+//       !embedderSettings.settings.baseApiUrl ||
+//       !embedderSettings.settings.embedId
+//     ) {
+//       throw new Error(
+//         "[AnythingLLM Embed Module::Abort] - Invalid script tag setup detected. Missing required parameters for boot!"
+//       );
+//     }
+
+//     setSettings((prevSettings) => ({
+//       ...prevSettings,
+//       ...DEFAULT_SETTINGS,
+//       ...parseAndValidateEmbedSettings(embedderSettings.settings),
+//       loaded: true,
+//     }));
+//   }
+
+//   const getBotDetails = async () => {
+//     try {
+//       const res = await BrandBotConfigure.getBotDetails(settings);
+//       console.log("Bot details fetched:", res);
+
+//       if (res) {
+//         setSettings((prevSettings) => ({
+//           ...prevSettings,
+//           ...res,
+//         }));
+//       }
+//     } catch (error) {
+//       console.error("Error fetching bot details:", error);
+//     }
+//   };
+
+//   fetchAttribs();
+
+//   if (settings.loaded) {
+//     getBotDetails();
+//   }
+// }, [settings.loaded, document]);
+
+//   // useEffect(() => {
+//   //   function fetchAttribs() {
+//   //     if (!document) return false;
+//   //     if (
+//   //       !embedderSettings.settings.baseApiUrl ||
+//   //       !embedderSettings.settings.embedId
+//   //     )
+//   //       throw new Error(
+//   //         "[AnythingLLM Embed Module::Abort] - Invalid script tag setup detected. Missing required parameters for boot!"
+//   //       );
+
+//   //     setSettings({
+//   //       ...DEFAULT_SETTINGS,
+//   //       ...parseAndValidateEmbedSettings(embedderSettings.settings),
+//   //       loaded: true,
+//   //     });
+//   //   }
+//   //   fetchAttribs();
+//   // }, [document]);
+
+//   // useEffect(() => {
+//   //   const getBotDetails = async () => {
+//   //     try {
+//   //       const res = await BrandBotConfigure.getBotDetails(settings);
+//   //       console.log("Bot details fetched:", res);
+
+//   //       if (res) {
+//   //         setSettings((prevSettings) => ({
+//   //           ...prevSettings, 
+//   //           ...res, 
+//   //         }));
+//   //       }
+//   //     } catch (error) {
+//   //       console.error("Error fetching bot details:", error);
+//   //     }
+//   //   };
+
+//   //   if (settings.loaded) {
+//   //     getBotDetails();
+//   //   }
+//   // }, [settings.loaded]);
+//   // console.log("settings", settings);
+
+//   return settings;
+// }
 
 const validations = {
   _fallbacks: {

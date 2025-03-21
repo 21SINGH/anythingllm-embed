@@ -219,7 +219,7 @@ const ProductCard = ({ product, setReplyProduct }) => {
       href={product?.buy_link || product?.purchase_link}
       // target="blank"
       rel="noopener noreferrer"
-      className="allm-border allm-rounded-lg allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[190px] allm-min-w-[190px] "
+      className="allm-rounded-lg allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[190px] allm-min-w-[190px] "
       style={{ textDecoration: "none" }}
       onClick={handleAnchorClick}
     >
@@ -246,16 +246,31 @@ const ProductCard = ({ product, setReplyProduct }) => {
         style={{ backgroundColor: embedSettings.cardBgColor }}
         className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2"
       >
-        <div className="allm-font-semibold allm-text-white allm-w-full allm-text-[13px] allm-line-clamp-1">
+        <div
+          style={{
+            color: embedSettings.cardTextColor,
+          }}
+          className="allm-font-semiboldallm-w-full allm-text-[13px] allm-line-clamp-1"
+        >
           {product?.title || product?.product_name}
         </div>
         <div className="allm-flex allm-w-full allm-justify-between allm-items-center">
           <div>
-            <div className="allm-text-white allm-font-bold allm-mr-2 allm-text-[18px] allm-mb-1">
+            <div
+              style={{
+                color: embedSettings.cardTextColor,
+              }}
+              className=" allm-font-bold allm-mr-2 allm-text-[18px] allm-mb-1"
+            >
               {product?.discounted_price ||
                 product?.product_prices?.Discounted_price}
             </div>
-            <div className="allm-line-through allm-font-medium allm-text-[#A4A4A4] allm-mr-2 allm-text-[12px]">
+            <div
+              style={{
+                color: embedSettings.cardTextSubColour,
+              }}
+              className="allm-line-through allm-font-medium allm-mr-2 allm-text-[12px]"
+            >
               {product?.original_price ||
                 product?.product_prices?.Original_price}
             </div>
@@ -292,6 +307,7 @@ const HistoricalMessage = forwardRef(
       ? `allm-text-[${embedderSettings.settings.textSize}px]`
       : "allm-text-sm";
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
+    const embedSettings = useGetScriptAttributes();
 
     // Parse message based on role
     let parsedData;
@@ -330,8 +346,10 @@ const HistoricalMessage = forwardRef(
               wordBreak: "break-word",
               backgroundColor:
                 role === "user"
-                  ? embedderSettings.USER_STYLES.msgBg
-                  : embedderSettings.ASSISTANT_STYLES.msgBg,
+                  ? embedSettings.userBgColor
+                  // embedderSettings.USER_STYLES.msgBg
+                  : embedSettings.assistantBgColor,
+                  // embedderSettings.ASSISTANT_STYLES.msgBg,
               marginRight: role === "user" && "5px",
             }}
             className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col  allm-max-w-[70%] ${
@@ -359,6 +377,9 @@ const HistoricalMessage = forwardRef(
                   {role === "user" && textAfterProduct && (
                     <span
                       className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 ${textSize} allm-leading-[20px]`}
+                      style={{
+                        color: embedSettings.userTextColor,
+                      }}
                       dangerouslySetInnerHTML={{
                         __html: DOMPurify.sanitize(
                           renderMarkdown(textAfterProduct)
@@ -371,6 +392,9 @@ const HistoricalMessage = forwardRef(
                   {role !== "user" && (
                     <span
                       className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 ${textSize} allm-leading-[20px]`}
+                      style={{
+                        color: embedSettings.botTextColor,
+                      }}
                       dangerouslySetInnerHTML={{
                         __html: DOMPurify.sanitize(
                           renderMarkdown(textBeforeSuggestions)
@@ -401,13 +425,15 @@ const HistoricalMessage = forwardRef(
               <div
                 key={index}
                 style={{
-                  border: "1px solid rgba(30, 96, 251, 0.5)",
+                  border: `1px solid ${embedSettings.userBgColor}`,
+                  backgroundColor: lightenAndDullColor(embedSettings.userBgColor, 70, 0.9),
                   maxWidth: "80%",
+                  color: embedSettings.userTextColor,
                 }}
                 onClick={() => {
                   handlePrompt(prompt);
                 }}
-                className="allm-bg-[#1E60FB]/40 allm-rounded-3xl allm-px-4 allm-py-2 allm-text-sm allm-text-white allm-cursor-pointer"
+                className=" allm-rounded-3xl allm-px-4 allm-py-2 allm-text-sm  allm-cursor-pointer"
               >
                 {prompt}
               </div>
@@ -420,3 +446,24 @@ const HistoricalMessage = forwardRef(
 );
 
 export default memo(HistoricalMessage);
+
+const lightenAndDullColor = (hex, lightenFactor = 70, desaturateFactor = 0.9) => {
+  let num = parseInt(hex.replace("#", ""), 16);
+  let r = (num >> 16);
+  let g = ((num >> 8) & 0x00ff);
+  let b = (num & 0x0000ff);
+
+  // Lighten the color by increasing RGB values
+  r = Math.min(255, r + lightenFactor);
+  g = Math.min(255, g + lightenFactor);
+  b = Math.min(255, b + lightenFactor);
+
+  // Desaturate by blending with a neutral gray (RGB 200, 200, 200)
+  r = Math.round(r * desaturateFactor + 200 * (1 - desaturateFactor));
+  g = Math.round(g * desaturateFactor + 200 * (1 - desaturateFactor));
+  b = Math.round(b * desaturateFactor + 200 * (1 - desaturateFactor));
+
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
+
