@@ -207,7 +207,8 @@ const ProductCard = ({ product, setReplyProduct }) => {
     );
 
     // After the analytics is sent, you can now navigate if needed
-    if (product?.buy_link || product?.purchase_link) {
+    if (sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
+    if (product?.buy_link || product?.purchase_link ) {
       window.location.href = product?.buy_link || product?.purchase_link;
     }
   };
@@ -221,10 +222,17 @@ const ProductCard = ({ product, setReplyProduct }) => {
       onClick={handleAnchorClick}
     >
       <div>
-        {(product?.image_url || product?.product_images[0] || product?.product_images) && !imageError ? (
+        {(product?.image_url ||
+          product?.product_images[0] ||
+          product?.product_images) &&
+        !imageError ? (
           <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[160px]">
             <img
-              src={product?.image_url  || product?.product_images || product?.product_images[0]}
+              src={
+                product?.image_url ||
+                product?.product_images ||
+                product?.product_images[0]
+              }
               alt={product?.title || product?.product_name}
               className="allm-h-full allm-w-full allm-object-cover"
               onError={() => setImageError(true)}
@@ -323,7 +331,6 @@ const HistoricalMessage = forwardRef(
       textAfterPrompts,
     } = parsedData;
 
-    
     return (
       <div className="py-[5px]">
         {/* Render Product Card if exists */}
@@ -345,9 +352,9 @@ const HistoricalMessage = forwardRef(
               backgroundColor:
                 role === "user"
                   ? embedSettings.userBgColor
-                  // embedderSettings.USER_STYLES.msgBg
-                  : embedSettings.assistantBgColor,
-                  // embedderSettings.ASSISTANT_STYLES.msgBg,
+                  : // embedderSettings.USER_STYLES.msgBg
+                    embedSettings.assistantBgColor,
+              // embedderSettings.ASSISTANT_STYLES.msgBg,
               marginRight: role === "user" && "5px",
             }}
             className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col  allm-max-w-[80%] ${
@@ -424,12 +431,17 @@ const HistoricalMessage = forwardRef(
                 key={index}
                 style={{
                   border: `1px solid ${embedSettings.userBgColor}`,
-                  backgroundColor: lightenAndDullColor(embedSettings.userBgColor, 70, 0.9),
+                  backgroundColor: lightenAndDullColor(
+                    embedSettings.userBgColor,
+                    70,
+                    0.9
+                  ),
                   maxWidth: "80%",
                   color: embedSettings.userTextColor,
                 }}
                 onClick={() => {
-                  handlePrompt(prompt);
+                  if (sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
+                    handlePrompt(prompt);
                 }}
                 className=" allm-rounded-3xl allm-px-4 allm-py-2 allm-text-sm  allm-cursor-pointer"
               >
@@ -445,11 +457,15 @@ const HistoricalMessage = forwardRef(
 
 export default memo(HistoricalMessage);
 
-const lightenAndDullColor = (hex, lightenFactor = 70, desaturateFactor = 0.9) => {
+const lightenAndDullColor = (
+  hex,
+  lightenFactor = 70,
+  desaturateFactor = 0.9
+) => {
   let num = parseInt(hex.replace("#", ""), 16);
-  let r = (num >> 16);
-  let g = ((num >> 8) & 0x00ff);
-  let b = (num & 0x0000ff);
+  let r = num >> 16;
+  let g = (num >> 8) & 0x00ff;
+  let b = num & 0x0000ff;
 
   // Lighten the color by increasing RGB values
   r = Math.min(255, r + lightenFactor);
@@ -463,5 +479,3 @@ const lightenAndDullColor = (hex, lightenFactor = 70, desaturateFactor = 0.9) =>
 
   return `rgb(${r}, ${g}, ${b})`;
 };
-
-

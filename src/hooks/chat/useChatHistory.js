@@ -1,3 +1,4 @@
+import { dummyData } from "@/components/ChatWindow/dummyData";
 import ChatService from "@/models/chatService";
 import { useEffect, useState } from "react";
 
@@ -8,16 +9,24 @@ export default function useChatHistory(settings = null, sessionId = null) {
   useEffect(() => {
     async function fetchChatHistory() {
       if (!sessionId || !settings) return;
-      try {
-        const formattedMessages = await ChatService.embedSessionHistory(
-          settings,
-          sessionId
-        );
-        setMessages(formattedMessages);
+      console.log("sessionId", sessionId);
+
+      if (sessionId === "d5c5134a-ab48-458d-bc90-16cb66456426") {        
+        setMessages(dummyData);
         setLoading(false);
-      } catch (error) {
-        console.error("Error fetching historical chats:", error);
-        setLoading(false);
+      } 
+     else {
+        try {
+          const formattedMessages = await ChatService.embedSessionHistory(
+            settings,
+            sessionId
+          );
+          setMessages(formattedMessages);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching historical chats:", error);
+          setLoading(false);
+        }
       }
     }
     fetchChatHistory();
