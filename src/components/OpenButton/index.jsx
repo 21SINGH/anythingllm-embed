@@ -40,9 +40,6 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
     }
   }, [settings, brandDetails]);
 
-  useEffect(() => {
-    console.log(brandDetails);
-  }, [brandDetails]);
 
   return (
     <button

@@ -198,8 +198,6 @@ const ProductCard = ({ product, setReplyProduct }) => {
   const handleAnchorClick = async (e) => {
     e.preventDefault(); // Prevent anchor's default behavior (navigation)
 
-    console.log("Anchor clicked for product:", product);
-
     // Send analytics
     await BrandAnalytics.sendAnalytics(
       embedderSettings?.settings,
@@ -226,7 +224,7 @@ const ProductCard = ({ product, setReplyProduct }) => {
         {(product?.image_url || product?.product_images[0] || product?.product_images) && !imageError ? (
           <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[160px]">
             <img
-              src={product?.image_url || product?.product_images[0] || product?.product_images}
+              src={product?.image_url  || product?.product_images || product?.product_images[0]}
               alt={product?.title || product?.product_name}
               className="allm-h-full allm-w-full allm-object-cover"
               onError={() => setImageError(true)}
@@ -325,9 +323,7 @@ const HistoricalMessage = forwardRef(
       textAfterPrompts,
     } = parsedData;
 
-    console.log('suggestions', suggestions);
     
-
     return (
       <div className="py-[5px]">
         {/* Render Product Card if exists */}

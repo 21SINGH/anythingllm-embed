@@ -191,10 +191,6 @@ export default function ChatContainer({
     };
   }, []);
 
-  useEffect(() => {
-    console.log("replyProduct", replyProduct);
-  }, [replyProduct]);
-
   return (
     <div className="allm-h-full allm-w-full allm-flex allm-flex-col">
       <div className="allm-flex-grow allm-overflow-y-auto">
