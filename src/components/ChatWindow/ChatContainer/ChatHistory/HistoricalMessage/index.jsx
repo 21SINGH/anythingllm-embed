@@ -217,17 +217,16 @@ const ProductCard = ({ product, setReplyProduct }) => {
   return (
     <a
       href={product?.buy_link || product?.purchase_link}
-      // target="blank"
       rel="noopener noreferrer"
       className="allm-rounded-lg allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[190px] allm-min-w-[190px] "
       style={{ textDecoration: "none" }}
       onClick={handleAnchorClick}
     >
       <div>
-        {(product?.image_url || product?.product_images[0]) && !imageError ? (
+        {(product?.image_url || product?.product_images[0] || product?.product_images) && !imageError ? (
           <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[160px]">
             <img
-              src={product?.image_url || product?.product_images[0]}
+              src={product?.image_url || product?.product_images[0] || product?.product_images}
               alt={product?.title || product?.product_name}
               className="allm-h-full allm-w-full allm-object-cover"
               onError={() => setImageError(true)}
@@ -326,6 +325,9 @@ const HistoricalMessage = forwardRef(
       textAfterPrompts,
     } = parsedData;
 
+    console.log('suggestions', suggestions);
+    
+
     return (
       <div className="py-[5px]">
         {/* Render Product Card if exists */}
@@ -352,7 +354,7 @@ const HistoricalMessage = forwardRef(
                   // embedderSettings.ASSISTANT_STYLES.msgBg,
               marginRight: role === "user" && "5px",
             }}
-            className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col  allm-max-w-[70%] ${
+            className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col  allm-max-w-[80%] ${
               error
                 ? "allm-bg-red-200 allm-rounded-lg allm-mr-[37px] allm-ml-[9px]"
                 : role === "user"

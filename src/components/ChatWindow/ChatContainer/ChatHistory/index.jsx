@@ -47,7 +47,7 @@ export default function ChatHistory({
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTo({
         top: chatHistoryRef.current.scrollHeight,
-        behavior: "smooth",
+        behavior:"auto",
       });
     }
   };
@@ -111,23 +111,6 @@ export default function ChatHistory({
           />
         );
       })}
-
-      {/* arrow to go down */}
-      {/* {!isAtBottom && (
-        <div className="allm-fixed allm-bottom-[10rem] allm-right-[50px] allm-z-50 allm-cursor-pointer allm-animate-pulse">
-          <div className="allm-flex allm-flex-col allm-items-center">
-            <div className="allm-p-1 allm-rounded-full allm-border allm-border-white/10 allm-bg-black/20 hover:allm-bg-black/50">
-              <ArrowDown
-                weight="bold"
-                className="allm-text-white/50 allm-w-5 allm-h-5"
-                onClick={scrollToBottom}
-                id="scroll-to-bottom-button"
-                aria-label="Scroll to bottom"
-              />
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 }

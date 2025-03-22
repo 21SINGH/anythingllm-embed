@@ -10,18 +10,12 @@ const BrandAnalytics = {
     const brandData = await BrandService.getBrandDetails(embedSettings);
     const url = "https://analytics-backend.aroundme.global/api/shoppie/";
 
-    console.log("embedSettings", embedSettings);
-    console.log("sessionId", sessionId);
-    console.log("type", type);
-    console.log("brandData", brandData);
-
     const body = {
       type,
       brand_id: brandData.id,
       industry: brandData.industry,
       brand_name: brandData.name,
-      product_link: product?.purchase_link || null, 
-      product_name: product?.product_name || null,
+      product: product?.product_name || product?.title || null,
       session_id: sessionId,
     };
 
@@ -38,7 +32,7 @@ const BrandAnalytics = {
         throw new Error("Failed to send analytics data");
       }
 
-      const result = await response.json();
+      const result = await response.json();            
       return result;
     } catch (error) {
       console.error("Error sending analytics data:", error);

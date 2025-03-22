@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS = {
   cardBgColor: "#1d1d1d",
 
   // behaviors
+  inputbarDisabled:false,
   openOnLoad: "off", // or "on"
   supportEmail: null, // string of email for contact
   username: null, // The display or readable name set on a script

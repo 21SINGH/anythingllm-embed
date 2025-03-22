@@ -49,7 +49,7 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
       style={{ backgroundColor: settings.buttonColor }}
       id="anything-llm-embed-chat-button"
       onClick={toggleOpen}
-      className="hover:allm-cursor-pointer allm-border-none allm-flex allm-items-center allm-justify-center allm-rounded-full allm-text-white allm-text-2xl hover:allm-opacity-50 allm-h-[48px] allm-w-[48px]"
+      className="hover:allm-cursor-pointer allm-border-none allm-flex allm-items-center allm-justify-center allm-rounded-full allm-text-white allm-text-2xl allm-transition-transform alm-duration-200 hover:allm-scale-125 allm-h-[48px] allm-w-[48px]"
       aria-label="Toggle Menu"
     >
       <img
