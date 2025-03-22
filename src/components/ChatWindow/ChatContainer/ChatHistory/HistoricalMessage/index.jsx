@@ -313,6 +313,7 @@ const HistoricalMessage = forwardRef(
       : "allm-text-sm";
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
     const embedSettings = useGetScriptAttributes();
+    const sessionId = useSessionId();
 
     // Parse message based on role
     let parsedData;
