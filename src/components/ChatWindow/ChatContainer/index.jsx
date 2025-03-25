@@ -5,7 +5,6 @@ import handleChat from "@/utils/chat";
 import ChatService from "@/models/chatService";
 export const SEND_TEXT_EVENT = "anythingllm-embed-send-prompt";
 import BrandAnalytics from "@/models/brandAnalytics";
-import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 
 export default function ChatContainer({
   sessionId,
@@ -16,7 +15,6 @@ export default function ChatContainer({
   const [replyProduct, setReplyProduct] = useState();
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
-   const embedSettings = useGetScriptAttributes();
 
   // Resync history if the ref to known history changes
   // eg: cleared.
@@ -205,10 +203,11 @@ export default function ChatContainer({
         message={message}
         submit={handleSubmit}
         onChange={handleMessageChange}
-        inputDisabled={embedSettings.inputbarDisabled || loadingResponse}
+        inputDisabled={settings.inputbarDisabled || loadingResponse}
         buttonDisabled={loadingResponse}
         replyProduct={replyProduct}
         setReplyProduct={setReplyProduct}
+        settings={settings}
       />
     </div>
   );

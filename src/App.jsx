@@ -7,7 +7,6 @@ import ChatWindow from "./components/ChatWindow";
 import { useEffect, useState } from "react";
 import BrandAnalytics from "@/models/brandAnalytics";
 import { motion, AnimatePresence } from "framer-motion";
-// import BrandBotConfigure from "./models/brandBotConfigure";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
@@ -27,6 +26,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (sessionId === "d5c5134a-ab48-458d-bc90-16cb66456426") {
+      embedSettings.inputbarDisabled = true;
+    }
+    embedSettings.sessionId = sessionId;
+  }, [embedSettings.loaded, sessionId]);
+
+  useEffect(() => {
     const sendBrandView = async () => {
       await BrandAnalytics.sendAnalytics(
         embedSettings,
@@ -42,11 +48,7 @@ export default function App() {
         "tap_widget"
       );
     };
-    // const getBotDetailes = async () =>{
-    //   const res = await BrandBotConfigure.getBotDetails(embedSettings)
-    //   console.log('result for bot details',res);
 
-    // }
     if (embedSettings.openOnLoad === "on") {
       sendWidgetClick();
     }
@@ -54,9 +56,8 @@ export default function App() {
 
     if (embedSettings.loaded) {
       sendBrandView();
-      // getBotDetailes()
     }
-  }, [embedSettings.loaded]);
+  }, [embedSettings.loaded, sessionId]);
 
   if (!embedSettings.loaded) return null;
 
@@ -93,20 +94,32 @@ export default function App() {
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "center";
 
-    const buttonVariants = {
-      open: {
-        scale: 1,
-        opacity: 1,
-        transition: { duration: 0.3, ease: [0.76, 0, 0.24, 1] }
-      },
-      closed: {
-        scale: 0,
-        opacity: 0,
-        transition: { duration: 0.2, ease: [0.6, 0, 0.24, 1] }
-      }
-    };
+  const buttonVariants = {
+    open: {
+      scale: 1,
+      opacity: 1,
+      transition: { duration: 0.4, ease: [0.76, 0, 0.24, 1] },
+    },
+    closed: {
+      scale: 0,
+      opacity: 0,
+      transition: { duration: 0.1, ease: [0.6, 0, 0.24, 1] },
+    },
+  };
 
-    
+  const openingMessageVariants = {
+    open: {
+      scale: 1,
+      opacity: 1,
+      transition: { duration: 0.3, ease: [0.76, 0, 0.24, 1] },
+    },
+    closed: {
+      scale: 0,
+      opacity: 0,
+      transition: { duration: 0.2, ease: [0.6, 0, 0.24, 1] },
+    },
+  };
+
   return (
     <>
       <Head />
@@ -137,41 +150,82 @@ export default function App() {
         </AnimatePresence>
       </div>
       <AnimatePresence>
-      {!isChatOpen && (
-        <>
-          <motion.div
-            key="welcome-message"
-            variants={buttonVariants}
-            initial="closed"
-            animate="open"
-            exit="closed"
-            className={`allm-fixed allm-bottom-20 ${positionClasses[position]} allm-bg-[#2d2d2d] allm-text-white allm-py-2 allm-px-4 allm-rounded-md allm-shadow-lg allm-text-center`}
-            style={{ transformOrigin }}
-          >
-            <p className="allm-text-sm allm-font-medium">
-              Welcome to Plix Chat, How can we help you today?
-            </p>
-          </motion.div>
+        {!isChatOpen && (
+          <>
+            {embedSettings.openingMessage !== "" && (
+              <motion.div
+                key="welcome-message"
+                variants={openingMessageVariants}
+                initial="closed"
+                animate="open"
+                exit="closed"
+                className={`allm-fixed allm-bottom-[110px] ${positionClasses[position]} allm-bg-transparent`}
+                style={{ transformOrigin }}
+              >
+                <div className="allm-relative allm-w-[350px] allm-flex allm-flex-col allm-items-end allm-p-[16px] ">
+                  <div
+                    style={{
+                      backgroundColor: embedSettings.startingMessageTheme,
+                      color: getContrastColor(
+                        embedSettings.startingMessageTheme
+                      ),
+                      // boxShadow: `0px 5px 5px ${getContrastColor(embedSettings.startingMessageTheme)}`,
+                    }}
+                    className="allm-rounded-lg allm-px-[10px] allm-py-[5px] allm-relative"
+                  >
+                    <p className="allm-text-[14px] allm-font-medium allm-leading-[20px]">
+                      {embedSettings.openingMessage}
+                    </p>
+                  </div>
 
-          <motion.div
-            key="chat-button"
-            variants={buttonVariants}
-            initial="closed"
-            animate="open"
-            exit="closed"
-            id="anything-llm-embed-chat-button-container"
-            className={`allm-fixed allm-bottom-0 ${positionClasses[position]} allm-mb-4 allm-z-50`}
-            style={{ transformOrigin }}
-          >
-            <OpenButton
-              settings={embedSettings}
-              isOpen={isChatOpen}
-              toggleOpen={openBot}
-            />
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+                  {/* Triangle pointer */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "0px",
+                      right: "50px",
+                      width: "0px",
+                      height: "0px",
+                      borderLeft: "30px solid transparent",
+                      borderRight: "0px solid transparent",
+                      borderTop: `20px solid ${embedSettings.startingMessageTheme}`,
+                      display: "block",
+                    }}
+                  ></div>
+                </div>
+              </motion.div>
+            )}
+
+            <motion.div
+              key="chat-button"
+              variants={buttonVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              id="anything-llm-embed-chat-button-container"
+              className={`allm-fixed allm-bottom-[30px] allm-right-[15px] ${positionClasses[position]} allm-z-50`}
+              style={{ transformOrigin }}
+            >
+              <OpenButton
+                settings={embedSettings}
+                isOpen={isChatOpen}
+                toggleOpen={openBot}
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }
+
+const getContrastColor = (hex) => {
+  let r = parseInt(hex.substring(1, 3), 16);
+  let g = parseInt(hex.substring(3, 5), 16);
+  let b = parseInt(hex.substring(5, 7), 16);
+
+  // Calculate luminance (Y) using the relative luminance formula
+  let luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  return luminance > 0.5 ? "#000000" : "#FFFFFF"; // Black for light BG, White for dark BG
+};

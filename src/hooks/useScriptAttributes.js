@@ -6,6 +6,8 @@ import BrandBotConfigure from "@/models/brandBotConfigure";
 const DEFAULT_SETTINGS = {
   embedId: null, //required
   baseApiUrl: null, // required
+  
+  sessionId: null, 
 
   // Override properties that can be defined.
   prompt: null, // override
@@ -36,6 +38,8 @@ const DEFAULT_SETTINGS = {
   bgColor: "#282828",
   inputbarColor: "#1d1d1d",
   cardBgColor: "#1d1d1d",
+  startingMessageTheme:'#2d2d2d',
+  openingMessage:"",
 
   // behaviors
   inputbarDisabled:false,
@@ -94,101 +98,9 @@ export default function useGetScriptAttributes() {
   if (error) {
     console.error("Error fetching bot details:", error);
   }
-  
+
   return settings;
 }
-// export default function useGetScriptAttributes() {
-//   const [settings, setSettings] = useState({
-//     loaded: false,
-//     ...DEFAULT_SETTINGS,
-//   });useEffect(() => {
-//   function fetchAttribs() {
-//     if (!document) return false;
-//     if (
-//       !embedderSettings.settings.baseApiUrl ||
-//       !embedderSettings.settings.embedId
-//     ) {
-//       throw new Error(
-//         "[AnythingLLM Embed Module::Abort] - Invalid script tag setup detected. Missing required parameters for boot!"
-//       );
-//     }
-
-//     setSettings((prevSettings) => ({
-//       ...prevSettings,
-//       ...DEFAULT_SETTINGS,
-//       ...parseAndValidateEmbedSettings(embedderSettings.settings),
-//       loaded: true,
-//     }));
-//   }
-
-//   const getBotDetails = async () => {
-//     try {
-//       const res = await BrandBotConfigure.getBotDetails(settings);
-//       console.log("Bot details fetched:", res);
-
-//       if (res) {
-//         setSettings((prevSettings) => ({
-//           ...prevSettings,
-//           ...res,
-//         }));
-//       }
-//     } catch (error) {
-//       console.error("Error fetching bot details:", error);
-//     }
-//   };
-
-//   fetchAttribs();
-
-//   if (settings.loaded) {
-//     getBotDetails();
-//   }
-// }, [settings.loaded, document]);
-
-//   // useEffect(() => {
-//   //   function fetchAttribs() {
-//   //     if (!document) return false;
-//   //     if (
-//   //       !embedderSettings.settings.baseApiUrl ||
-//   //       !embedderSettings.settings.embedId
-//   //     )
-//   //       throw new Error(
-//   //         "[AnythingLLM Embed Module::Abort] - Invalid script tag setup detected. Missing required parameters for boot!"
-//   //       );
-
-//   //     setSettings({
-//   //       ...DEFAULT_SETTINGS,
-//   //       ...parseAndValidateEmbedSettings(embedderSettings.settings),
-//   //       loaded: true,
-//   //     });
-//   //   }
-//   //   fetchAttribs();
-//   // }, [document]);
-
-//   // useEffect(() => {
-//   //   const getBotDetails = async () => {
-//   //     try {
-//   //       const res = await BrandBotConfigure.getBotDetails(settings);
-//   //       console.log("Bot details fetched:", res);
-
-//   //       if (res) {
-//   //         setSettings((prevSettings) => ({
-//   //           ...prevSettings, 
-//   //           ...res, 
-//   //         }));
-//   //       }
-//   //     } catch (error) {
-//   //       console.error("Error fetching bot details:", error);
-//   //     }
-//   //   };
-
-//   //   if (settings.loaded) {
-//   //     getBotDetails();
-//   //   }
-//   // }, [settings.loaded]);
-//   // console.log("settings", settings);
-
-//   return settings;
-// }
 
 const validations = {
   _fallbacks: {

@@ -1,7 +1,6 @@
 import { IoMdArrowUp } from "react-icons/io";
 import { RxCross2 } from "react-icons/rx";
 import React, { useState, useRef, useEffect } from "react";
-import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 
 export default function PromptInput({
   message,
@@ -11,11 +10,11 @@ export default function PromptInput({
   buttonDisabled,
   replyProduct,
   setReplyProduct,
+  settings
 }) {
   const formRef = useRef(null);
   const textareaRef = useRef(null);
   const [_, setFocused] = useState(false);
-  const embedSettings = useGetScriptAttributes();
 
   useEffect(() => {
     if (!inputDisabled && textareaRef.current) {
@@ -53,17 +52,17 @@ export default function PromptInput({
   return (
     <div
       className="allm-w-full allm-sticky allm-bottom-0 allm-z-10 allm-flex allm-justify-center allm-items-center "
-      style={{ backgroundColor: embedSettings.bgColor }}
+      style={{ backgroundColor: settings.bgColor }}
     >
       <form
         onSubmit={handleSubmit}
         className="allm-flex allm-flex-col allm-gap-y-1 allm-rounded-t-lg allm-w-full allm-items-center allm-justify-center "
       >
         <div className="allm-flex allm-items-center allm-w-full ">
-          <div className="allm-flex allm-flex-col allm-px-3 allm-py-3 allm-overflow-hidden allm-w-full">
+          <div className="allm-flex allm-flex-col allm-px-[13px] allm-py-[13px] allm-overflow-hidden allm-w-full">
             {replyProduct && (
               <div style={{
-                backgroundColor:embedSettings.cardBgColor
+                backgroundColor:settings.cardBgColor
               }} className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2  allm-rounded-t-lg ">
                 <div className="allm-flex allm-items-center allm-justify-center  allm-w-[70px] allm-h-[70px]  allm-rounded-[10px] overflow-hidden">
                   <img
@@ -75,10 +74,10 @@ export default function PromptInput({
                   />
                 </div>
                 <div className="allm-flex allm-flex-col allm-gap-1 ">
-                  <span style={{color:embedSettings.cardTextColor}} className="allm-font-semibold allm-text-lg allm-line-clamp-1">
+                  <span style={{color:settings.cardTextColor}} className="allm-font-semibold allm-text-[18px] allm-line-clamp-1">
                     {replyProduct?.title || replyProduct?.product_name}
                   </span>
-                  <span style={{color:embedSettings.cardTextSubColour}} className="allm-text-xs allm-line-clamp-2">
+                  <span style={{color:settings.cardTextSubColour}} className="allm-text-[12px] allm-line-clamp-2">
                     {replyProduct?.product_description}
                   </span>
                 </div>
@@ -98,9 +97,9 @@ export default function PromptInput({
 
             <div
               style={{
-                backgroundColor: embedSettings.inputbarColor,
+                backgroundColor: settings.inputbarColor,
               }}
-              className={`allm-flex  allm-w-full allm-items-center allm-rounded-[10px]  allm-py-2 ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
+              className={`allm-flex  allm-w-full allm-items-center allm-rounded-[10px]  allm-py-[10px] ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
             >
               <input
                 ref={textareaRef}
@@ -115,9 +114,9 @@ export default function PromptInput({
                   adjustTextArea(e);
                 }}
                 value={message}
-                className=" allm-border-none allm-cursor-text allm-text-[16px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-none focus:allm-outline-none allm-flex-grow"
+                className=" allm-border-none allm-cursor-text allm-text-[16px] allm-min-h-[24px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-0  focus:allm-outline-0  allm-flex-grow"
                 style={{
-                  color : getContrastColor(embedSettings.inputbarColor)
+                  color : getContrastColor(settings.inputbarColor)
                 }}
                 placeholder={"Ask me anything..."}
                 id="message-input"
@@ -125,10 +124,10 @@ export default function PromptInput({
               <button
                 ref={formRef}
                 type="submit"
-                className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-1 allm-rounded-full allm-mr-3 allm-outline-none allm-border-0`}
+                className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-[5px] allm-rounded-full allm-mr-[12px] allm-outline-none allm-border-0`}
                 style={{
                   backgroundColor: message
-                    ? embedSettings.userBgColor
+                    ? settings.userBgColor
                     : "#5a5a5a",
                 }}
                 id="send-message-button"

@@ -9,8 +9,6 @@ export default function useChatHistory(settings = null, sessionId = null) {
   useEffect(() => {
     async function fetchChatHistory() {
       if (!sessionId || !settings) return;
-      console.log("sessionId", sessionId);
-
       if (sessionId === "d5c5134a-ab48-458d-bc90-16cb66456426") {        
         setMessages(dummyData);
         setLoading(false);

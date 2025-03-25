@@ -1,29 +1,9 @@
 import { useEffect, useState } from "react";
-import {
-  Plus,
-  ChatCircleDots,
-  Headset,
-  Binoculars,
-  MagnifyingGlass,
-  MagicWand,
-} from "@phosphor-icons/react";
 import BrandService from "@/models/brandService";
-
-// const CHAT_ICONS = {
-//   plus: Plus,
-//   chatBubble: ChatCircleDots,
-//   support: Headset,
-//   search2: Binoculars,
-//   search: MagnifyingGlass,
-//   magic: MagicWand,
-// };
 
 export default function OpenButton({ settings, isOpen, toggleOpen }) {
   if (isOpen) return null;
   const [brandDetails, setBrandDetails] = useState(null);
-  // const ChatIcon = CHAT_ICONS.hasOwnProperty(settings?.chatIcon)
-  //   ? CHAT_ICONS[settings.chatIcon]
-  //   : CHAT_ICONS.plus;
 
   const getBrandDetails = async () => {
     try {
@@ -33,20 +13,19 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
       console.error("Error streaming chat:", error);
     }
   };
-  
+
   useEffect(() => {
     if (!brandDetails) {
       getBrandDetails();
     }
   }, [settings, brandDetails]);
 
-
   return (
     <button
-      style={{ backgroundColor: settings.buttonColor }}
+      // style={{ backgroundColor: settings.buttonColor }}
       id="anything-llm-embed-chat-button"
       onClick={toggleOpen}
-      className="hover:allm-cursor-pointer allm-border-none allm-flex allm-items-center allm-justify-center allm-rounded-full allm-text-white allm-text-2xl allm-transition-transform alm-duration-200 hover:allm-scale-125 allm-h-[48px] allm-w-[48px]"
+      className="hover:allm-cursor-pointer allm-border-none allm-flex allm-items-center allm-justify-center allm-rounded-full allm-transition-transform alm-duration-200 hover:allm-scale-110 allm-w-[70px] allm-h-[70px] allm-overflow-hidden"
       aria-label="Toggle Menu"
     >
       <img
@@ -55,7 +34,7 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
           "https://storage.aroundme.global/avatar_default.png"
         }
         alt={brandDetails?.name || "Brand Logo"}
-        style={{ maxWidth: 48, maxHeight: 48, borderRadius: 25 }}
+        className="allm-w-[70px] allm-h-[70px] allm-rounded-full allm-object-cover allm-border-2 allm-border-[#2d2d2d]"
       />
     </button>
   );

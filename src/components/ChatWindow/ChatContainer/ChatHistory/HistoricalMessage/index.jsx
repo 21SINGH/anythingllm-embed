@@ -6,8 +6,6 @@ import { v4 } from "uuid";
 import createDOMPurify from "dompurify";
 import { ChatTeardropDots } from "@phosphor-icons/react";
 import BrandAnalytics from "@/models/brandAnalytics";
-import useSessionId from "@/hooks/useSessionId";
-import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 
 const DOMPurify = createDOMPurify(window);
 
@@ -152,13 +150,17 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
   }
 };
 
-const ProductSuggestions = ({ suggestions, setReplyProduct }) => {
+const ProductSuggestions = ({
+  suggestions,
+  setReplyProduct,
+  embedSettings,
+}) => {
   if (!suggestions) return null;
 
   if (!suggestions.products) {
     return (
       <div className="allm-mt-4 allm-border-t allm-pt-3 allm-border-gray-200">
-        <div className="allm-text-sm allm-font-medium allm-mb-3">
+        <div className="allm-text-[14px] allm-font-medium allm-mb-3">
           Product suggestions available
         </div>
         <div className="allm-text-xs allm-text-gray-500">
@@ -177,6 +179,7 @@ const ProductSuggestions = ({ suggestions, setReplyProduct }) => {
             key={product?.id || Math.random().toString()}
             product={product}
             setReplyProduct={setReplyProduct}
+            embedSettings={embedSettings}
           />
         ))}
       </div>
@@ -184,10 +187,8 @@ const ProductSuggestions = ({ suggestions, setReplyProduct }) => {
   );
 };
 
-const ProductCard = ({ product, setReplyProduct }) => {
+const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
   const [imageError, setImageError] = React.useState(false);
-  const sessionId = useSessionId();
-  const embedSettings = useGetScriptAttributes();
 
   const handleButtonClick = (e) => {
     e.stopPropagation();
@@ -201,16 +202,16 @@ const ProductCard = ({ product, setReplyProduct }) => {
     // Send analytics
     await BrandAnalytics.sendAnalytics(
       embedderSettings?.settings,
-      sessionId,
+      embedSettings.sessionId,
       "tap_product",
       product
     );
 
     // After the analytics is sent, you can now navigate if needed
-    if (sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
-    if (product?.buy_link || product?.purchase_link ) {
-      window.location.href = product?.buy_link || product?.purchase_link;
-    }
+    if (embedSettings.sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
+      if (product?.buy_link || product?.purchase_link) {
+        window.location.href = product?.buy_link || product?.purchase_link;
+      }
   };
 
   return (
@@ -240,7 +241,7 @@ const ProductCard = ({ product, setReplyProduct }) => {
             />
           </div>
         ) : (
-          <div className="allm-flex allm-justify-center allm-items-center allm-bg-[#1B1B1B] allm-h-40">
+          <div className="allm-flex allm-justify-center allm-items-center allm-bg-[#1B1B1B] allm-h-[160px]">
             <span className="allm-text-gray-400 allm-text-xs">
               Product image
             </span>
@@ -297,6 +298,7 @@ const HistoricalMessage = forwardRef(
     {
       uuid = v4(),
       message,
+      settings,
       role,
       sources = [],
       error = false,
@@ -308,12 +310,7 @@ const HistoricalMessage = forwardRef(
     },
     ref
   ) => {
-    const textSize = !!embedderSettings.settings.textSize
-      ? `allm-text-[${embedderSettings.settings.textSize}px]`
-      : "allm-text-sm";
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
-    const embedSettings = useGetScriptAttributes();
-    const sessionId = useSessionId();
 
     // Parse message based on role
     let parsedData;
@@ -337,7 +334,11 @@ const HistoricalMessage = forwardRef(
         {/* Render Product Card if exists */}
         {role === "user" && product && (
           <div className="allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end allm-my-2">
-            <ProductCard product={product} setReplyProduct={setReplyProduct} />
+            <ProductCard
+              product={product}
+              setReplyProduct={setReplyProduct}
+              embedSettings={settings}
+            />
           </div>
         )}
         <div
@@ -352,10 +353,8 @@ const HistoricalMessage = forwardRef(
               wordBreak: "break-word",
               backgroundColor:
                 role === "user"
-                  ? embedSettings.userBgColor
-                  : // embedderSettings.USER_STYLES.msgBg
-                    embedSettings.assistantBgColor,
-              // embedderSettings.ASSISTANT_STYLES.msgBg,
+                  ? settings.userBgColor
+                  : settings.assistantBgColor,
               marginRight: role === "user" && "5px",
             }}
             className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col  allm-max-w-[80%] ${
@@ -382,9 +381,9 @@ const HistoricalMessage = forwardRef(
                   {/* Render the text after product for user */}
                   {role === "user" && textAfterProduct && (
                     <span
-                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 ${textSize} allm-leading-[20px]`}
+                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-leading-[20px]`}
                       style={{
-                        color: embedSettings.userTextColor,
+                        color: settings.userTextColor,
                       }}
                       dangerouslySetInnerHTML={{
                         __html: DOMPurify.sanitize(
@@ -397,9 +396,9 @@ const HistoricalMessage = forwardRef(
                   {/* Assistant rendering logic */}
                   {role !== "user" && (
                     <span
-                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 ${textSize} allm-leading-[20px]`}
+                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-leading-[20px]`}
                       style={{
-                        color: embedSettings.botTextColor,
+                        color: settings.botTextColor,
                       }}
                       dangerouslySetInnerHTML={{
                         __html: DOMPurify.sanitize(
@@ -420,6 +419,7 @@ const HistoricalMessage = forwardRef(
             <ProductSuggestions
               suggestions={suggestions}
               setReplyProduct={setReplyProduct}
+              embedSettings={settings}
             />
           )}
         </div>
@@ -431,20 +431,20 @@ const HistoricalMessage = forwardRef(
               <div
                 key={index}
                 style={{
-                  border: `1px solid ${embedSettings.userBgColor}`,
+                  border: `1px solid ${settings.userBgColor}`,
                   backgroundColor: lightenAndDullColor(
-                    embedSettings.userBgColor,
+                    settings.userBgColor,
                     70,
                     0.9
                   ),
                   maxWidth: "80%",
-                  color: embedSettings.userTextColor,
+                  color: settings.userTextColor,
                 }}
                 onClick={() => {
-                  if (sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
+                  if (settings.sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
                     handlePrompt(prompt);
                 }}
-                className=" allm-rounded-3xl allm-px-4 allm-py-2 allm-text-sm  allm-cursor-pointer"
+                className=" allm-rounded-3xl allm-px-4 allm-py-2 allm-text-[14px]  allm-cursor-pointer"
               >
                 {prompt}
               </div>
