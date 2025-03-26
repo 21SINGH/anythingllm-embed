@@ -79,46 +79,85 @@ export default function App() {
 
   const variants = {
     open: {
-      scale: 1,
-      opacity: 1,
-      transition: { duration: 0.5, ease: [0.76, 0, 0.24, 1] },
+      scale: embedSettings.inputbarDisabled ? 1 : 1,
+      opacity: embedSettings.inputbarDisabled ? 1 : 1,
+      transition: embedSettings.inputbarDisabled
+        ? {} // No transition if disabled
+        : { duration: 0.5, ease: [0.76, 0, 0.24, 1] }, // Normal transition
     },
     closed: {
-      scale: 0,
-      opacity: 0,
-      transition: { duration: 0.5, ease: [0.6, 0, 0.24, 1] },
+      scale: embedSettings.inputbarDisabled ? 1 : 0,
+      opacity: embedSettings.inputbarDisabled ? 1 : 0,
+      transition: embedSettings.inputbarDisabled
+        ? {} // No transition if disabled
+        : { duration: 0.5, ease: [0.6, 0, 0.24, 1] }, // Normal transition
     },
   };
+  
+  const buttonVariants = {
+    open: {
+      scale: embedSettings.inputbarDisabled ? 1 : 1,
+      opacity: embedSettings.inputbarDisabled ? 1 : 1,
+      transition: embedSettings.inputbarDisabled
+        ? {} // No transition if disabled
+        : { duration: 0.4, ease: [0.76, 0, 0.24, 1] },
+    },
+    closed: {
+      scale: embedSettings.inputbarDisabled ? 1 : 0,
+      opacity: embedSettings.inputbarDisabled ? 1 : 0,
+      transition: embedSettings.inputbarDisabled
+        ? {} // No transition if disabled
+        : { duration: 0.1, ease: [0.6, 0, 0.24, 1] },
+    },
+  };
+  
+  const openingMessageVariants = {
+    open: {
+      scale: embedSettings.inputbarDisabled ? 1 : 1,
+      opacity: embedSettings.inputbarDisabled ? 1 : 1,
+      transition: embedSettings.inputbarDisabled
+        ? {} // No transition if disabled
+        : { duration: 0.3, ease: [0.76, 0, 0.24, 1] },
+    },
+    closed: {
+      scale: embedSettings.inputbarDisabled ? 1 : 0,
+      opacity: embedSettings.inputbarDisabled ? 1 : 0,
+      transition: embedSettings.inputbarDisabled
+        ? {} // No transition if disabled
+        : { duration: 0.2, ease: [0.6, 0, 0.24, 1] },
+    },
+  };
+  
 
   const transformOrigin = isLargeScreen
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "center";
 
-  const buttonVariants = {
-    open: {
-      scale: 1,
-      opacity: 1,
-      transition: { duration: 0.4, ease: [0.76, 0, 0.24, 1] },
-    },
-    closed: {
-      scale: 0,
-      opacity: 0,
-      transition: { duration: 0.1, ease: [0.6, 0, 0.24, 1] },
-    },
-  };
+  // const buttonVariants = {
+  //   open: {
+  //     scale: 1,
+  //     opacity: 1,
+  //     transition: { duration: 0.4, ease: [0.76, 0, 0.24, 1] },
+  //   },
+  //   closed: {
+  //     scale: 0,
+  //     opacity: 0,
+  //     transition: { duration: 0.1, ease: [0.6, 0, 0.24, 1] },
+  //   },
+  // };
 
-  const openingMessageVariants = {
-    open: {
-      scale: 1,
-      opacity: 1,
-      transition: { duration: 0.3, ease: [0.76, 0, 0.24, 1] },
-    },
-    closed: {
-      scale: 0,
-      opacity: 0,
-      transition: { duration: 0.2, ease: [0.6, 0, 0.24, 1] },
-    },
-  };
+  // const openingMessageVariants = {
+  //   open: {
+  //     scale: 1,
+  //     opacity: 1,
+  //     transition: { duration: 0.3, ease: [0.76, 0, 0.24, 1] },
+  //   },
+  //   closed: {
+  //     scale: 0,
+  //     opacity: 0,
+  //     transition: { duration: 0.2, ease: [0.6, 0, 0.24, 1] },
+  //   },
+  // };
 
   return (
     <>

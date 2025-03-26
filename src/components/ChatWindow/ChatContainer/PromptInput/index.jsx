@@ -114,7 +114,7 @@ export default function PromptInput({
                   adjustTextArea(e);
                 }}
                 value={message}
-                className=" allm-border-none allm-cursor-text allm-text-[16px] allm-min-h-[24px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-0  focus:allm-outline-0  allm-flex-grow"
+                className="allm-border-none allm-cursor-text allm-text-[16px] allm-min-h-[24px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-0  focus:allm-outline-0  allm-flex-grow"
                 style={{
                   color : getContrastColor(settings.inputbarColor)
                 }}

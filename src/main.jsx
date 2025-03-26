@@ -59,10 +59,10 @@ export const embedderSettings = {
   stylesSrc: parseStylesSrc(document?.currentScript?.src),
   USER_STYLES: {
     msgBg: scriptSettings?.userBgColor ,
-    base: `allm-text-white allm-rounded-t-[18px] allm-rounded-bl-[18px] allm-rounded-br-[4px] allm-mx-[20px] allm-mb-1`,
+    base: `allm-text-white allm-rounded-t-[18px] allm-rounded-bl-[18px] allm-rounded-br-[4px] allm-mx-[20px] allm-my-[3px]`,
   },
   ASSISTANT_STYLES: {
     msgBg: scriptSettings?.assistantBgColor ,
-    base: `allm-text-[#fff] allm-rounded-t-[18px] allm-rounded-br-[18px] allm-rounded-bl-[4px] allm-mr-[37px] allm-ml-[9px] allm-mb-1`,
+    base: `allm-text-[#fff] allm-rounded-t-[18px] allm-rounded-br-[18px] allm-rounded-bl-[4px] allm-mr-[37px] allm-ml-[9px] allm-my-[5px]`,
   },
 };

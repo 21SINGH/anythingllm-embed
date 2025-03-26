@@ -413,16 +413,15 @@ const HistoricalMessage = forwardRef(
           </div>
         </div>
 
-        {/* Display suggestions if available */}
-        <div className="allm-pl-4">
-          {suggestions && (
+        {suggestions?.products.length > 0 && (
+          <div className="allm-pl-4">
             <ProductSuggestions
               suggestions={suggestions}
               setReplyProduct={setReplyProduct}
               embedSettings={settings}
             />
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Display prompts if available */}
         {isLastBotReply && prompts?.length > 0 && (
@@ -441,7 +440,10 @@ const HistoricalMessage = forwardRef(
                   color: settings.userTextColor,
                 }}
                 onClick={() => {
-                  if (settings.sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
+                  if (
+                    settings.sessionId !==
+                    "d5c5134a-ab48-458d-bc90-16cb66456426"
+                  )
                     handlePrompt(prompt);
                 }}
                 className=" allm-rounded-3xl allm-px-4 allm-py-2 allm-text-[14px]  allm-cursor-pointer"
