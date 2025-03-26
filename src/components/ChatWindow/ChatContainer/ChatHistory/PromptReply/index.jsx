@@ -34,7 +34,7 @@ const PromptReply = forwardRef(
     if (!reply && sources.length === 0 && !pending && !error) return null;
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
 
-    if (!pending) {
+    if (pending) {
       return <TypingIndicator />;
     }
 
@@ -85,7 +85,7 @@ const PromptReply = forwardRef(
           </div>
           {isSuggestions && <ProductCardShimmer />}
           {isProducts && (
-            <div className="allm-flex allm-items-end allm-justify-end allm-w-[400px]">
+            <div className="allm-flex allm-items-end allm-justify-end allm-w-[420px]">
               <PromptShimmer />
             </div>
           )}
