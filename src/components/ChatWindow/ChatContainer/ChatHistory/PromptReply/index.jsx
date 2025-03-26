@@ -34,7 +34,7 @@ const PromptReply = forwardRef(
     if (!reply && sources.length === 0 && !pending && !error) return null;
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
 
-    if (pending) {
+    if (!pending) {
       return <TypingIndicator />;
     }
 
@@ -85,7 +85,7 @@ const PromptReply = forwardRef(
           </div>
           {isSuggestions && <ProductCardShimmer />}
           {isProducts && (
-            <div className="allm-flex allm-items-end allm-justify-end allm-w-[100%]">
+            <div className="allm-flex allm-items-end allm-justify-end allm-w-[400px]">
               <PromptShimmer />
             </div>
           )}
@@ -119,7 +119,7 @@ const PromptShimmer = () => {
 
 const TypingIndicator = () => {
   return (
-    <div className="allm-flex allm-items-center allm-space-x-1 allm-mx-[16px] allm-mt-[8px]">
+    <div className="allm-flex allm-flex-1 allm-items-center allm-w-[100px] allm-space-x-1 allm-mx-[16px] allm-mt-[8px]">
       <div
         className="allm-w-[10px] allm-h-[10px] allm-rounded-full allm-bg-[#9d9d9d] allm-animate-blink-up-down"
         style={{ animationDelay: "0s" }}

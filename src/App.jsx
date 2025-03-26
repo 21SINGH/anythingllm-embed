@@ -93,7 +93,7 @@ export default function App() {
         : { duration: 0.5, ease: [0.6, 0, 0.24, 1] }, // Normal transition
     },
   };
-  
+
   const buttonVariants = {
     open: {
       scale: embedSettings.inputbarDisabled ? 1 : 1,
@@ -110,7 +110,7 @@ export default function App() {
         : { duration: 0.1, ease: [0.6, 0, 0.24, 1] },
     },
   };
-  
+
   const openingMessageVariants = {
     open: {
       scale: embedSettings.inputbarDisabled ? 1 : 1,
@@ -127,7 +127,6 @@ export default function App() {
         : { duration: 0.2, ease: [0.6, 0, 0.24, 1] },
     },
   };
-  
 
   const transformOrigin = isLargeScreen
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
@@ -162,98 +161,101 @@ export default function App() {
   return (
     <>
       <Head />
-      <div id="anything-llm-embed-chat-container">
-        <AnimatePresence>
-          {isChatOpen && (
-            <motion.div
-              variants={variants}
-              initial="closed"
-              animate="open"
-              exit="closed"
-              style={{
-                transformOrigin,
-                width: isLargeScreen ? windowWidth : "100%",
-                height: isLargeScreen ? windowHeight : "100%",
-              }}
-              className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 allm-z-[9999] allm-right-0 
-                ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
-              id="anything-llm-chat"
-            >
-              <ChatWindow
-                closeChat={() => toggleOpenChat(false)}
-                settings={embedSettings}
-                sessionId={sessionId}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      <AnimatePresence>
-        {!isChatOpen && (
-          <>
-            {embedSettings.openingMessage !== "" && (
+      <div id="anyhting-all-wrapper">
+        <div id="anything-llm-embed-chat-container">
+          <AnimatePresence>
+            {isChatOpen && (
               <motion.div
-                key="welcome-message"
-                variants={openingMessageVariants}
+                variants={variants}
                 initial="closed"
                 animate="open"
                 exit="closed"
-                className={`allm-fixed allm-bottom-[110px] ${positionClasses[position]} allm-bg-transparent`}
-                style={{ transformOrigin }}
+                style={{
+                  transformOrigin,
+                  width: isLargeScreen ? windowWidth : "100%",
+                  height: isLargeScreen ? windowHeight : "100%",
+                }}
+                className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 allm-z-[9999] allm-right-0 
+                ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
+                id="anything-llm-chat"
               >
-                <div className="allm-relative allm-w-[350px] allm-flex allm-flex-col allm-items-end allm-p-[16px] ">
-                  <div
-                    style={{
-                      backgroundColor: embedSettings.startingMessageTheme,
-                      color: getContrastColor(
-                        embedSettings.startingMessageTheme
-                      ),
-                      // boxShadow: `0px 5px 5px ${getContrastColor(embedSettings.startingMessageTheme)}`,
-                    }}
-                    className="allm-rounded-lg allm-px-[10px] allm-py-[5px] allm-relative"
-                  >
-                    <p className="allm-text-[14px] allm-font-medium allm-leading-[20px]">
-                      {embedSettings.openingMessage}
-                    </p>
-                  </div>
-
-                  {/* Triangle pointer */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: "0px",
-                      right: "50px",
-                      width: "0px",
-                      height: "0px",
-                      borderLeft: "30px solid transparent",
-                      borderRight: "0px solid transparent",
-                      borderTop: `20px solid ${embedSettings.startingMessageTheme}`,
-                      display: "block",
-                    }}
-                  ></div>
-                </div>
+                <ChatWindow
+                  closeChat={() => toggleOpenChat(false)}
+                  settings={embedSettings}
+                  sessionId={sessionId}
+                />
               </motion.div>
             )}
+          </AnimatePresence>
+        </div>
+        <AnimatePresence>
+          {!isChatOpen && (
+            <>
+              {embedSettings.openingMessage !== "" && (
+                <motion.div
+                  key="welcome-message"
+                  variants={openingMessageVariants}
+                  initial="closed"
+                  animate="open"
+                  exit="closed"
+                  className={`allm-fixed allm-bottom-[110px] ${positionClasses[position]} allm-bg-transparent`}
+                  style={{ transformOrigin }}
+                >
+                  <div className="allm-relative allm-w-[350px] allm-flex allm-flex-col allm-items-end allm-p-[16px] ">
+                    <div
+                    id="allm-starting-message-div"
+                      style={{
+                        backgroundColor: embedSettings.startingMessageTheme,
+                        color: getContrastColor(
+                          embedSettings.startingMessageTheme
+                        ),
+                        // boxShadow: `0px 5px 5px ${getContrastColor(embedSettings.startingMessageTheme)}`,
+                      }}
+                      className="allm-rounded-lg allm-px-[10px] allm-py-[5px] allm-relative"
+                    >
+                      <p id="allm-starting-message" className="allm-text-[14px] allm-font-medium allm-leading-[20px]">
+                        {embedSettings.openingMessage}
+                      </p>
+                    </div>
 
-            <motion.div
-              key="chat-button"
-              variants={buttonVariants}
-              initial="closed"
-              animate="open"
-              exit="closed"
-              id="anything-llm-embed-chat-button-container"
-              className={`allm-fixed allm-bottom-[30px] allm-right-[15px] ${positionClasses[position]} allm-z-50`}
-              style={{ transformOrigin }}
-            >
-              <OpenButton
-                settings={embedSettings}
-                isOpen={isChatOpen}
-                toggleOpen={openBot}
-              />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                    {/* Triangle pointer */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: "0px",
+                        right: "50px",
+                        width: "0px",
+                        height: "0px",
+                        borderLeft: "30px solid transparent",
+                        borderRight: "0px solid transparent",
+                        borderTop: `20px solid ${embedSettings.startingMessageTheme}`,
+                        display: "block",
+                      }}
+                    ></div>
+                  </div>
+                </motion.div>
+              )}
+
+              <motion.div
+                key="chat-button"
+                variants={buttonVariants}
+                initial="closed"
+                animate="open"
+                exit="closed"
+                id="anything-llm-embed-chat-button-container"
+                className={`allm-fixed allm-bottom-[30px] allm-right-[15px] ${positionClasses[position]} allm-z-50`}
+                style={{ transformOrigin }}
+              >
+                <OpenButton
+                  settings={embedSettings}
+                  isOpen={isChatOpen}
+                  toggleOpen={openBot}
+                />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
     </>
   );
 }

@@ -256,7 +256,7 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
           style={{
             color: embedSettings.cardTextColor,
           }}
-          className="allm-font-semiboldallm-w-full allm-text-[13px] allm-line-clamp-1"
+          className="allm-font-semiboldallm-w-full allm-text-[13px] allm-line-clamp-2 allm-h-[30px] allm-max-h-[30px]"
         >
           {product?.title || product?.product_name}
         </div>
