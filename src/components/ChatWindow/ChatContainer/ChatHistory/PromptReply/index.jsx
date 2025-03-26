@@ -6,13 +6,29 @@ import { embedderSettings } from "@/main";
 const PromptReply = forwardRef(
   ({ uuid, reply, pending, error, sources = [], sentAt, settings }, ref) => {
     let displayContent = reply;
-    let isIncomplete = false;
+    let isSuggestions = false;
+    let isProducts = false;
 
     if (reply.includes("@@SUGGESTIONS START@@")) {
-      // Extract content up to the marker.
-      const markerIndex = reply.indexOf("@@SUGGESTIONS START@@");
-      displayContent = reply.slice(0, markerIndex);
-      isIncomplete = true;
+      // Stop display content at the marker
+      displayContent = reply.split("@@SUGGESTIONS START@@")[0];
+      isSuggestions = false;
+      if (reply.includes('@@SUGGESTIONS START@@\n{\n    "products": [')) {
+        if (
+          reply.includes(
+            '@@SUGGESTIONS START@@\n{\n    "products": []'
+          )
+        ) {
+          isSuggestions = false;
+        } else {
+          isSuggestions = true;
+        }
+      }
+    }
+
+    // Check if there are prompts
+    if (reply.includes("@@PROMPTS START@@\n") && !isSuggestions) {
+      isProducts = true;
     }
 
     if (!reply && sources.length === 0 && !pending && !error) return null;
@@ -67,17 +83,24 @@ const PromptReply = forwardRef(
               />
             </div>
           </div>
-          {isIncomplete && <ProductCardShimmer />}
+          {isSuggestions && <ProductCardShimmer />}
+          {isProducts && (
+            <div className="allm-flex allm-items-end allm-justify-end allm-w-[100%]">
+              <PromptShimmer />
+            </div>
+          )}
         </div>
       </div>
     );
   }
 );
 
+export default memo(PromptReply);
+
 const ProductCardShimmer = () => {
   return (
-    <div className="allm-w-[200px] allm-mx-[16px] allm-h-[280px] allm-mt-[8px] allm-bg-[#1d1d1d] allm-rounded-2xl allm-flex allm-flex-col allm-gap-[12px]  allm-animate-pulse">
-      <div className="allm-w-full allm-h-[180px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-rounded-b-none allm-shimmer"></div>
+    <div className="allm-w-[200px] allm-mx-[16px] allm-h-[280px] allm-mt-[8px] allm-bg-[#1d1d1d] allm-rounded-2xl allm-gap-[12px]  allm-animate-pulse">
+      <div className="allm-w-[100%] allm-h-[180px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-rounded-b-none allm-shimmer"></div>
 
       <div className="allm-flex allm-flex-col allm-gap-[8px] allm-px-[12px]">
         <div className="allm-h-[16px] allm-bg-[#5a5a5a] allm-rounded allm-w-[100%]"></div>
@@ -88,7 +111,11 @@ const ProductCardShimmer = () => {
   );
 };
 
-export default memo(PromptReply);
+const PromptShimmer = () => {
+  return (
+    <div className="allm-w-[300px] allm-mx-[16px] allm-h-[40px] allm-mt-[8px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-flex allm-flex-col allm-gap-[12px]  allm-animate-pulse "></div>
+  );
+};
 
 const TypingIndicator = () => {
   return (
