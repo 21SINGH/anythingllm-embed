@@ -532,6 +532,6 @@ const getContrastColor = (hex) => {
 const playSound = () => {
   console.log("sound");
 
-  const audio = new Audio("../src/assets/discord-message.mp3");
+  const audio = new Audio("https://pub-8c1bb6e7c1dc4de9a9c50ab4d399094d.r2.dev/discord-message.mp3");
   audio.play();
 };
