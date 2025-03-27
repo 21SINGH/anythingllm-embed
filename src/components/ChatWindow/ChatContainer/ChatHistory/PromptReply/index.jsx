@@ -14,11 +14,7 @@ const PromptReply = forwardRef(
       displayContent = reply.split("@@SUGGESTIONS START@@")[0];
       isSuggestions = false;
       if (reply.includes('@@SUGGESTIONS START@@\n{\n    "products": [')) {
-        if (
-          reply.includes(
-            '@@SUGGESTIONS START@@\n{\n    "products": []'
-          )
-        ) {
+        if (reply.includes('@@SUGGESTIONS START@@\n{\n    "products": []')) {
           isSuggestions = false;
         } else {
           isSuggestions = true;
@@ -35,7 +31,11 @@ const PromptReply = forwardRef(
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
 
     if (pending) {
-      return <TypingIndicator />;
+    return (
+      <div className=" allm-w-[400px] allm-min-h-[50px]">
+        <TypingIndicator />
+      </div>
+    );
     }
 
     if (error) {
@@ -119,18 +119,18 @@ const PromptShimmer = () => {
 
 const TypingIndicator = () => {
   return (
-    <div className="allm-flex allm-flex-1 allm-items-center allm-w-[100px] allm-space-x-1 allm-mx-[16px] allm-mt-[8px]">
+    <div className="allm-flex allm-flex-1 allm-items-center allm-w-[100px] allm-h-[50px] allm-space-x-1 allm-mx-[16px] allm-mt-[8px]">
       <div
-        className="allm-w-[10px] allm-h-[10px] allm-rounded-full allm-bg-[#9d9d9d] allm-animate-blink-up-down"
-        style={{ animationDelay: "0s" }}
+        className="allm-w-[10px] allm-h-[10px] allm-rounded-full allm-bg-[#9d9d9d] allm-animate-blink-up-down "
+        style={{ animationDelay: "0s", display: "block" }}
       />
       <div
-        className="allm-w-[10px] allm-h-[10px] allm-rounded-full allm-bg-[#9d9d9d] allm-animate-blink-up-down"
-        style={{ animationDelay: "0.3s" }}
+        className="allm-w-[10px] allm-h-[10px] allm-rounded-full allm-bg-[#9d9d9d] allm-animate-blink-up-down "
+        style={{ animationDelay: "0.3s", display: "block" }}
       />
       <div
-        className="allm-w-[10px] allm-h-[10px] allm-rounded-full allm-bg-[#9d9d9d] allm-animate-blink-up-down"
-        style={{ animationDelay: "0.6s" }}
+        className="allm-w-[10px] allm-h-[10px] allm-rounded-full allm-bg-[#9d9d9d] allm-animate-blink-up-down "
+        style={{ animationDelay: "0.6s", display: "block" }}
       />
     </div>
   );

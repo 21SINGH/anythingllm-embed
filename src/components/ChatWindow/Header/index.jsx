@@ -56,14 +56,14 @@ export default function ChatWindowHeader({
       <div className="allm-flex allm-pl-3 allm-items-center allm-w-full allm-h-[76px]">
         <img
           style={{ maxWidth: 48, maxHeight: 48, borderRadius: 25 }}
-          src={brandDetails?.logo ?? AnythingLLMIcon}
+          src={settings?.brandImageUrl ?? brandDetails?.logo ?? AnythingLLMIcon}
           alt={brandDetails?.logo ? "Brand" : "AnythingLLM Logo"}
         />
         <div
           className="allm-text-[21px] allm-font-semibold allm-ml-3 "
           style={{ color: settings.textHeaderColor }}
         >
-          {brandDetails?.name}
+          {settings?.brandName ?? brandDetails?.name}
         </div>
       </div>
       <div className="allm-absolute allm-right-0 allm-flex allm-justify-center allm-items-center allm-px-[22px]">

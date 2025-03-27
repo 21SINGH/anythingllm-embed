@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   temperature: null, //override
 
   // style parameters
+  brandName: null,
   chatIcon: "plus",
   brandImageUrl: null, // will be forced into 100x50px container
   greeting: null, // empty chat window greeting.

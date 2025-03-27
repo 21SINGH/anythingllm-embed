@@ -30,7 +30,7 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
     >
       <img
         src={
-          brandDetails?.logo ||
+          settings?.brandImageUrl ?? brandDetails?.logo ??
           "https://storage.aroundme.global/avatar_default.png"
         }
         alt={brandDetails?.name || "Brand Logo"}

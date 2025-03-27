@@ -50,8 +50,6 @@ export default function useChatHistory(settings = null, sessionId = null) {
     }
     fetchChatHistory();
   }, [sessionId, settings]);
-
-  console.log("messages", messages);
-
+  
   return { chatHistory: messages, setChatHistory: setMessages, loading };
 }

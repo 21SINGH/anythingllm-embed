@@ -7,6 +7,7 @@ import ChatWindow from "./components/ChatWindow";
 import { useEffect, useState } from "react";
 import BrandAnalytics from "@/models/brandAnalytics";
 import { motion, AnimatePresence } from "framer-motion";
+// import openingSound from "../src/assets/discord-message.mp3";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
@@ -77,13 +78,20 @@ export default function App() {
     await BrandAnalytics.sendAnalytics(embedSettings, sessionId, "tap_widget");
   };
 
+  const playSound = () => {
+    console.log("sound");
+
+    const audio = new Audio("../src/assets/discord-message.mp3");
+    audio.play();
+  };
+
   const variants = {
     open: {
       scale: embedSettings.inputbarDisabled ? 1 : 1,
       opacity: embedSettings.inputbarDisabled ? 1 : 1,
       transition: embedSettings.inputbarDisabled
         ? {} // No transition if disabled
-        : { duration: 0.5, ease: [0.76, 0, 0.24, 1] }, // Normal transition
+        : { duration: 0.5, ease: [0.76, 0, 0.24, 1] }, // Normal transitio
     },
     closed: {
       scale: embedSettings.inputbarDisabled ? 1 : 0,
@@ -117,7 +125,7 @@ export default function App() {
       opacity: embedSettings.inputbarDisabled ? 1 : 1,
       transition: embedSettings.inputbarDisabled
         ? {} // No transition if disabled
-        : { duration: 0.3, ease: [0.76, 0, 0.24, 1] },
+        : { delay: 2, duration: 0.3, ease: [0.76, 0, 0.24, 1] },
     },
     closed: {
       scale: embedSettings.inputbarDisabled ? 1 : 0,
@@ -131,7 +139,6 @@ export default function App() {
   const transformOrigin = isLargeScreen
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "center";
-
   // const buttonVariants = {
   //   open: {
   //     scale: 1,
@@ -167,6 +174,10 @@ export default function App() {
             {isChatOpen && (
               <motion.div
                 variants={variants}
+                // onLoad={() => {
+                //   const audio = new Audio("../src/assets/discord-message.mp3");
+                //   audio.play();
+                // }}
                 initial="closed"
                 animate="open"
                 exit="closed"
@@ -175,7 +186,7 @@ export default function App() {
                   width: isLargeScreen ? windowWidth : "100%",
                   height: isLargeScreen ? windowHeight : "100%",
                 }}
-                className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 allm-z-[9999] allm-right-0 
+                className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-[10px] allm-z-[9999] allm-right-0 
                 ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
                 id="anything-llm-chat"
               >
@@ -188,22 +199,23 @@ export default function App() {
             )}
           </AnimatePresence>
         </div>
-        <AnimatePresence>
-          {!isChatOpen && (
-            <>
-              {embedSettings.openingMessage !== "" && (
-                <motion.div
-                  key="welcome-message"
-                  variants={openingMessageVariants}
-                  initial="closed"
-                  animate="open"
-                  exit="closed"
-                  className={`allm-fixed allm-bottom-[110px] ${positionClasses[position]} allm-bg-transparent`}
-                  style={{ transformOrigin }}
-                >
+
+        {!isChatOpen && (
+          <div>
+            <AnimatePresence>
+              <motion.div
+                key="welcome-message"
+                variants={openingMessageVariants}
+                initial="closed"
+                animate="open"
+                exit="closed"
+                className={`allm-fixed allm-bottom-[110px] ${positionClasses[position]} allm-bg-transparent`}
+                style={{ transformOrigin }}
+              >
+                {embedSettings.openingMessage !== "" && (
                   <div className="allm-relative allm-w-[350px] allm-flex allm-flex-col allm-items-end allm-p-[16px] ">
                     <div
-                    id="allm-starting-message-div"
+                      id="allm-starting-message-div"
                       style={{
                         backgroundColor: embedSettings.startingMessageTheme,
                         color: getContrastColor(
@@ -213,7 +225,10 @@ export default function App() {
                       }}
                       className="allm-rounded-lg allm-px-[10px] allm-py-[5px] allm-relative"
                     >
-                      <p id="allm-starting-message" className="allm-text-[14px] allm-font-medium allm-leading-[20px]">
+                      <p
+                        id="allm-starting-message"
+                        className="allm-text-[14px] allm-font-medium allm-leading-[20px]"
+                      >
                         {embedSettings.openingMessage}
                       </p>
                     </div>
@@ -233,9 +248,10 @@ export default function App() {
                       }}
                     ></div>
                   </div>
-                </motion.div>
-              )}
-
+                )}
+              </motion.div>
+            </AnimatePresence>
+            <AnimatePresence>
               <motion.div
                 key="chat-button"
                 variants={buttonVariants}
@@ -252,9 +268,9 @@ export default function App() {
                   toggleOpen={openBot}
                 />
               </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </>
   );
