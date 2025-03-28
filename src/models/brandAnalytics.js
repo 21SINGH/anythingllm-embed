@@ -5,17 +5,17 @@ const BrandAnalytics = {
     embedSettings,
     sessionId,
     type,
-    product = null
+    product = null,
   ) {
     const brandData = await BrandService.getBrandDetails(embedSettings);
     const url = "https://analytics-backend.aroundme.global/api/shoppie/";
 
     const body = {
       type,
-      brand_id: brandData.id,
-      industry: brandData.industry,
-      brand_name: brandData.name,
-      product: product?.product_name || product?.title || null,
+      brand_id: brandData?.id,
+      industry: brandData?.industry,
+      brand_name: brandData?.name,
+      content: product?.product_name || product?.title || null,
       session_id: sessionId,
     };
 

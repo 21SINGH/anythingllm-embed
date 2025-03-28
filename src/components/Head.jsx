@@ -126,6 +126,10 @@ export default function Head() {
       <style>{hljsCss}</style>
       <style>{customCss}</style>
       <link rel="stylesheet" href={embedderSettings.stylesSrc} />
+      <link
+          href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
     </head>
   );
 }

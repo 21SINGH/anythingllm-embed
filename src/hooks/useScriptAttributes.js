@@ -40,7 +40,9 @@ const DEFAULT_SETTINGS = {
   inputbarColor: "#1d1d1d",
   cardBgColor: "#1d1d1d",
   startingMessageTheme:'#2d2d2d',
-  openingMessage:"",
+  openingMessage:null,
+  openingMessageTextColor:null,
+  inputTextColor:null,
 
   // behaviors
   inputbarDisabled:false,
