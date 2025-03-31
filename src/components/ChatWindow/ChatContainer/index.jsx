@@ -201,15 +201,18 @@ export default function ChatContainer({
         setReplyProduct={setReplyProduct}
         settings={settings}
       />
-      <div className="allm-flex allm-items-center allm-justify-center allm-mt-[-2px] allm-mb-[10px]">
-        <div
+      {/* <div className="allm-flex allm-items-center allm-justify-center allm-mt-[-2px] allm-mb-[10px]">
+        <a
+          href="https://marketplace.goshoppie.com/"
+          target="_blank"
           style={{
             color: getContrastColor(settings.bgColor),
+            textDecoration: "none",
           }}
         >
           Powered by Shoppie
-        </div>
-      </div>
+        </a>
+      </div> */}
     </div>
   );
 }

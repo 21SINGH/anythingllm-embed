@@ -196,7 +196,7 @@ export default function App() {
                   width: isLargeScreen ? windowWidth : "100%",
                   height: isLargeScreen ? windowHeight : "100%",
                 }}
-                className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-[10px] allm-z-[9999] allm-right-0 
+                className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 md:allm-bottom-[10px] allm-z-[9999] allm-right-0 
                 ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
                 id="anything-llm-chat"
               >
@@ -213,66 +213,51 @@ export default function App() {
         {!isChatOpen && (
           <div>
             <AnimatePresence>
-              {startAnimation && showFirstMessage && (
+              {
+                showFirstMessage &&
                 <motion.div
                   key="welcome-message"
                   variants={openingMessageVariants}
                   initial="closed"
                   animate="open"
                   exit="closed"
-                  className={`allm-fixed allm-bottom-[100px] ${positionClasses[position]} allm-bg-transparent`}
+                  className={`allm-fixed allm-bottom-[100px] allm-max-w-[200px] md:allm-max-w-[500px] ${positionClasses[position]} allm-bg-transparent`}
                   style={{ transformOrigin }}
-                  onAnimationStart={playSound}
+                  // onAnimationStart={playSound}
                 >
                   {embedSettings.openingMessage !== "" && (
-                    <div className="allm-relative allm-w-[350px] allm-flex allm-flex-col allm-items-end allm-p-[16px] allm-mr-[5px] ">
+                    <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-p-[16px] allm-mr-[5px] allm-gap-2">
+                      {/* Close button */}
+                      <div
+                        onClick={handleCloseFirstMessage}
+                        className="allm-right-[5px]  hover:allm-cursor-pointer allm-bg-[#5C5C5C]/90 allm-rounded-full allm-p-1  allm-flex allm-items-center allm-justify-center"
+                        style={{
+                          borderColor: embedSettings.startingMessageTheme,
+                          borderWidth: "2px",
+                          borderStyle: "solid",
+                        }}
+                      >
+                        <RxCross2 size={18} color="#FAFAFA" />
+                      </div>
                       <div
                         id="allm-starting-message-div"
                         style={{
                           backgroundColor: embedSettings.startingMessageTheme,
                           color: embedSettings.openingMessageTextColor,
                         }}
-                        className="allm-rounded-2xl allm-px-[20px] allm-py-[5px] allm-relative"
+                        className="allm-rounded-2xl allm-p-4"
                       >
                         <p
                           id="allm-starting-message"
-                          className="allm-text-[14px] allm-font-medium allm-leading-[20px]"
+                          className="allm-text-sm allm-font-medium "
                         >
                           {embedSettings.openingMessage}
                         </p>
                       </div>
-
-                      {/* Close button */}
-                      <div
-                        onClick={handleCloseFirstMessage}
-                        className="allm-absolute allm-top-[5px] allm-right-[5px]  hover:allm-cursor-pointer allm-bg-[#5C5C5C]/90 allm-rounded-full allm-p-1  allm-flex allm-items-center allm-justify-center"
-                        style={{
-                          borderColor: embedSettings.startingMessageTheme,
-                          borderWidth: "2px",
-                          borderStyle: "solid", 
-                        }}
-                      >
-                        <RxCross2 size={18} color="#FAFAFA" />
-                      </div>
-
-                      {/* Triangle pointer */}
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: "5px",
-                          right: "30px",
-                          width: "0px",
-                          height: "0px",
-                          borderLeft: "20px solid transparent",
-                          borderRight: "20px solid transparent",
-                          borderTop: `30px solid ${embedSettings.startingMessageTheme}`,
-                          display: "block",
-                        }}
-                      ></div>
                     </div>
                   )}
                 </motion.div>
-              )}
+              }
             </AnimatePresence>
             <AnimatePresence>
               <motion.div

@@ -31,7 +31,7 @@ const DEFAULT_SETTINGS = {
   headerColor: "#222222",
   textHeaderColor: "#fff",
   userTextColor: "#fff",
-  botTextColor: "#fff",
+  botTextColor: null,
   cardTextColor: "#fff",
   cardTextSubColour: "#a4a4a4",
   prompotBgColor: "#1E60FB66",
@@ -40,7 +40,7 @@ const DEFAULT_SETTINGS = {
   inputbarColor: "#1d1d1d",
   cardBgColor: "#1d1d1d",
   startingMessageTheme:'#2d2d2d',
-  openingMessage:null,
+  openingMessage:"",
   openingMessageTextColor:null,
   inputTextColor:null,
 
@@ -89,7 +89,7 @@ export default function useGetScriptAttributes() {
     retry: 2, // Optional: Retry failed requests
   });
 
-  useEffect(() => {
+  useEffect(() => {    
     if (data) {
       setSettings((prevSettings) => ({
         ...prevSettings,

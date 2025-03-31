@@ -17,7 +17,9 @@ const BrandBotConfigure = {
         throw new Error("Failed to fetch brand details");
       }
 
-      const data = await response.json();            
+      const data = await response.json(); 
+      console.log('theme data',data);
+                 
       return data.theme;
     } catch (error) {
       console.error("Error fetching brand details:", error);

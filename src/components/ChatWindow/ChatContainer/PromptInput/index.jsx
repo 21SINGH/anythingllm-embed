@@ -64,22 +64,22 @@ export default function PromptInput({
               <div style={{
                 backgroundColor:settings.cardBgColor
               }} className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2  allm-rounded-t-lg ">
-                <div className="allm-flex allm-items-center allm-justify-center  allm-w-[70px] allm-h-[70px]  allm-rounded-[10px] overflow-hidden">
+                <div className="allm-flex allm-items-center allm-justify-center  allm-min-w-[80px] allm-rounded-[10px] overflow-hidden">
                   <img
                     src={
                       replyProduct?.image_url || replyProduct?.product_images[0]
                     }
                     alt={replyProduct?.title || replyProduct?.product_name}
-                    className="allm-w-[70px] allm-h-[70px] allm-rounded-[10px] allm-object-cover"
+                    className="allm-min-w-[70px] allm-h-[70px] allm-rounded-[10px] allm-object-cover"
                   />
                 </div>
                 <div className="allm-flex allm-flex-col allm-gap-1 ">
                   <span style={{color:settings.cardTextColor}} className="allm-font-semibold allm-text-[18px] allm-line-clamp-1">
                     {replyProduct?.title || replyProduct?.product_name}
                   </span>
-                  <span style={{color:settings.cardTextSubColour}} className="allm-text-[12px] allm-line-clamp-2">
+                  {/* <span style={{color:settings.cardTextSubColour}} className="allm-text-[12px] allm-line-clamp-2">
                     {replyProduct?.product_description}
-                  </span>
+                  </span> */}
                 </div>
 
                 <button
@@ -116,7 +116,7 @@ export default function PromptInput({
                 value={message}
                 className="allm-border-none allm-cursor-text allm-text-[16px] allm-min-h-[24px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-0  focus:allm-outline-0  allm-flex-grow"
                 style={{
-                  color : settings.inputTextColor
+                  color : settings.inputMes
                 }}
                 placeholder={"Ask me anything..."}
                 id="message-input"

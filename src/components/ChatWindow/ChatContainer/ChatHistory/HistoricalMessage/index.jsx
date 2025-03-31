@@ -1,4 +1,4 @@
-import React, { memo, forwardRef, useEffect } from "react";
+import React, { memo, forwardRef } from "react";
 import { Warning } from "@phosphor-icons/react";
 import renderMarkdown from "@/utils/chat/markdown";
 import { embedderSettings } from "@/main";
@@ -6,6 +6,7 @@ import { v4 } from "uuid";
 import createDOMPurify from "dompurify";
 import { ChatTeardropDots } from "@phosphor-icons/react";
 import BrandAnalytics from "@/models/brandAnalytics";
+import ReactMarkdown from "react-markdown";
 
 const DOMPurify = createDOMPurify(window);
 
@@ -381,7 +382,7 @@ const HistoricalMessage = forwardRef(
                   {/* Render the text after product for user */}
                   {role === "user" && textAfterProduct && (
                     <span
-                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-leading-[20px]`}
+                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
                       style={{
                         color: settings.userTextColor,
                       }}
@@ -395,17 +396,86 @@ const HistoricalMessage = forwardRef(
 
                   {/* Assistant rendering logic */}
                   {role !== "user" && (
-                    <span
-                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-leading-[20px]`}
-                      style={{
-                        color: settings.botTextColor,
-                      }}
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(
-                          renderMarkdown(textBeforeSuggestions)
+                    <ReactMarkdown
+                      children={textBeforeSuggestions}
+                      components={{
+                        h1: ({ node, ...props }) => (
+                          <h1
+                            className=" allm-font-bold  allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        h2: ({ node, ...props }) => (
+                          <h2
+                            className="  allm-font-semibold allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        h3: ({ node, ...props }) => (
+                          <h3
+                            className=" allm-font-medium  allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p
+                            className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul
+                            className="allm-list-disc allm-pl-4  allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol
+                            className="allm-list-decimal allm-pl-4 allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li
+                            className="allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
                         ),
                       }}
                     />
+
+                    // <span
+                    //   className={`markdown-content allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
+                    //   style={{
+                    //     color: settings.botTextColor,
+                    //   }}
+                    //   dangerouslySetInnerHTML={{
+                    //     __html: DOMPurify.sanitize(
+                    //       renderMarkdown(textBeforeSuggestions)
+                    //     ),
+                    //   }}
+                    // />
                   )}
                 </>
               )}
