@@ -183,7 +183,9 @@ export default function App() {
     <>
       <Head />
       <div id="anyhting-all-wrapper">
-        <div id="anything-llm-embed-chat-container">
+        <div 
+        // id="anything-llm-embed-chat-container"
+        >
           <AnimatePresence>
             {isChatOpen && (
               <motion.div
@@ -198,7 +200,7 @@ export default function App() {
                 }}
                 className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 md:allm-bottom-[10px] allm-z-[9999] allm-right-0 
                 ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
-                id="anything-llm-chat"
+                // id="anything-llm-chat"
               >
                 <ChatWindow
                   closeChat={() => toggleOpenChat(false)}
@@ -284,16 +286,6 @@ export default function App() {
   );
 }
 
-const getContrastColor = (hex) => {
-  let r = parseInt(hex.substring(1, 3), 16);
-  let g = parseInt(hex.substring(3, 5), 16);
-  let b = parseInt(hex.substring(5, 7), 16);
-
-  // Calculate luminance (Y) using the relative luminance formula
-  let luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  return luminance > 0.5 ? "#000000" : "#FFFFFF"; // Black for light BG, White for dark BG
-};
 const playSound = () => {
   if (!sessionStorage.getItem("stop-sound")) {
     const audio = new Audio(

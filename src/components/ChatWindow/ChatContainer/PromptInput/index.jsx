@@ -15,13 +15,34 @@ export default function PromptInput({
   const formRef = useRef(null);
   const textareaRef = useRef(null);
   const [_, setFocused] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768); // Check if screen is md or larger
 
   useEffect(() => {
-    if (!inputDisabled && textareaRef.current) {
-      textareaRef.current.focus();
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 768); // Update if screen is md or larger
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!inputDisabled && textareaRef.current && isLargeScreen) {
+      textareaRef.current.focus(); // Focus only on large screens
     }
     resetTextAreaHeight();
-  }, [inputDisabled]);
+  }, [inputDisabled, isLargeScreen]); // Add isLargeScreen as a dependency
+
+
+  // useEffect(() => {
+  //   if (!inputDisabled && textareaRef.current) {
+  //     textareaRef.current.focus();
+  //   }
+  //   resetTextAreaHeight();
+  // }, [inputDisabled]);
 
   const handleSubmit = (e) => {
     setFocused(false);
@@ -98,6 +119,7 @@ export default function PromptInput({
             <div
               style={{
                 backgroundColor: settings.inputbarColor,
+                color : settings.inputTextColor
               }}
               className={`allm-flex  allm-w-full allm-items-center allm-rounded-[10px]  allm-py-[10px] ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
             >
@@ -116,7 +138,7 @@ export default function PromptInput({
                 value={message}
                 className="allm-border-none allm-cursor-text allm-text-[16px] allm-min-h-[24px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-0  focus:allm-outline-0  allm-flex-grow"
                 style={{
-                  color : settings.inputMes
+                  color : settings.inputTextColor
                 }}
                 placeholder={"Ask me anything..."}
                 id="message-input"
@@ -142,15 +164,3 @@ export default function PromptInput({
     </div>
   );
 }
-
-
-const getContrastColor = (hex) => {
-  let r = parseInt(hex.substring(1, 3), 16);
-  let g = parseInt(hex.substring(3, 5), 16);
-  let b = parseInt(hex.substring(5, 7), 16);
-
-  // Calculate luminance (Y) using the relative luminance formula
-  let luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  return luminance > 0.5 ? "#000000" : "#FFFFFF"; // Black for light BG, White for dark BG
-};

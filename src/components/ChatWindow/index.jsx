@@ -7,7 +7,7 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
   const { chatHistory, setChatHistory, loading } = useChatHistory(
     settings,
     sessionId
-  );    
+  );
   if (loading) {
     return (
       <div className="allm-flex allm-flex-col allm-h-full">
@@ -35,7 +35,11 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
         setChatHistory={setChatHistory}
       />
       <div
-        className="allm-flex-grow allm-overflow-y-auto "
+        className="allm-flex-grow 
+        allm-overflow-y-auto
+  allm-overscroll-contain
+        "
+        // allm-overflow-y-auto
         style={{ backgroundColor: settings.bgColor }}
       >
         <ChatContainer
