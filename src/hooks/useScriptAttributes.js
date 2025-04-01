@@ -4,30 +4,27 @@ import { useQuery } from "@tanstack/react-query";
 import BrandBotConfigure from "@/models/brandBotConfigure";
 
 const DEFAULT_SETTINGS = {
-  embedId: null, //required
-  baseApiUrl: null, // required
-  
+  embedId: null,
+  baseApiUrl: null,
   sessionId: null, 
-
-  // Override properties that can be defined.
-  prompt: null, // override
-  model: null, // override
-  temperature: null, //override
+  prompt: null, 
+  model: null,
+  temperature: null,
 
   // style parameters
   brandName: null,
   chatIcon: "plus",
-  brandImageUrl: null, // will be forced into 100x50px container
-  greeting: null, // empty chat window greeting.
-  buttonColor: "#262626", // must be hex color code
-  userBgColor: "#2563eb", // user text bubble color
-  assistantBgColor: "#1B1B1B", // assistant text bubble color
-  position: "bottom-right", // position of chat button/window
-  assistantName: "AnythingLLM Chat Assistant", // default assistant name
-  assistantIcon: null, // default assistant icon
-  windowHeight: null, // height of chat window in number:css-prefix
-  windowWidth: null, // width of chat window in number:css-prefix
-  textSize: null, // text size in px (number only)
+  brandImageUrl: null,
+  greeting: null,
+  buttonColor: "#262626", 
+  userBgColor: "#2563eb", 
+  assistantBgColor: "#1B1B1B", 
+  position: "bottom-right",
+  assistantName: "AnythingLLM Chat Assistant", 
+  assistantIcon: null,
+  windowHeight: null,
+  windowWidth: null,
+  textSize: null, 
   headerColor: "#222222",
   textHeaderColor: "#fff",
   userTextColor: "#fff",
@@ -41,15 +38,15 @@ const DEFAULT_SETTINGS = {
   cardBgColor: "#1d1d1d",
   startingMessageTheme:'#2d2d2d',
   openingMessage:"",
-  openingMessageTextColor:null,
-  inputTextColor:null,
+  openingMessageTextColor:"#ffff",
+  inputTextColor:'#fff',
 
   // behaviors
   inputbarDisabled:false,
-  openOnLoad: "off", // or "on"
-  supportEmail: null, // string of email for contact
-  username: null, // The display or readable name set on a script
-  defaultMessages: [], // list of strings for default messages.
+  openOnLoad: "off", 
+  supportEmail: null,
+  username: null,
+  defaultMessages: [], 
 };
 
 export default function useGetScriptAttributes() {
@@ -74,19 +71,18 @@ export default function useGetScriptAttributes() {
         ...prevSettings,
         ...DEFAULT_SETTINGS,
         ...parseAndValidateEmbedSettings(embedderSettings.settings),
-        loaded: true,
+        loaded: false,
       }));
     }
 
     fetchAttribs();
   }, []);
 
-  // Use TanStack Query to fetch bot details
   const { data, error } = useQuery({
     queryKey: ["botDetails", settings],
     queryFn: () => BrandBotConfigure.getBotDetails(settings),
-    enabled: settings.loaded, // Only run when settings.loaded is true
-    retry: 2, // Optional: Retry failed requests
+    // enabled: settings.loaded, // Only run when settings.loaded is true
+    retry: 2,
   });
 
   useEffect(() => {    
@@ -94,12 +90,17 @@ export default function useGetScriptAttributes() {
       setSettings((prevSettings) => ({
         ...prevSettings,
         ...data,
+        loaded:true, 
       }));
     }
   }, [data]);
 
   if (error) {
     console.error("Error fetching bot details:", error);
+    setSettings((prevSettings) => ({
+      ...prevSettings,
+      loaded:true
+    }));
   }
 
   return settings;

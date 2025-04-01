@@ -95,7 +95,7 @@ export default function PromptInput({
                   />
                 </div>
                 <div className="allm-flex allm-flex-col allm-gap-1 ">
-                  <span style={{color:settings.cardTextColor}} className="allm-font-semibold allm-text-[18px] allm-line-clamp-1">
+                  <span style={{color:settings.cardTextColor}} className="allm-font-semibold allm-text-[18px] allm-line-clamp-2">
                     {replyProduct?.title || replyProduct?.product_name}
                   </span>
                   {/* <span style={{color:settings.cardTextSubColour}} className="allm-text-[12px] allm-line-clamp-2">

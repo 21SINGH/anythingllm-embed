@@ -16,8 +16,6 @@ export default function ChatContainer({
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
 
-  // Resync history if the ref to known history changes
-  // eg: cleared.
   useEffect(() => {
     if (knownHistory.length !== chatHistory.length)
       setChatHistory([...knownHistory]);
@@ -71,13 +69,12 @@ export default function ChatContainer({
       ];
       setChatHistory(prevChatHistory);
     }
-    await BrandAnalytics.sendAnalytics(settings, sessionId, "sent_message");
     setReplyProduct(null);
     setMessage("");
     setLoadingResponse(true);
+    await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
   };
 
-  //sending suggested question
   const handlePrompt = async (prompt) => {
     if (!prompt || prompt === "") return false;
 
@@ -93,10 +90,10 @@ export default function ChatContainer({
         sentAt: Math.floor(Date.now() / 1000),
       },
     ];
-    await BrandAnalytics.sendAnalytics(settings, sessionId, "sent_message");
     setChatHistory(prevChatHistory);
     setMessage("");
     setLoadingResponse(true);
+    await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
   };
 
   const sendCommand = (command, history = [], attachments = []) => {
@@ -104,7 +101,6 @@ export default function ChatContainer({
 
     let prevChatHistory;
     if (history.length > 0) {
-      // use pre-determined history chain.
       prevChatHistory = [
         ...history,
         {
@@ -206,29 +202,6 @@ allm-overscroll-contain
         setReplyProduct={setReplyProduct}
         settings={settings}
       />
-      {/* <div className="allm-flex allm-items-center allm-justify-center allm-mt-[-2px] allm-mb-[10px]">
-        <a
-          href="https://marketplace.goshoppie.com/"
-          target="_blank"
-          style={{
-            color: getContrastColor(settings.bgColor),
-            textDecoration: "none",
-          }}
-        >
-          Powered by Shoppie
-        </a>
-      </div> */}
     </div>
   );
 }
-
-const getContrastColor = (hex) => {
-  let r = parseInt(hex.substring(1, 3), 16);
-  let g = parseInt(hex.substring(3, 5), 16);
-  let b = parseInt(hex.substring(5, 7), 16);
-
-  // Calculate luminance (Y) using the relative luminance formula
-  let luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  return luminance > 0.5 ? "#343434" : "#b2b2b2"; // Black for light BG, White for dark BG
-};

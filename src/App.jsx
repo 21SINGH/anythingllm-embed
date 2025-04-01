@@ -14,34 +14,31 @@ export default function App() {
   const embedSettings = useGetScriptAttributes();
   const sessionId = useSessionId();
   const [isLargeScreen, setIsLargeScreen] = useState(true);
-
-  const [interaction, setInteraction] = useState(false); // Track user interaction
-  const [startAnimation, setStartAnimation] = useState(false); // Trigger animation after delay
+  const [interaction, setInteraction] = useState(false); 
+  const [startAnimation, setStartAnimation] = useState(false); 
   const [showFirstMessage, setShowFirstMessage] = useState(false);
 
   useEffect(() => {
     const firstMessageShown = sessionStorage.getItem("firstMessageShown");
     if (!firstMessageShown) {
-      setShowFirstMessage(true); // Show the first message if not yet shown
+      setShowFirstMessage(true);
     }
 
     const handleResize = () => {
-      setIsLargeScreen(window.innerWidth > 560); // Adjust 768 to your desired breakpoint
+      setIsLargeScreen(window.innerWidth > 560);
     };
 
     window.addEventListener("resize", handleResize);
-    handleResize(); // Check the screen size on initial render
+    handleResize();
 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const handleCloseFirstMessage = () => {
-    // Mark the first message as shown and store it in sessionStorage
     sessionStorage.setItem("firstMessageShown", "true");
-    setShowFirstMessage(false); // Close the first message
+    setShowFirstMessage(false);
   };
 
-  // Add an effect to track user interaction
   useEffect(() => {
     const handleUserInteraction = () => {
       if (!interaction) {
@@ -49,25 +46,21 @@ export default function App() {
       }
     };
 
-    // Listen to events that represent user interaction
     window.addEventListener("click", handleUserInteraction);
     window.addEventListener("keydown", handleUserInteraction);
 
-    // Cleanup event listeners
     return () => {
       window.removeEventListener("click", handleUserInteraction);
       window.removeEventListener("keydown", handleUserInteraction);
     };
   }, [interaction]);
 
-  // Start the animation after 2 seconds of interaction
   useEffect(() => {
     if (interaction) {
       const timer = setTimeout(() => {
         setStartAnimation(true);
-      }, 2000); // Delay of 2 seconds
+      }, 2000); 
 
-      // Cleanup the timer if interaction is reset
       return () => clearTimeout(timer);
     }
   }, [interaction]);
@@ -77,7 +70,7 @@ export default function App() {
       embedSettings.inputbarDisabled = true;
     }
     embedSettings.sessionId = sessionId;
-  }, [embedSettings.loaded, sessionId]);
+  }, [embedSettings?.loaded, sessionId]);
 
   useEffect(() => {
     const sendBrandView = async () => {
@@ -106,8 +99,6 @@ export default function App() {
     }
   }, [embedSettings.loaded, sessionId]);
 
-  if (!embedSettings.loaded) return null;
-
   const positionClasses = {
     "bottom-left": "allm-bottom-0 allm-left-0 allm-ml-4",
     "bottom-right": "allm-bottom-0 allm-right-0 allm-mr-4",
@@ -129,15 +120,15 @@ export default function App() {
       scale: embedSettings.inputbarDisabled ? 1 : 1,
       opacity: embedSettings.inputbarDisabled ? 1 : 1,
       transition: embedSettings.inputbarDisabled
-        ? {} // No transition if disabled
-        : { duration: 0.5, ease: [0.76, 0, 0.24, 1] }, // Normal transitio
+        ? {} 
+        : { duration: 0.5, ease: [0.76, 0, 0.24, 1] },
     },
     closed: {
       scale: embedSettings.inputbarDisabled ? 1 : 0,
       opacity: embedSettings.inputbarDisabled ? 1 : 0,
       transition: embedSettings.inputbarDisabled
-        ? {} // No transition if disabled
-        : { duration: 0.5, ease: [0.6, 0, 0.24, 1] }, // Normal transition
+        ? {}
+        : { duration: 0.5, ease: [0.6, 0, 0.24, 1] },
     },
   };
 
@@ -179,12 +170,14 @@ export default function App() {
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "center";
 
+  if (!embedSettings.loaded) return null;
+  
   return (
     <>
       <Head />
       <div id="anyhting-all-wrapper">
-        <div 
-        // id="anything-llm-embed-chat-container"
+        <div
+        id="anything-llm-embed-chat-container"
         >
           <AnimatePresence>
             {isChatOpen && (
@@ -200,7 +193,6 @@ export default function App() {
                 }}
                 className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 md:allm-bottom-[10px] allm-z-[9999] allm-right-0 
                 ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
-                // id="anything-llm-chat"
               >
                 <ChatWindow
                   closeChat={() => toggleOpenChat(false)}
@@ -215,8 +207,7 @@ export default function App() {
         {!isChatOpen && (
           <div>
             <AnimatePresence>
-              {
-                showFirstMessage &&
+              {showFirstMessage && (
                 <motion.div
                   key="welcome-message"
                   variants={openingMessageVariants}
@@ -229,7 +220,6 @@ export default function App() {
                 >
                   {embedSettings.openingMessage !== "" && (
                     <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-p-[16px] allm-mr-[5px] allm-gap-2">
-                      {/* Close button */}
                       <div
                         onClick={handleCloseFirstMessage}
                         className="allm-right-[5px]  hover:allm-cursor-pointer allm-bg-[#5C5C5C]/90 allm-rounded-full allm-p-1  allm-flex allm-items-center allm-justify-center"
@@ -259,7 +249,7 @@ export default function App() {
                     </div>
                   )}
                 </motion.div>
-              }
+              )}
             </AnimatePresence>
             <AnimatePresence>
               <motion.div
