@@ -2,29 +2,31 @@ import { useEffect, useState } from "react";
 import { embedderSettings } from "../main";
 import { useQuery } from "@tanstack/react-query";
 import BrandBotConfigure from "@/models/brandBotConfigure";
+import BrandService from "@/models/brandService";
 
 const DEFAULT_SETTINGS = {
   embedId: null,
   baseApiUrl: null,
-  sessionId: null, 
-  prompt: null, 
+  sessionId: null,
+  prompt: null,
   model: null,
   temperature: null,
+  host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvdGVzdHNob3BwaWVzdG9yZQ",
 
   // style parameters
   brandName: null,
   chatIcon: "plus",
   brandImageUrl: null,
   greeting: null,
-  buttonColor: "#262626", 
-  userBgColor: "#2563eb", 
-  assistantBgColor: "#1B1B1B", 
+  buttonColor: "#262626",
+  userBgColor: "#2563eb",
+  assistantBgColor: "#1B1B1B",
   position: "bottom-right",
-  assistantName: "AnythingLLM Chat Assistant", 
+  assistantName: "AnythingLLM Chat Assistant",
   assistantIcon: null,
   windowHeight: null,
   windowWidth: null,
-  textSize: null, 
+  textSize: null,
   headerColor: "#222222",
   textHeaderColor: "#fff",
   userTextColor: "#fff",
@@ -36,20 +38,25 @@ const DEFAULT_SETTINGS = {
   bgColor: "#282828",
   inputbarColor: "#1d1d1d",
   cardBgColor: "#1d1d1d",
-  startingMessageTheme:'#2d2d2d',
-  openingMessage:"",
-  openingMessageTextColor:"#ffff",
-  inputTextColor:'#fff',
+  startingMessageTheme: "#2d2d2d",
+  openingMessage: "",
+  openingMessageTextColor: "#ffff",
+  inputTextColor: "#fff",
+  suggestion1: null,
+  suggestion2: null,
+  nudgeBgColor: null,
+  nudgeTextColor: null,
 
   // behaviors
-  inputbarDisabled:false,
-  openOnLoad: "off", 
+  inputbarDisabled: false,
+  openOnLoad: "off",
   supportEmail: null,
   username: null,
-  defaultMessages: [], 
+  defaultMessages: [],
 };
 
 export default function useGetScriptAttributes() {
+  const host = "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvdGVzdHNob3BwaWVzdG9yZQ";
   const [settings, setSettings] = useState({
     loaded: false,
     ...DEFAULT_SETTINGS,
@@ -59,8 +66,9 @@ export default function useGetScriptAttributes() {
     function fetchAttribs() {
       if (!document) return false;
       if (
-        !embedderSettings.settings.baseApiUrl ||
-        !embedderSettings.settings.embedId
+        !embedderSettings.settings.baseApiUrl
+        // ||
+        // !embedderSettings.settings.embedId
       ) {
         throw new Error(
           "[AnythingLLM Embed Module::Abort] - Invalid script tag setup detected. Missing required parameters for boot!"
@@ -78,30 +86,37 @@ export default function useGetScriptAttributes() {
     fetchAttribs();
   }, []);
 
-  const { data, error } = useQuery({
-    queryKey: ["botDetails", settings],
-    queryFn: () => BrandBotConfigure.getBotDetails(settings),
-    // enabled: settings.loaded, // Only run when settings.loaded is true
-    retry: 2,
+  const { data } = useQuery({
+    queryKey: ["brandDetails", host],
+    queryFn: () => BrandService.getBrandDetails(host),
+    enabled: !!host, // avoid running if host is not ready
   });
 
-  useEffect(() => {    
-    if (data) {
+  const { data: brandConfig } = useQuery({
+    queryKey: ["brandTheme", host],
+    queryFn: () => BrandBotConfigure.getBotDetails(host),
+    enabled: !!host, // avoid running if host is not ready
+  });
+
+  useEffect(() => {
+    if (data?.embed_id) {
       setSettings((prevSettings) => ({
         ...prevSettings,
-        ...data,
-        loaded:true, 
+        embedId: data.embed_id,
+        loaded: true,
       }));
     }
   }, [data]);
 
-  if (error) {
-    console.error("Error fetching bot details:", error);
-    setSettings((prevSettings) => ({
-      ...prevSettings,
-      loaded:true
-    }));
-  }
+  useEffect(()=>{
+    if (brandConfig) {
+      setSettings((prevSettings) => ({
+        ...prevSettings,
+        ...brandConfig,
+        loaded: true,
+      }));
+    }
+  },[brandConfig])
 
   return settings;
 }
@@ -145,3 +160,4 @@ function parseAndValidateEmbedSettings(settings = {}) {
 
   return validated;
 }
+

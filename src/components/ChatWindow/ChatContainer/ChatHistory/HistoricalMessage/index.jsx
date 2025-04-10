@@ -173,7 +173,7 @@ const ProductSuggestions = ({
   }
 
   return (
-    <div className="allm-mt-3">
+    <div className="allm-mt-[12px] allm-mb-[8px]">
       <div className="allm-flex allm-space-x-3 allm-overflow-x-auto allm-no-scroll">
         {suggestions.products.map((product) => (
           <ProductCard
@@ -201,48 +201,51 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
     e.preventDefault(); // Prevent anchor's default behavior (navigation)
 
     // Send analytics
-    await BrandAnalytics.sendAnalytics(
-      embedderSettings?.settings,
-      embedSettings.sessionId,
-      "tap_product",
-      product
-    );
+    // await BrandAnalytics.sendAnalytics(
+    //   embedderSettings?.settings,
+    //   embedSettings.sessionId,
+    //   "tap_product",
+    //   product
+    // );
 
     // After the analytics is sent, you can now navigate if needed
     if (embedSettings.sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
-      if (product?.buy_link || product?.purchase_link) {
-        window.location.href = product?.buy_link || product?.purchase_link;
+      if (product?.buy_link || product?.purchase_link ||product?.handle) {
+        window.location.href = product?.buy_link || product?.purchase_link || `https://reginaldmen.com/products/${product?.handle}`;
       }
   };
 
   return (
     <a
-      href={product?.buy_link || product?.purchase_link}
+      href={product?.buy_link || product?.purchase_link || product?.handle}
       rel="noopener noreferrer"
-      className="allm-rounded-lg allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[190px] allm-min-w-[190px] "
+      className="allm-rounded-[10px] allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[220px] allm-min-w-[220px] "
       style={{ textDecoration: "none" }}
       onClick={handleAnchorClick}
     >
       <div>
         {(product?.image_url ||
-          product?.product_images[0] ||
-          product?.product_images) &&
+          // product?.product_images[0] ||
+          // product?.product_images||
+        product?.images)
+         &&
         !imageError ? (
-          <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[160px]">
+          <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[190px]">
             <img
               src={
                 product?.image_url ||
                 product?.product_images ||
-                product?.product_images[0]
+                // product?.product_images[0]||
+                product?.images
               }
-              alt={product?.title || product?.product_name}
+              alt={product?.title || product?.product_name ||product?.images}
               className="allm-h-full allm-w-full allm-object-cover"
               onError={() => setImageError(true)}
               loading="lazy"
             />
           </div>
         ) : (
-          <div className="allm-flex allm-justify-center allm-items-center allm-bg-[#1B1B1B] allm-h-[160px]">
+          <div className="allm-flex allm-justify-center allm-items-center allm-bg-[#1B1B1B] allm-h-[190px]">
             <span className="allm-text-gray-400 allm-text-xs">
               Product image
             </span>
@@ -251,17 +254,17 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
       </div>
       <div
         style={{ backgroundColor: embedSettings.cardBgColor }}
-        className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2"
+        className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2 allm-min-h-[70px]"
       >
         <div
           style={{
             color: embedSettings.cardTextColor,
           }}
-          className="allm-font-semiboldallm-w-full allm-text-[13px] allm-line-clamp-2 allm-h-[45px] allm-max-h-[45px]"
+          className="allm-font-semiboldallm-w-full allm-text-[13.5px] allm-line-clamp-2 allm-h-[35px] allm-min-h-[35px] allm-max-h-[35px] allm-leading-[16px]"
         >
           {product?.title || product?.product_name}
         </div>
-        <div className="allm-flex allm-w-full allm-justify-between allm-items-center">
+        <div className="allm-flex allm-w-full allm-justify-between allm-items-center allm-min-h-[40px] allm-h-[40px]">
           <div>
             <div
               style={{
@@ -269,7 +272,7 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
               }}
               className=" allm-font-bold allm-mr-2 allm-text-[18px] allm-mb-1"
             >
-              {product?.discounted_price ||
+              {product?.discounted_price|| product?.price ||
                 product?.product_prices?.Discounted_price}
             </div>
             <div
@@ -278,7 +281,7 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
               }}
               className="allm-line-through allm-font-medium allm-mr-2 allm-text-[12px]"
             >
-              {product?.original_price ||
+              {product?.original_price|| product?.compare_at_price||
                 product?.product_prices?.Original_price}
             </div>
           </div>
@@ -331,7 +334,7 @@ const HistoricalMessage = forwardRef(
     } = parsedData;
 
     return (
-      <div className="py-[5px]">
+      <div className="py-[5px] allm-tracking-[0px]">
         {/* Render Product Card if exists */}
         {role === "user" && product && (
           <div className="allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end allm-my-2">
@@ -358,7 +361,7 @@ const HistoricalMessage = forwardRef(
                   : settings.assistantBgColor,
               marginRight: role === "user" && "5px",
             }}
-            className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col  allm-max-w-[80%] ${
+            className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${
               error
                 ? "allm-bg-red-200 allm-rounded-lg allm-mr-[37px] allm-ml-[9px]"
                 : role === "user"
@@ -381,17 +384,85 @@ const HistoricalMessage = forwardRef(
                 <>
                   {/* Render the text after product for user */}
                   {role === "user" && textAfterProduct && (
-                    <span
-                      className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
-                      style={{
-                        color: settings.userTextColor,
-                      }}
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(
-                          renderMarkdown(textAfterProduct)
-                        ),
-                      }}
-                    />
+                    <ReactMarkdown
+                    children={textAfterProduct}
+                    components={{
+                      h1: ({ node, ...props }) => (
+                        <h1
+                          className=" allm-font-bold  allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                      h2: ({ node, ...props }) => (
+                        <h2
+                          className="  allm-font-semibold allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3
+                          className=" allm-font-medium  allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul
+                          className="allm-list-disc allm-pl-4  allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol
+                          className="allm-list-decimal allm-pl-4 allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li
+                          className="allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                    }}
+                  />
+                    // <span
+                    //   className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
+                    //   style={{
+                    //     color: settings.userTextColor,
+                    //   }}
+                    //   dangerouslySetInnerHTML={{
+                    //     __html: DOMPurify.sanitize(
+                    //       renderMarkdown(textAfterProduct)
+                    //     ),
+                    //   }}
+                    // />
                   )}
 
                   {/* Assistant rendering logic */}
@@ -516,7 +587,7 @@ const HistoricalMessage = forwardRef(
                   )
                     handlePrompt(prompt);
                 }}
-                className=" allm-rounded-3xl allm-px-4 allm-py-2 allm-text-[14px]  allm-cursor-pointer"
+                className=" allm-rounded-[24px] allm-px-[16px] allm-py-2 allm-text-[14px] allm-leading-normal  allm-cursor-pointer"
               >
                 {prompt}
               </div>

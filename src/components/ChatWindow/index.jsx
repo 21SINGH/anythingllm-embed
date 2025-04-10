@@ -26,7 +26,7 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
   setEventDelegatorForCodeSnippets();
 
   return (
-    <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-3xl allm-overflow-hidden bg-[#000]">
+    <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-[24px] allm-overflow-hidden ">
       <ChatWindowHeader
         sessionId={sessionId}
         settings={settings}
@@ -35,10 +35,9 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
         setChatHistory={setChatHistory}
       />
       <div
-        className="allm-flex-grow 
-        allm-overflow-y-auto
-  allm-overscroll-contain
-        "
+        className="allm-flex-grow  allm-overflow-y-auto"
+        // allm-overflow-y-auto
+        // allm-overscroll-contain
         // allm-overflow-y-auto
         style={{ backgroundColor: settings.bgColor }}
       >

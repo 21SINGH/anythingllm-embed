@@ -55,7 +55,7 @@ export default function ChatHistory({
     return (
       <div className="allm-pb-[100px] allm-pt-[5px] allm-rounded-lg allm-px-2 allm-h-full allm-mt-2 allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll">
         <div className="allm-flex allm-h-full allm-flex-col allm-items-center allm-justify-center">
-          <p className="allm-text-slate-400 allm-text-sm  allm-py-4 allm-text-center">
+          <p className="allm-text-slate-400 allm-text-[14px]  allm-py-4 allm-text-center">
             {settings?.greeting ?? "Send a chat to get started."}
           </p>
           <SuggestedMessages settings={settings} />
@@ -66,7 +66,7 @@ export default function ChatHistory({
 
   return (
     <div
-      className="allm-pb-[30px] allm-pt-[5px] allm-rounded-3xl allm-px-2 allm-h-full allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll allm-md:max-h-[500px] allm-overflow-hidden"
+      className="allm-pb-[30px] allm-pt-[5px] allm-rounded-[24px] allm-px-2 allm-h-full allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll allm-md:max-h-[500px] allm-overflow-hidden"
       id="chat-history"
       ref={chatHistoryRef}
     >

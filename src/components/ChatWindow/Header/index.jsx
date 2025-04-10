@@ -1,4 +1,5 @@
-import AnythingLLMIcon from "@/assets/anything-llm-icon.svg";
+// import AnythingLLMIcon from "@/assets/anything-llm-icon.svg";
+import ShoopieIcon from "@/assets/shoppie logo.png"
 import BrandService from "@/models/brandService";
 import { RxCross2 } from "react-icons/rx";
 import { useEffect, useRef, useState } from "react";
@@ -41,11 +42,11 @@ export default function ChatWindowHeader({
     }
   };
 
-  useEffect(() => {
-    if (!brandDetails) {
-      getBrandDetails();
-    }
-  }, [settings, brandDetails]);
+  // useEffect(() => {
+  //   if (!brandDetails) {
+  //     getBrandDetails();
+  //   }
+  // }, [settings, brandDetails]);
 
   return (
     <div
@@ -56,7 +57,7 @@ export default function ChatWindowHeader({
       <div className="allm-flex allm-pl-3 allm-items-center allm-w-full allm-h-[76px]">
         <img
           style={{ maxWidth: 48, maxHeight: 48, borderRadius: 25 }}
-          src={settings?.brandImageUrl ?? brandDetails?.logo ?? AnythingLLMIcon}
+          src={settings?.brandImageUrl ?? brandDetails?.logo ?? ShoopieIcon}
           alt={brandDetails?.logo ? "Brand" : "AnythingLLM Logo"}
         />
         <div

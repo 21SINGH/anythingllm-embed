@@ -43,7 +43,7 @@ const PromptReply = forwardRef(
         <div className="allm-flex allm-items-end allm-w-full allm-h-fit allm-justify-start">
           <div
             style={{ wordBreak: "break-word" }}
-            className={`allm-py-[11px] allm-px-4 allm-rounded-lg allm-flex allm-flex-col allm-bg-red-200 allm-shadow-[0_4px_14px_rgba(0,0,0,0.25)] allm-mr-[37px] allm-ml-[9px]`}
+            className={`allm-py-[11px] allm-px-[16px] allm-rounded-lg allm-flex allm-flex-col allm-bg-red-200 allm-shadow-[0_4px_14px_rgba(0,0,0,0.25)] allm-mr-[37px] allm-ml-[9px]`}
           >
             <div className="allm-flex allm-gap-x-5">
               <span className="allm-inline-block allm-p-2 allm-rounded-lg allm-bg-red-50 allm-text-red-500">
@@ -70,7 +70,7 @@ const PromptReply = forwardRef(
               backgroundColor: settings.assistantBgColor,
               color: settings.botTextColor,
             }}
-            className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col ${
+            className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col ${
               error ? "allm-bg-red-200" : embedderSettings.ASSISTANT_STYLES.base
             } allm-shadow-[0_4px_14px_rgba(0,0,0,0.25)]`}
           >

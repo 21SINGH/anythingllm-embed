@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import BrandService from "@/models/brandService";
+import ShoopieIcon from "@/assets/shoppie logo.png"
 
 export default function OpenButton({ settings, isOpen, toggleOpen }) {
   if (isOpen) return null;
@@ -14,14 +15,14 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
     }
   };
 
-  useEffect(() => {
-    if (!brandDetails) {
-      getBrandDetails();
-    }
-  }, [settings, brandDetails]);
+  // useEffect(() => {
+  //   if (!brandDetails) {
+  //     getBrandDetails();
+  //   }
+  // }, [settings, brandDetails]);
 
   return (
-    <button
+    <div
       // style={{ backgroundColor: settings.buttonColor }}
       id="anything-llm-embed-chat-button"
       onClick={toggleOpen}
@@ -30,12 +31,12 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
     >
       <img
         src={
-          settings?.brandImageUrl ?? brandDetails?.logo ??
+          settings?.brandImageUrl ?? brandDetails?.logo ?? ShoopieIcon ??
           "https://storage.aroundme.global/avatar_default.png"
         }
         alt={brandDetails?.name || "Brand Logo"}
-        className="allm-w-[70px] allm-h-[70px] allm-rounded-full allm-object-cover allm-border-2 allm-border-[#2d2d2d]"
+        className="allm-w-[70px] allm-h-[70px] allm-rounded-full allm-object-cover"
       />
-    </button>
+    </div>
   );
 }

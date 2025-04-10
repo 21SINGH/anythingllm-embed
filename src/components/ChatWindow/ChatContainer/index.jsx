@@ -72,7 +72,7 @@ export default function ChatContainer({
     setReplyProduct(null);
     setMessage("");
     setLoadingResponse(true);
-    await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
+    // await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
   };
 
   const handlePrompt = async (prompt) => {
@@ -93,7 +93,7 @@ export default function ChatContainer({
     setChatHistory(prevChatHistory);
     setMessage("");
     setLoadingResponse(true);
-    await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
+    // await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
   };
 
   const sendCommand = (command, history = [], attachments = []) => {
@@ -179,11 +179,12 @@ export default function ChatContainer({
 
   return (
     <div className="allm-h-full allm-w-full allm-flex allm-flex-col">
-      <div className="allm-flex-grow 
-allm-overflow-y-auto
-allm-overscroll-contain
+      <div
+        style={{
+          boxSizing: "content-box",
+        }}
+        className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain
       "
-      // allm-overflow-y-auto
       >
         <ChatHistory
           settings={settings}

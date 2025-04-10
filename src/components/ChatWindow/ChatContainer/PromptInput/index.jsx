@@ -1,6 +1,7 @@
 import { IoMdArrowUp } from "react-icons/io";
 import { RxCross2 } from "react-icons/rx";
 import React, { useState, useRef, useEffect } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 
 export default function PromptInput({
   message,
@@ -16,6 +17,8 @@ export default function PromptInput({
   const textareaRef = useRef(null);
   const [_, setFocused] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768); // Check if screen is md or larger
+
+  // const shopify = useAppBridge()
 
   useEffect(() => {
     const handleResize = () => {
@@ -83,12 +86,14 @@ export default function PromptInput({
           <div className="allm-flex allm-flex-col allm-px-[13px] allm-py-[13px] allm-overflow-hidden allm-w-full">
             {replyProduct && (
               <div style={{
-                backgroundColor:settings.cardBgColor
+                backgroundColor:settings.inputbarColor,
+                marginRight:'0.5px'
               }} className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2  allm-rounded-t-lg ">
                 <div className="allm-flex allm-items-center allm-justify-center  allm-min-w-[80px] allm-rounded-[10px] overflow-hidden">
                   <img
                     src={
-                      replyProduct?.image_url || replyProduct?.product_images[0]
+                      replyProduct?.image_url ||  replyProduct?.images
+                      // replyProduct?.product_images[0]
                     }
                     alt={replyProduct?.title || replyProduct?.product_name}
                     className="allm-min-w-[70px] allm-h-[70px] allm-rounded-[10px] allm-object-cover"
@@ -119,9 +124,13 @@ export default function PromptInput({
             <div
               style={{
                 backgroundColor: settings.inputbarColor,
-                color : settings.inputTextColor
+                color : settings.inputTextColor,
+                borderTopLeftRadius:replyProduct ? 0 : '10px',
+                borderTopRightRadius:replyProduct ? 0 : '10px',
+                borderBottomRightRadius:'10px',
+                borderBottomLeftRadius:'10px'
               }}
-              className={`allm-flex  allm-w-full allm-items-center allm-rounded-[10px]  allm-py-[10px] ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
+              className={`allm-flex  allm-w-full allm-items-center allm-py-[10px] ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
             >
               <input
                 ref={textareaRef}

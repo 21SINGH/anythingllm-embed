@@ -14,7 +14,7 @@ const root = ReactDOM.createRoot(appElement);
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+        <App />
     </QueryClientProvider>
   </React.StrictMode>
 );
@@ -27,11 +27,11 @@ export const embedderSettings = {
   settings: scriptSettings,
   stylesSrc: parseStylesSrc(document?.currentScript?.src),
   USER_STYLES: {
-    msgBg: scriptSettings?.userBgColor ,
-    base: `allm-text-white allm-rounded-t-[18px] allm-rounded-bl-[18px] allm-rounded-br-[4px] allm-mx-[20px] allm-my-[3px]`,
+    msgBg: scriptSettings?.userBgColor,
+    base: ` allm-rounded-t-[18px] allm-rounded-bl-[18px] allm-rounded-br-[4px] allm-mx-[20px] allm-my-[3px]`,
   },
   ASSISTANT_STYLES: {
-    msgBg: scriptSettings?.assistantBgColor ,
-    base: `allm-text-[#fff] allm-rounded-t-[18px] allm-rounded-br-[18px] allm-rounded-bl-[4px] allm-mr-[37px] allm-ml-[9px] allm-my-[5px]`,
+    msgBg: scriptSettings?.assistantBgColor,
+    base: `allm-rounded-t-[18px] allm-rounded-br-[18px] allm-rounded-bl-[4px] allm-mr-[37px] allm-ml-[9px] allm-my-[5px]`,
   },
 };

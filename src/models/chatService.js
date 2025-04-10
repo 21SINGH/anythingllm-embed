@@ -3,7 +3,7 @@ import { v4 } from "uuid";
 
 const ChatService = {
   embedSessionHistory: async function (embedSettings, sessionId) {
-    const { embedId, baseApiUrl } = embedSettings;
+    const { embedId, baseApiUrl } = embedSettings;    
     return await fetch(`${baseApiUrl}/${embedId}/${sessionId}`)
       .then((res) => {
         if (res.ok) return res.json();
