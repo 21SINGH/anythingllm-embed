@@ -35,7 +35,8 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
         setChatHistory={setChatHistory}
       />
       <div
-        className="allm-flex-grow  allm-overflow-y-auto"
+       className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
+        // className="allm-flex-grow  allm-overflow-y-auto"
         // allm-overflow-y-auto
         // allm-overscroll-contain
         // allm-overflow-y-auto

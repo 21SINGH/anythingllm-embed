@@ -95,7 +95,7 @@ export default function ChatContainer({
 
         // Fetch order detail
         fetch(
-          `https://shoppie-backend-dev.aroundme.global/api/stores/order-detail?order_name=${orderId}&host=${host}`
+          `https://shoppie-backend.aroundme.global/api/stores/order-detail?order_name=${orderId}&host=${host}`
         )
           .then((res) => res.json())
           .then((data) => {
@@ -373,8 +373,8 @@ export default function ChatContainer({
         style={{
           boxSizing: "content-box",
         }}
-        className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain
-      "
+        className="allm-flex-grow "
+        // allm-overflow-y-auto allm-overscroll-contain
       >
         <ChatHistory
           settings={settings}

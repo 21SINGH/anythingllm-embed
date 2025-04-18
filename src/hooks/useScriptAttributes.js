@@ -56,7 +56,7 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function useGetScriptAttributes() {
-  const host = "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvdGVzdHNob3BwaWVzdG9yZQ";
+  const host = "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ";
   const [settings, setSettings] = useState({
     loaded: false,
     ...DEFAULT_SETTINGS,
@@ -97,7 +97,7 @@ export default function useGetScriptAttributes() {
     queryFn: () => BrandBotConfigure.getBotDetails(host),
     enabled: !!host, // avoid running if host is not ready
   });
-
+  
   useEffect(() => {
     if (data?.embed_id) {
       setSettings((prevSettings) => ({
@@ -108,8 +108,11 @@ export default function useGetScriptAttributes() {
     }
   }, [data]);
 
+  console.log('brand',brandConfig);
+  
   useEffect(()=>{
     if (brandConfig) {
+      console.log('brand',brandConfig);
       setSettings((prevSettings) => ({
         ...prevSettings,
         ...brandConfig,
