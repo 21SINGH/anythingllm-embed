@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
   prompt: null,
   model: null,
   temperature: null,
-  host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvdGVzdHNob3BwaWVzdG9yZQ",
+  host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ",
 
   // style parameters
   brandName: null,

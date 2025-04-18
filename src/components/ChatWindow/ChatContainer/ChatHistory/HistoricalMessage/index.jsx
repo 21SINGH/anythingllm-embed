@@ -1,18 +1,56 @@
 import React, { memo, forwardRef } from "react";
 import { Warning } from "@phosphor-icons/react";
-import renderMarkdown from "@/utils/chat/markdown";
 import { embedderSettings } from "@/main";
 import { v4 } from "uuid";
-import createDOMPurify from "dompurify";
 import { ChatTeardropDots } from "@phosphor-icons/react";
 import BrandAnalytics from "@/models/brandAnalytics";
 import ReactMarkdown from "react-markdown";
 
-const DOMPurify = createDOMPurify(window);
-
 const parseMessageWithProductByUser = (message) => {
   if (!message || typeof message !== "string")
     return { product: null, textAfterProduct: message };
+
+  const orderBlockRegex =
+    /->ORDER DETAILS START->([\s\S]*?)->ORDER DETAILS END->/;
+  const match = message.match(orderBlockRegex);
+
+  if (match) {
+    const content = match[1].trim();
+
+    // Match full `user:` or `bot:` lines using regex (including JSON)
+    const lineRegex = /(user|bot):([\s\S]*?)(?=,\s*(user|bot):|,\s*$)/g;
+    const result = {};
+    let userCount = 1;
+    let botCount = 1;
+
+    let matchLine;
+    while ((matchLine = lineRegex.exec(content)) !== null) {
+      const [, type, value] = matchLine;
+
+      if (type === "user") {
+        result[`user${userCount}`] = value.trim();
+        userCount++;
+      } else if (type === "bot") {
+        const botValue = value.trim();
+        try {
+          result[`bot${botCount}`] = JSON.parse(botValue);
+        } catch {
+          result[`bot${botCount}`] = botValue;
+        }
+        botCount++;
+      }
+    }
+
+    if (result) {
+      return {
+        orderMessage: result,
+        textAfterProduct: message
+          .substring(match.index + match[0].length)
+          .trim(),
+      };
+    }
+  }
+
   const productRegex = /->REPLY START->\s*([\s\S]*?)\s*->REPLY END->/;
   const productMatch = message.match(productRegex);
 
@@ -210,8 +248,11 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
 
     // After the analytics is sent, you can now navigate if needed
     if (embedSettings.sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
-      if (product?.buy_link || product?.purchase_link ||product?.handle) {
-        window.location.href = product?.buy_link || product?.purchase_link || `https://reginaldmen.com/products/${product?.handle}`;
+      if (product?.buy_link || product?.purchase_link || product?.handle) {
+        window.location.href =
+          product?.buy_link ||
+          product?.purchase_link ||
+          `https://reginaldmen.com/products/${product?.handle}`;
       }
   };
 
@@ -227,8 +268,7 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
         {(product?.image_url ||
           // product?.product_images[0] ||
           // product?.product_images||
-        product?.images)
-         &&
+          product?.images) &&
         !imageError ? (
           <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[190px]">
             <img
@@ -238,7 +278,7 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
                 // product?.product_images[0]||
                 product?.images
               }
-              alt={product?.title || product?.product_name ||product?.images}
+              alt={product?.title || product?.product_name || product?.images}
               className="allm-h-full allm-w-full allm-object-cover"
               onError={() => setImageError(true)}
               loading="lazy"
@@ -272,7 +312,8 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
               }}
               className=" allm-font-bold allm-mr-2 allm-text-[18px] allm-mb-1"
             >
-              {product?.discounted_price|| product?.price ||
+              {product?.discounted_price ||
+                product?.price ||
                 product?.product_prices?.Discounted_price}
             </div>
             <div
@@ -281,7 +322,8 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
               }}
               className="allm-line-through allm-font-medium allm-mr-2 allm-text-[12px]"
             >
-              {product?.original_price|| product?.compare_at_price||
+              {product?.original_price ||
+                product?.compare_at_price ||
                 product?.product_prices?.Original_price}
             </div>
           </div>
@@ -324,7 +366,7 @@ const HistoricalMessage = forwardRef(
       parsedData = parseMessageWithSuggestionsAndPrompts(message);
     }
 
-    const { product, textAfterProduct } = parsedData;
+    const { product, orderMessage, textAfterProduct } = parsedData;
     const {
       textBeforeSuggestions,
       suggestions,
@@ -333,58 +375,160 @@ const HistoricalMessage = forwardRef(
       textAfterPrompts,
     } = parsedData;
 
-    return (
-      <div className="py-[5px] allm-tracking-[0px]">
-        {/* Render Product Card if exists */}
-        {role === "user" && product && (
-          <div className="allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end allm-my-2">
-            <ProductCard
-              product={product}
-              setReplyProduct={setReplyProduct}
-              embedSettings={settings}
-            />
-          </div>
-        )}
-        <div
-          key={uuid}
-          ref={ref}
-          className={`allm-flex allm-items-start allm-w-full allm-h-fit ${
-            role === "user" ? "allm-justify-end" : "allm-justify-start"
-          }`}
-        >
+    const isOrderDetailsMessage =
+      textBeforeSuggestions?.startsWith("Order details:\n");
+    let orderDetails;
+    if (isOrderDetailsMessage) {
+      try {
+        const jsonPart = textBeforeSuggestions.slice("Order details:\n".length);
+        orderDetails = JSON.parse(jsonPart);
+      } catch (e) {
+        console.error("Invalid order JSON format", e);
+      }
+    }
+
+    if (orderDetails && role !== "user") {
+      return (
+        <OrderDetailsCard
+          orderDetails={orderDetails}
+          settings={settings}
+          embedderSettings={embedderSettings}
+        />
+      );
+    }
+
+    if (orderMessage && role === "user") {
+      return (
+        <div key={uuid} ref={ref}>
+          {/* user order inquiry message */}
           <div
-            style={{
-              wordBreak: "break-word",
-              backgroundColor:
-                role === "user"
-                  ? settings.userBgColor
-                  : settings.assistantBgColor,
-              marginRight: role === "user" && "5px",
-            }}
-            className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${
-              error
-                ? "allm-bg-red-200 allm-rounded-lg allm-mr-[37px] allm-ml-[9px]"
-                : role === "user"
-                  ? `${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`
-                  : `${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message`
-            }`}
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-end`}
           >
-            <div className="allm-flex allm-flex-col">
-              {error ? (
-                <div className="allm-p-2 allm-rounded-lg allm-bg-red-50 allm-text-red-500">
-                  <span className={`allm-inline-block `}>
-                    <Warning className="allm-h-4 allm-w-4 allm-mb-1 allm-inline-block" />{" "}
-                    Could not respond to message.
-                  </span>
-                  <p className="allm-text-xs allm-font-mono allm-mt-2 allm-border-l-2 allm-border-red-500 allm-pl-2 allm-bg-red-300 allm-p-2 allm-rounded-sm">
-                    {errorMsg || "Server error"}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Render the text after product for user */}
-                  {role === "user" && textAfterProduct && (
-                    <ReactMarkdown
+            <div
+              style={{
+                wordBreak: "break-word",
+                backgroundColor:
+                  role === "user"
+                    ? settings.userBgColor
+                    : settings.assistantBgColor,
+                marginRight: role === "user" && "5px",
+              }}
+              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${`${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`}`}
+            >
+              <div className="allm-flex allm-flex-col">
+                {role === "user" && orderMessage?.user1 && (
+                  <ReactMarkdown
+                    children={orderMessage?.user1}
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+          {/* asked order id */}
+          <div
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
+          >
+            <div
+              style={{
+                wordBreak: "break-word",
+                backgroundColor: settings.assistantBgColor,
+                marginRight: role === "user" && "5px",
+              }}
+              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
+            >
+              <div className="allm-flex allm-flex-col">
+                {role === "user" && orderMessage?.bot1 && (
+                  <ReactMarkdown
+                    children={orderMessage?.bot1}
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            olor: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+          {/*  order id */}
+          <div
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-end`}
+          >
+            <div
+              style={{
+                wordBreak: "break-word",
+                backgroundColor:
+                  role === "user"
+                    ? settings.userBgColor
+                    : settings.assistantBgColor,
+                marginRight: role === "user" && "5px",
+              }}
+              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${`${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`}`}
+            >
+              <div className="allm-flex allm-flex-col">
+                {role === "user" && orderMessage?.user2 && (
+                  <ReactMarkdown
+                    children={orderMessage?.user2}
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.userTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+          <OrderDetailsCard
+            orderDetails={orderMessage?.bot2}
+            settings={settings}
+            embedderSettings={embedderSettings}
+          />
+          ;
+          <div
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-end`}
+          >
+            <div
+              style={{
+                wordBreak: "break-word",
+                backgroundColor:
+                  role === "user"
+                    ? settings.userBgColor
+                    : settings.assistantBgColor,
+                marginRight: role === "user" && "5px",
+              }}
+              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${`${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`}`}
+            >
+              <div className="allm-flex allm-flex-col">
+                {role === "user" && textAfterProduct && (
+                  <ReactMarkdown
                     children={textAfterProduct}
                     components={{
                       h1: ({ node, ...props }) => (
@@ -452,6 +596,133 @@ const HistoricalMessage = forwardRef(
                       ),
                     }}
                   />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="py-[5px] allm-tracking-[0px]">
+        {/* Render Product Card if exists */}
+        {role === "user" && product && (
+          <div className="allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end allm-my-2">
+            <ProductCard
+              product={product}
+              setReplyProduct={setReplyProduct}
+              embedSettings={settings}
+            />
+          </div>
+        )}
+        <div
+          key={uuid}
+          ref={ref}
+          className={`allm-flex allm-items-start allm-w-full allm-h-fit ${
+            role === "user" ? "allm-justify-end" : "allm-justify-start"
+          }`}
+        >
+          <div
+            style={{
+              wordBreak: "break-word",
+              backgroundColor:
+                role === "user"
+                  ? settings.userBgColor
+                  : settings.assistantBgColor,
+              marginRight: role === "user" && "5px",
+            }}
+            className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${
+              error
+                ? "allm-bg-red-200 allm-rounded-lg allm-mr-[37px] allm-ml-[9px]"
+                : role === "user"
+                  ? `${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`
+                  : `${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message`
+            }`}
+          >
+            <div className="allm-flex allm-flex-col">
+              {error ? (
+                <div className="allm-p-2 allm-rounded-lg allm-bg-red-50 allm-text-red-500">
+                  <span className={`allm-inline-block `}>
+                    <Warning className="allm-h-4 allm-w-4 allm-mb-1 allm-inline-block" />{" "}
+                    Could not respond to message.
+                  </span>
+                  <p className="allm-text-xs allm-font-mono allm-mt-2 allm-border-l-2 allm-border-red-500 allm-pl-2 allm-bg-red-300 allm-p-2 allm-rounded-sm">
+                    {errorMsg || "Server error"}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Render the text after product for user */}
+                  {role === "user" && textAfterProduct && (
+                    <ReactMarkdown
+                      children={textAfterProduct}
+                      components={{
+                        h1: ({ node, ...props }) => (
+                          <h1
+                            className=" allm-font-bold  allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.userTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        h2: ({ node, ...props }) => (
+                          <h2
+                            className="  allm-font-semibold allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.userTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        h3: ({ node, ...props }) => (
+                          <h3
+                            className=" allm-font-medium  allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.userTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p
+                            className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.userTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul
+                            className="allm-list-disc allm-pl-4  allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.userTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol
+                            className="allm-list-decimal allm-pl-4 allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.userTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li
+                            className="allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.userTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                      }}
+                    />
                     // <span
                     //   className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
                     //   style={{
@@ -622,4 +893,100 @@ const lightenAndDullColor = (
   b = Math.round(b * desaturateFactor + 200 * (1 - desaturateFactor));
 
   return `rgb(${r}, ${g}, ${b})`;
+};
+
+const OrderDetailsCard = ({
+  orderDetails,
+  settings = {},
+  embedderSettings = {},
+}) => {
+  return (
+    <div
+      style={{
+        wordBreak: "break-word",
+        backgroundColor: settings.assistantBgColor,
+      }}
+      className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col allm-gap-2 allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-text-[14px] allm-mb-[-5px]`}
+    >
+      {orderDetails?.tracking_number && (
+        <span>
+          <span className="allm-font-semibold">Tracking Id:</span>{" "}
+          <span className="allm-font-extralight">
+            {orderDetails.tracking_number}
+          </span>
+        </span>
+      )}
+      {orderDetails?.payment_mode && (
+        <span>
+          <span className="allm-font-semibold">Payment Method:</span>{" "}
+          <span className="allm-font-extralight">
+            {orderDetails.payment_mode}
+          </span>
+        </span>
+      )}
+      {orderDetails?.status && (
+        <span>
+          <span className="allm-font-semibold">Status:</span>{" "}
+          <span className="allm-font-extralight">{orderDetails.status}</span>
+        </span>
+      )}
+      {orderDetails?.edd && (
+        <span>
+          <span className="allm-font-semibold">Delivery Date:</span>{" "}
+          <span className="allm-font-extralight">{orderDetails.edd}</span>
+        </span>
+      )}
+      {/* Products section */}
+      {orderDetails?.products?.length > 0 && (
+        <>
+          <div className="allm-flex allm-overflow-x-auto allm-gap-4 allm-py-2">
+            {orderDetails.products.map((product, index) => (
+              <div
+                key={index}
+                className="allm-flex allm-w-[260px] allm-border allm-rounded-xl allm-bg-[#eee] allm-shadow-md allm-p-3 allm-gap-3"
+              >
+                {/* Image on the left */}
+                {product.image && (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="allm-w-[64px] allm-h-[64px] allm-object-cover allm-rounded-md"
+                  />
+                )}
+
+                {/* Details on the right */}
+                <div className="allm-flex allm-flex-col allm-gap-1">
+                  <span className=" allm-text-sm allm-line-clamp-1">
+                    {product.name}
+                  </span>
+                  {product.variant_title && (
+                    <span className="allm-text-xs allm-text-gray-600">
+                      Variant: {product.variant_title}
+                    </span>
+                  )}
+                  {product.price && (
+                    <span className="allm-text-sm">₹{product.price}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {orderDetails?.tracking_url && (
+        <span>
+          <span className="allm-text-bold">Track your shipment:</span>{" "}
+          <a
+            href={orderDetails.tracking_url}
+            className="allm-text-blue-500 allm-text-sm allm-line-clamp-2"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {orderDetails.tracking_url}
+          </a>
+        </span>
+      )}
+    </div>
+  );
 };
