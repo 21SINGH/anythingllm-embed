@@ -12,6 +12,7 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
     return (
       <div className="allm-flex allm-flex-col allm-h-full">
         <ChatWindowHeader
+        chatHistory={chatHistory}
           sessionId={sessionId}
           settings={settings}
           iconUrl={settings.brandImageUrl}
@@ -28,6 +29,7 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
   return (
     <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-[24px] allm-overflow-hidden ">
       <ChatWindowHeader
+      chatHistory={chatHistory}
         sessionId={sessionId}
         settings={settings}
         iconUrl={settings.brandImageUrl}
@@ -36,10 +38,6 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
       />
       <div
        className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
-        // className="allm-flex-grow  allm-overflow-y-auto"
-        // allm-overflow-y-auto
-        // allm-overscroll-contain
-        // allm-overflow-y-auto
         style={{ backgroundColor: settings.bgColor }}
       >
         <ChatContainer

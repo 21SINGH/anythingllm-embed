@@ -40,10 +40,7 @@ export default function useChatHistory(settings = null, sessionId = null) {
           const formattedMessages = await ChatService.embedSessionHistory(
             settings,
             sessionId
-          );
-
-          console.log('formatted message',formattedMessages);
-          
+          );          
           setMessages([welcomeMessage, ...formattedMessages]);
           setLoading(false);
         } catch (error) {

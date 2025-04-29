@@ -36,6 +36,9 @@ export default function ChatContainer({
 
     if (!message || message === "") return false;
 
+    const mess = message;
+    setMessage("");
+
     // Check if the message contains order-related keywords
     const orderKeywords = [
       "order",
@@ -45,7 +48,7 @@ export default function ChatContainer({
       "delivery",
       "order status",
     ];
-    const messageLowerCase = message.toLowerCase();
+    const messageLowerCase = mess.toLowerCase();
 
     if (
       !orderData &&
@@ -54,7 +57,7 @@ export default function ChatContainer({
       const prevChatHistory = [
         ...chatHistory,
         {
-          content: message,
+          content: mess,
           role: "user",
           sentAt: Math.floor(Date.now() / 1000),
         },
@@ -62,12 +65,12 @@ export default function ChatContainer({
           content: "Enter your order id : ",
           role: "assistant",
           pending: false,
-          userMessage: message,
+          userMessage: mess,
           animate: false,
           sentAt: Math.floor(Date.now() / 1000),
         },
       ];
-      setFirstUserMessage(message);
+      setFirstUserMessage(mess);
       setChatHistory(prevChatHistory);
       setMessage("");
       setAwaitingOrderId(true);
@@ -77,7 +80,7 @@ export default function ChatContainer({
 
       const orderIdPattern = /^(?=.*[0-9])[a-zA-Z0-9.]+$/;
 
-      if (orderIdPattern.test(message.trim())) {
+      if (orderIdPattern.test(mess.trim())) {
         const orderId = message.trim();
         // Show loading message in chat
         const userEntry = {
@@ -175,7 +178,7 @@ export default function ChatContainer({
         const prevChatHistory = [
           ...chatHistory,
           {
-            content: message,
+            content: mess,
             role: "user",
             sentAt: Math.floor(Date.now() / 1000),
           },
@@ -191,7 +194,7 @@ export default function ChatContainer({
         setChatHistory(prevChatHistory);
       }
 
-      setMessage("");
+      // setMessage("");
       setAwaitingOrderId(false);
       return;
     } else if (orderData) {
@@ -201,7 +204,7 @@ export default function ChatContainer({
       bot:Enter your order id :,
       user:${orderId},
       bot:${order},
-     ->ORDER DETAILS END-> ${message}`;
+     ->ORDER DETAILS END-> ${mess}`;
       const prevChatHistory = [
         ...chatHistory,
         {
@@ -214,15 +217,16 @@ export default function ChatContainer({
           role: "assistant",
           pending: true,
           userMessage: orderText,
-          animate: true,
+          animate: false,
           sentAt: Math.floor(Date.now() / 1000),
         },
       ];
       setChatHistory(prevChatHistory);
       setOrderData(null);
+      await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
     } else if (replyProduct) {
       const replied_product = JSON.stringify(replyProduct);
-      const replyText = `->REPLY START-> ${replied_product} ->REPLY END-> ${message}`;
+      const replyText = `->REPLY START-> ${replied_product} ->REPLY END-> ${mess}`;
       const prevChatHistory = [
         ...chatHistory,
         {
@@ -240,11 +244,12 @@ export default function ChatContainer({
         },
       ];
       setChatHistory(prevChatHistory);
+      await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
     } else {
       const prevChatHistory = [
         ...chatHistory,
         {
-          content: message,
+          content: mess,
           role: "user",
           sentAt: Math.floor(Date.now() / 1000),
         },
@@ -252,17 +257,17 @@ export default function ChatContainer({
           content: "",
           role: "assistant",
           pending: true,
-          userMessage: message,
+          userMessage: mess,
           animate: true,
           sentAt: Math.floor(Date.now() / 1000),
         },
       ];
       setChatHistory(prevChatHistory);
+      await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
     }
     setReplyProduct(null);
-    setMessage("");
+    // setMessage("");
     setLoadingResponse(true);
-    // await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
   };
 
   const handlePrompt = async (prompt) => {
@@ -282,7 +287,9 @@ export default function ChatContainer({
     ];
     setChatHistory(prevChatHistory);
     setMessage("");
+    setReplyProduct(null)
     setLoadingResponse(true);
+    await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
     // await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
   };
 
@@ -373,7 +380,7 @@ export default function ChatContainer({
         style={{
           boxSizing: "content-box",
         }}
-        className="allm-flex-grow "
+        className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
         // allm-overflow-y-auto allm-overscroll-contain
       >
         <ChatHistory

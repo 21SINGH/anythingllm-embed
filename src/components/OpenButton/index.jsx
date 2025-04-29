@@ -34,6 +34,9 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
           settings?.brandImageUrl ?? brandDetails?.logo ?? ShoopieIcon ??
           "https://storage.aroundme.global/avatar_default.png"
         }
+        style={{
+          backgroundColor:settings.logoBackgroundColor
+        }}
         alt={brandDetails?.name || "Brand Logo"}
         className="allm-w-[70px] allm-h-[70px] allm-rounded-full allm-object-cover"
       />

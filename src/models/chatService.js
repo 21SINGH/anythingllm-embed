@@ -6,7 +6,7 @@ const ChatService = {
     const { embedId, baseApiUrl } = embedSettings; 
 
     if(!embedId || !baseApiUrl || !sessionId) return [];
-    console.log('baseApiUrl',baseApiUrl,'embedid', embedId, 'sessionId',sessionId);
+
     return await fetch(`${baseApiUrl}/${embedId}/${sessionId}`)
       .then((res) => {
         if (res.ok) return res.json();

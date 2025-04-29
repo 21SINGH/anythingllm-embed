@@ -11,7 +11,7 @@ import { RxCross2 } from "react-icons/rx";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
-  const embedSettings = useGetScriptAttributes();  
+  const embedSettings = useGetScriptAttributes();
   const sessionId = useSessionId(embedSettings);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
   const [interaction, setInteraction] = useState(false);
@@ -108,7 +108,7 @@ export default function App() {
 
   const position = embedSettings.position || "bottom-right";
   const windowWidth = embedSettings.windowWidth ?? "450px";
-  const windowHeight = embedSettings.windowHeight ?? "85%";
+  const windowHeight = embedSettings.windowHeight ?? "80%";
 
   const openBot = async () => {
     toggleOpenChat(true);
@@ -170,106 +170,110 @@ export default function App() {
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "center";
 
-  if (!embedSettings.loaded) return null;
+  if (!embedSettings.loaded || !sessionId) return null;
 
   return (
     <>
-      <Head/>
-        <div id="anyhting-all-wrapper">
-          <div id="anything-llm-embed-chat-container">
+      <Head />
+      <div id="anyhting-all-wrapper">
+        <div id="anything-llm-embed-chat-container">
+          <AnimatePresence>
+            {isChatOpen && (
+              <motion.div
+                variants={variants}
+                initial="closed"
+                animate="open"
+                exit="closed"
+                style={{
+                  transformOrigin,
+                  width: isLargeScreen ? windowWidth : "100%",
+                  height: isLargeScreen ? windowHeight : "100%",
+                }}
+                className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 md:allm-bottom-[10px] allm-z-[9999] allm-right-0 
+                ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
+              >
+                <ChatWindow
+                  closeChat={() => toggleOpenChat(false)}
+                  settings={embedSettings}
+                  sessionId={sessionId}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {!isChatOpen && (
+          <div>
             <AnimatePresence>
-              {isChatOpen && (
+              {showFirstMessage && (
                 <motion.div
-                  variants={variants}
+                  key="welcome-message"
+                  variants={openingMessageVariants}
                   initial="closed"
                   animate="open"
                   exit="closed"
-                  style={{
-                    transformOrigin,
-                    width: isLargeScreen ? windowWidth : "100%",
-                    height: isLargeScreen ? windowHeight : "100%",
-                  }}
-                  className={`allm-h-full allm-w-full allm-bg-transparent allm-fixed allm-bottom-0 md:allm-bottom-[10px] allm-z-[9999] allm-right-0 
-                ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
+                  className={`allm-fixed allm-bottom-[100px] allm-max-w-[250px] md:allm-max-w-[300px] ${positionClasses[position]} allm-bg-transparent`}
+                  style={{ transformOrigin }}
+                  // onAnimationStart={playSound}
                 >
-                  <ChatWindow
-                    closeChat={() => toggleOpenChat(false)}
-                    settings={embedSettings}
-                    sessionId={sessionId}
-                  />
+                  {embedSettings.openingMessage !== "" && (
+                    <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-p-[16px] allm-mr-[5px] allm-gap-2">
+                      <div
+                        onClick={handleCloseFirstMessage}
+                        style={{
+                          backgroundColor: embedSettings.nudgeBgColor,
+                        }}
+                        className="allm-right-[5px]  hover:allm-cursor-pointer allm-rounded-full allm-p-1  allm-flex allm-items-center allm-justify-center"
+                      >
+                        <RxCross2
+                          size={18}
+                          color={embedSettings.nudgeTextColor}
+                        />
+                      </div>
+                      <div
+                        id="allm-starting-message-div"
+                        style={{
+                          backgroundColor: embedSettings.nudgeBgColor,
+                          color: embedSettings.nudgeTextColor,
+                        }}
+                        className="allm-rounded-2xl allm-p-[12px]"
+                      >
+                        <span
+                          id="allm-starting-message"
+                          style={{
+                            wordBreak: "break-word",
+                          }}
+                          className="allm-text-[14px]  allm-line-clamp-3 allm-leading-[20px]"
+                        >
+                          {embedSettings.openingMessage}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
+            <AnimatePresence>
+              <motion.div
+                key="chat-button"
+                variants={buttonVariants}
+                initial="closed"
+                animate="open"
+                exit="closed"
+                id="anything-llm-embed-chat-button-container"
+                className={`allm-fixed allm-bottom-[30px] allm-right-[15px] ${positionClasses[position]} allm-z-50`}
+                style={{ transformOrigin }}
+              >
+                <OpenButton
+                  settings={embedSettings}
+                  isOpen={isChatOpen}
+                  toggleOpen={openBot}
+                />
+              </motion.div>
+            </AnimatePresence>
           </div>
-
-          {!isChatOpen && (
-            <div>
-              <AnimatePresence>
-                {showFirstMessage && (
-                  <motion.div
-                    key="welcome-message"
-                    variants={openingMessageVariants}
-                    initial="closed"
-                    animate="open"
-                    exit="closed"
-                    className={`allm-fixed allm-bottom-[100px] allm-max-w-[200px] md:allm-max-w-[500px] ${positionClasses[position]} allm-bg-transparent`}
-                    style={{ transformOrigin }}
-                    // onAnimationStart={playSound}
-                  >
-                    {embedSettings.openingMessage !== "" && (
-                      <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-p-[16px] allm-mr-[5px] allm-gap-2">
-                        <div
-                          onClick={handleCloseFirstMessage}
-                          className="allm-right-[5px]  hover:allm-cursor-pointer allm-bg-[#5C5C5C]/90 allm-rounded-full allm-p-1  allm-flex allm-items-center allm-justify-center"
-                          style={{
-                            // borderColor: embedSettings.startingMessageTheme,
-                            // borderWidth: "2px",
-                            // borderStyle: "solid",
-                          }}
-                        >
-                          <RxCross2 size={18} color="#FAFAFA" />
-                        </div>
-                        <div
-                          id="allm-starting-message-div"
-                          style={{
-                            backgroundColor: embedSettings.startingMessageTheme,
-                            color: embedSettings.openingMessageTextColor,
-                          }}
-                          className="allm-rounded-2xl allm-p-4"
-                        >
-                          <p
-                            id="allm-starting-message"
-                            className="allm-text-[14px] allm-font-medium "
-                          >
-                            {embedSettings.openingMessage}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <AnimatePresence>
-                <motion.div
-                  key="chat-button"
-                  variants={buttonVariants}
-                  initial="closed"
-                  animate="open"
-                  exit="closed"
-                  id="anything-llm-embed-chat-button-container"
-                  className={`allm-fixed allm-bottom-[30px] allm-right-[15px] ${positionClasses[position]} allm-z-50`}
-                  style={{ transformOrigin }}
-                >
-                  <OpenButton
-                    settings={embedSettings}
-                    isOpen={isChatOpen}
-                    toggleOpen={openBot}
-                  />
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
+        )}
+      </div>
     </>
   );
 }

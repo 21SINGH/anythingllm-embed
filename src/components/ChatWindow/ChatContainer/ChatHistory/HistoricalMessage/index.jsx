@@ -302,7 +302,9 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
           }}
           className="allm-font-semiboldallm-w-full allm-text-[13.5px] allm-line-clamp-2 allm-h-[35px] allm-min-h-[35px] allm-max-h-[35px] allm-leading-[16px]"
         >
-          {product?.title || product?.product_name}
+          <span className="allm-line-clamp-2">
+            {product?.title || product?.product_name}
+          </span>
         </div>
         <div className="allm-flex allm-w-full allm-justify-between allm-items-center allm-min-h-[40px] allm-h-[40px]">
           <div>
@@ -353,6 +355,7 @@ const HistoricalMessage = forwardRef(
       isLastBotReply,
       handlePrompt,
       setReplyProduct,
+      lastMessage,
     },
     ref
   ) => {
@@ -397,7 +400,11 @@ const HistoricalMessage = forwardRef(
       );
     }
 
-    if (orderMessage && role === "user") {
+    if (
+      orderMessage &&
+      role === "user" &&
+      !lastMessage.startsWith("Order details")
+    ) {
       return (
         <div key={uuid} ref={ref}>
           {/* user order inquiry message */}
@@ -445,7 +452,7 @@ const HistoricalMessage = forwardRef(
               style={{
                 wordBreak: "break-word",
                 backgroundColor: settings.assistantBgColor,
-                marginRight: role === "user" && "5px",
+                marginRight: "5px",
               }}
               className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
             >
@@ -458,7 +465,7 @@ const HistoricalMessage = forwardRef(
                         <p
                           className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
                           style={{
-                            olor: settings.userTextColor,
+                            color: settings.botTextColor,
                           }}
                           {...props}
                         />
@@ -472,7 +479,7 @@ const HistoricalMessage = forwardRef(
           {/*  order id */}
           <div
             className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-end`}
+             allm-justify-end alm-mb-[4px]`}
           >
             <div
               style={{
@@ -510,10 +517,10 @@ const HistoricalMessage = forwardRef(
             settings={settings}
             embedderSettings={embedderSettings}
           />
-          ;
+          <div className="allm-h-[6px]  allm-w-full" />
           <div
             className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-end`}
+             allm-justify-end `}
           >
             <div
               style={{
@@ -804,6 +811,8 @@ const HistoricalMessage = forwardRef(
                             {...props}
                           />
                         ),
+                        img: () => null,
+                        a: () => null,
                       }}
                     />
 
@@ -905,11 +914,16 @@ const OrderDetailsCard = ({
       style={{
         wordBreak: "break-word",
         backgroundColor: settings.assistantBgColor,
+        color: settings.botTextColor,
       }}
-      className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col allm-gap-2 allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-text-[14px] allm-mb-[-5px]`}
+      className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col allm-gap-2 allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-text-[14px] allm-mb-[8px]`}
     >
       {orderDetails?.tracking_number && (
-        <span>
+        <span
+          style={{
+            color: settings.botTextColor,
+          }}
+        >
           <span className="allm-font-semibold">Tracking Id:</span>{" "}
           <span className="allm-font-extralight">
             {orderDetails.tracking_number}
@@ -943,7 +957,11 @@ const OrderDetailsCard = ({
             {orderDetails.products.map((product, index) => (
               <div
                 key={index}
-                className="allm-flex allm-w-[260px] allm-border allm-rounded-xl allm-bg-[#eee] allm-shadow-md allm-p-3 allm-gap-3"
+                className="allm-flex allm-min-w-[260px] allm-border allm-rounded-xl allm-shadow-md allm-p-3 allm-gap-3"
+                style={{
+                  backgroundColor: "rgb(250, 250, 250)",
+                  color:'black'
+                }}
               >
                 {/* Image on the left */}
                 {product.image && (
@@ -975,17 +993,27 @@ const OrderDetailsCard = ({
       )}
 
       {orderDetails?.tracking_url && (
-        <span>
-          <span className="allm-text-bold">Track your shipment:</span>{" "}
+        <button
+          style={{
+            backgroundColor: "#2563eb",
+            borderRadius: 12,
+            padding: 10,
+            borderWidth: 0,
+          }}
+        >
+          {/* <span className="allm-text-bold">Track your shipment:</span>{" "} */}
           <a
             href={orderDetails.tracking_url}
-            className="allm-text-blue-500 allm-text-sm allm-line-clamp-2"
+            className="allm-text-white allm-text-sm allm-line-clamp-2"
             target="_blank"
             rel="noopener noreferrer"
+            style={{
+              textDecoration: "none",
+            }}
           >
-            {orderDetails.tracking_url}
+            Track your order
           </a>
-        </span>
+        </button>
       )}
     </div>
   );

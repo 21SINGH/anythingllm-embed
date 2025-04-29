@@ -46,6 +46,7 @@ const DEFAULT_SETTINGS = {
   suggestion2: null,
   nudgeBgColor: null,
   nudgeTextColor: null,
+  logoBackgroundColor:'black',
 
   // behaviors
   inputbarDisabled: false,
@@ -107,12 +108,9 @@ export default function useGetScriptAttributes() {
       }));
     }
   }, [data]);
-
-  console.log('brand',brandConfig);
   
   useEffect(()=>{
     if (brandConfig) {
-      console.log('brand',brandConfig);
       setSettings((prevSettings) => ({
         ...prevSettings,
         ...brandConfig,

@@ -2,6 +2,7 @@ import { forwardRef, memo } from "react";
 import { Warning } from "@phosphor-icons/react";
 import renderMarkdown from "@/utils/chat/markdown";
 import { embedderSettings } from "@/main";
+import ReactMarkdown from "react-markdown";
 
 const PromptReply = forwardRef(
   ({ uuid, reply, pending, error, sources = [], sentAt, settings }, ref) => {
@@ -31,11 +32,11 @@ const PromptReply = forwardRef(
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
 
     if (pending) {
-    return (
-      <div className=" allm-w-[400px] allm-min-h-[50px]">
-        <TypingIndicator />
-      </div>
-    );
+      return (
+        <div className=" allm-w-[400px] allm-min-h-[50px]">
+          <TypingIndicator />
+        </div>
+      );
     }
 
     if (error) {
@@ -75,12 +76,81 @@ const PromptReply = forwardRef(
             } allm-shadow-[0_4px_14px_rgba(0,0,0,0.25)]`}
           >
             <div className="allm-flex allm-gap-x-5 allm-flex-col">
-              <span
+              <ReactMarkdown
+                children={displayContent}
+                components={{
+                  h1: ({ node, ...props }) => (
+                    <h1
+                      className=" allm-font-bold  allm-text-[14px] allm-leading-[20px]"
+                      style={{
+                        color: settings.botTextColor,
+                      }}
+                      {...props}
+                    />
+                  ),
+                  h2: ({ node, ...props }) => (
+                    <h2
+                      className="  allm-font-semibold allm-text-[14px] allm-leading-[20px]"
+                      style={{
+                        color: settings.botTextColor,
+                      }}
+                      {...props}
+                    />
+                  ),
+                  h3: ({ node, ...props }) => (
+                    <h3
+                      className=" allm-font-medium  allm-text-[14px] allm-leading-[20px]"
+                      style={{
+                        color: settings.botTextColor,
+                      }}
+                      {...props}
+                    />
+                  ),
+                  p: ({ node, ...props }) => (
+                    <p
+                      className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                      style={{
+                        color: settings.botTextColor,
+                      }}
+                      {...props}
+                    />
+                  ),
+                  ul: ({ node, ...props }) => (
+                    <ul
+                      className="allm-list-disc allm-pl-4  allm-text-[14px] allm-leading-[20px]"
+                      style={{
+                        color: settings.botTextColor,
+                      }}
+                      {...props}
+                    />
+                  ),
+                  ol: ({ node, ...props }) => (
+                    <ol
+                      className="allm-list-decimal allm-pl-4 allm-text-[14px] allm-leading-[20px]"
+                      style={{
+                        color: settings.botTextColor,
+                      }}
+                      {...props}
+                    />
+                  ),
+                  li: ({ node, ...props }) => (
+                    <li
+                      className="allm-text-[14px] allm-leading-[20px]"
+                      style={{
+                        color: settings.botTextColor,
+                      }}
+                      {...props}
+                    />
+                  ),
+                  img: () => null,
+                }}
+              />
+              {/* <span
                 className=" allm-reply allm-whitespace-pre-line allm-font-normal allm-text-[14px]"
                 dangerouslySetInnerHTML={{
                   __html: renderMarkdown(displayContent),
                 }}
-              />
+              /> */}
             </div>
           </div>
           {isSuggestions && <ProductCardShimmer />}

@@ -10,7 +10,7 @@ export default function ChatHistory({
   settings = {},
   history = [],
   handlePrompt,
-  setReplyProduct
+  setReplyProduct,
 }) {
   const replyRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -46,7 +46,7 @@ export default function ChatHistory({
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTo({
         top: chatHistoryRef.current.scrollHeight,
-        behavior:"auto",
+        behavior: "auto",
       });
     }
   };
@@ -70,10 +70,15 @@ export default function ChatHistory({
       id="chat-history"
       ref={chatHistoryRef}
     >
-      {history.map((props, index) => {
+      {history.map((props, index) => {        
         const isLastMessage = index === history.length - 1;
         const isLastBotReply =
           index === history.length - 1 && props.role === "assistant";
+
+        const previousMessage =
+          index > 0
+            ? history[index - 1].content || history[index - 1].textResponse
+            : null;
 
         if (isLastBotReply && props.animate) {
           return (
@@ -97,6 +102,7 @@ export default function ChatHistory({
             ref={isLastMessage ? replyRef : null}
             settings={settings}
             message={props.textResponse || props.content}
+            lastMessage={previousMessage}
             sentAt={props.sentAt || Date.now() / 1000}
             role={props.role}
             sources={props.sources}

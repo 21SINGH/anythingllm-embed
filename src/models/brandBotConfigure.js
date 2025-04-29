@@ -39,6 +39,7 @@ const BrandBotConfigure = {
         suggestion2: data.theme.suggestion2,
         nudgeBgColor: data.theme.displayMessageBackgroundColor,
         nudgeTextColor: data.theme.displayMessageTextColor,
+        logoBackgroundColor:data.theme.logoBackgroundColor
       };
 
       return body;
