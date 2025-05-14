@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = {
   model: null,
   temperature: null,
   host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ",
+  customer:{},
 
   // style parameters
   brandName: null,
@@ -76,10 +77,22 @@ export default function useGetScriptAttributes() {
         );
       }
 
+      const rawSettings = embedderSettings.settings;
+
+      if (typeof rawSettings.customer === "string") {
+        try {
+          rawSettings.customer = JSON.parse(rawSettings.customer);
+        } catch (e) {
+          console.warn("Failed to parse customer data:", e);
+          rawSettings.customer = {}; // fallback
+        }
+      }
+  
+
       setSettings((prevSettings) => ({
         ...prevSettings,
         ...DEFAULT_SETTINGS,
-        ...parseAndValidateEmbedSettings(embedderSettings.settings),
+        ...parseAndValidateEmbedSettings(rawSettings),
         loaded: false,
       }));
     }
