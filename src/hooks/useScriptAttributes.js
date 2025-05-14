@@ -13,6 +13,8 @@ const DEFAULT_SETTINGS = {
   temperature: null,
   host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ",
   customer:{},
+  toggleWhatsapp:false,
+  whatsappNo:'7068835235',
 
   // style parameters
   brandName: null,

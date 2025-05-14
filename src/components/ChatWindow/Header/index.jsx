@@ -12,7 +12,7 @@ export default function ChatWindowHeader({
   iconUrl = null,
   closeChat,
   setChatHistory,
-  setOpenBottomSheet
+  setOpenBottomSheet,
 }) {
   const [showingOptions, setShowOptions] = useState(false);
   const [brandDetails, setBrandDetails] = useState(null);
@@ -46,132 +46,7 @@ export default function ChatWindowHeader({
   };
 
   const whatsAppClick = async () => {
-    setOpenBottomSheet((prev)=> !prev)
-    // const lastMessages = chatHistory.slice(-6);
-
-    // let id = null;
-
-    // // 1. Create API request body
-    // const bodyForSummary = lastMessages.map((item) => ({
-    //   role: item.role === "user" ? "user" : "assistant",
-    //   message: (item.textResponse || item.content || "").trim(),
-    //   created_at: item.created_at || new Date().toISOString(),
-    // }));
-    // console.log(bodyForSummary);
-
-    // try {
-    //   // 2. Hit summary API
-    //   const res = await fetch(
-    //     "https://shoppie-backend.aroundme.global/api/store_prompts/share-summary",
-    //     {
-    //       method: "POST",
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //       },
-    //       body: JSON.stringify(bodyForSummary),
-    //     }
-    //   );
-
-    //   const data = await res.json();
-
-    //   // 3. Format the messages
-    //   const formattedMessages = lastMessages
-    //     .map((item, index) => {
-    //       const sender = item.role === "user" ? "*User*" : "*Shoppie*";
-    //       const message = (item.textResponse || item.content || "").trim();
-    //       id = item.id;
-    //       let formattedMessage = "";
-
-    //       if (item.role === "user") {
-    //         const parsedData = parseMessageWithProductByUser(message);
-    //         const { product, orderMessage, textAfterProduct } = parsedData;
-
-    //         if (orderMessage) {
-    //           const orderDetails = orderMessage?.bot2;
-    //           const productLines =
-    //             orderDetails.products
-    //               ?.map((p) => {
-    //                 return `${p.name}${p.variant_title ? ` (Variant: ${p.variant_title})` : ""} - ₹${p.price}`;
-    //               })
-    //               .join("\n") || "";
-
-    //           formattedMessage = [
-    //             `\n- ${orderMessage?.user1}`,
-    //             `- ${orderMessage?.bot1}`,
-    //             `- ${orderMessage?.user2}`,
-    //             orderDetails.tracking_number
-    //               ? `- *Tracking Id:* ${orderDetails.tracking_number}`
-    //               : null,
-    //             orderDetails.payment_mode
-    //               ? `- *Payment Method:* ${orderDetails.payment_mode}`
-    //               : null,
-    //             orderDetails.status
-    //               ? `- *Status:* ${orderDetails.status}`
-    //               : null,
-    //             orderDetails.edd
-    //               ? `- *Delivery Date:* ${orderDetails.edd}`
-    //               : null,
-    //             productLines ? `\- *Products:*\n${productLines}` : null,
-    //             textAfterProduct,
-    //           ]
-    //             .filter(Boolean)
-    //             .join("\n");
-    //         } else {
-    //           formattedMessage = textAfterProduct;
-    //         }
-    //       } else {
-    //         const parsedData = parseMessageWithSuggestionsAndPrompts(message);
-    //         const { textBeforeSuggestions, suggestions } = parsedData;
-
-    //         formattedMessage = `${textBeforeSuggestions || ""}`.trim();
-
-    //         if (suggestions?.products.length > 0) {
-    //           suggestions.products.forEach((p) => {
-    //             formattedMessage += `\n- ${p.title}`;
-    //           });
-    //         }
-    //       }
-
-    //       const indentedMessage = formattedMessage.replace(
-    //         /^(\s*)\d+\.\s/gm,
-    //         "$1-> "
-    //       );
-
-    //       const cleanedMessage = indentedMessage
-    //         .replace(/\*\*(.*?)\*\*/g, "*$1*")
-    //         .replace(/https?:\/\/[^\s]+/g, "")
-    //         .replace(/\[[^\]]+\.\w{2,}\]/g, "");
-
-    //       return `${index + 1}. ${sender} - ${cleanedMessage}`;
-    //     })
-    //     .join("\n\n");
-
-
-    //   async function generateSerialNo(sessionId) {
-    //     const encoder = new TextEncoder();
-    //     const data = encoder.encode(sessionId);
-    //     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    //     const hashArray = Array.from(new Uint8Array(hashBuffer));
-      
-    //     const shortHashValue = hashArray
-    //       .slice(0, 3)
-    //       .reduce((acc, byte, i) => acc + (byte << (8 * i)), 0); 
-      
-    //     const base36 = shortHashValue.toString(36).toUpperCase().padStart(5, '0');
-      
-    //     return `#RM${base36}`;
-    //   }
-      
-      
-    //   const serialId = await generateSerialNo(id);
-      
-    //   const chatText = `*Session id:* ${serialId}\n\n*Summary:*\n${data.summary}\n\n*Tags:* ${data.tags.join(", ")}\n\n*chats:*\n\n${formattedMessages}`;
-
-    //   const whatsAppUrl = `https://api.whatsapp.com/send/?phone=+919618234477&text=${encodeURIComponent(chatText)}&type=phone_number&app_absent=0`;
-    //   window.open(whatsAppUrl, "_blank");
-    // } catch (error) {
-    //   console.error("Failed to fetch summary/tags or format message:", error);
-    // }
+    setOpenBottomSheet((prev) => !prev);
   };
 
   return (
@@ -199,17 +74,19 @@ export default function ChatWindowHeader({
         </div>
       </div>
       <div className="allm-absolute allm-right-0 allm-flex allm-justify-center allm-items-center allm-px-[22px] allm-gap-[16px]">
-        <img
-          style={{
-            maxWidth: 38,
-            maxHeight: 38,
-            borderRadius: 25,
-            backgroundColor: settings.logoBackgroundColor,
-          }}
-          src={whatsappIcon}
-          alt={brandDetails?.logo ? "Brand" : "AnythingLLM Logo"}
-          onClick={whatsAppClick}
-        />
+        {settings.toggleWhatsapp && (
+          <img
+            style={{
+              maxWidth: 38,
+              maxHeight: 38,
+              borderRadius: 25,
+              backgroundColor: settings.logoBackgroundColor,
+            }}
+            src={whatsappIcon}
+            alt={brandDetails?.logo ? "Brand" : "AnythingLLM Logo"}
+            onClick={whatsAppClick}
+          />
+        )}
         <button
           type="button"
           aria-label="Close"

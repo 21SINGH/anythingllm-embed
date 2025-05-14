@@ -72,6 +72,123 @@ const parseMessageWithProductByUser = (message) => {
   };
 };
 
+// const parseMessageWithSuggestionsAndPrompts = (message) => {
+//   if (!message || typeof message !== "string") {
+//     return {
+//       textBeforeSuggestions: message,
+//       suggestions: null,
+//       textAfterSuggestionsBeforePrompts: "",
+//       prompts: null,
+//       textAfterPrompts: "",
+//     };
+//   }
+
+//   let textBeforeSuggestions = "";
+//   let textAfterSuggestions = "";
+//   let suggestions = null;
+//   let prompts = null;
+
+//   // Check for suggestions
+//   const suggestionsRegex =
+//     /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/;
+//   const suggestionsMatch = message.match(suggestionsRegex);
+
+//   if (suggestionsMatch) {
+//     textBeforeSuggestions = message.substring(0, suggestionsMatch.index);
+//     textAfterSuggestions = message.substring(
+//       suggestionsMatch.index + suggestionsMatch[0].length
+//     );
+
+//     try {
+//       suggestions = JSON.parse(suggestionsMatch[1]);
+//     } catch (e) {
+//       console.error("Failed to parse suggestions JSON:", e);
+//       suggestions = { products: [] };
+//     }
+//   } else {
+//     textBeforeSuggestions = message;
+//     textAfterSuggestions = message; // Assign the whole message if no suggestions
+//   }
+
+//   // Check for prompts
+//   const promptsRegex = /@@PROMPTS START@@\s*([\s\S]*?)\s*@@PROMPTS END@@/;
+//   let promptsMatch;
+
+//   if (suggestionsMatch) {
+//     promptsMatch = textAfterSuggestions.match(promptsRegex);
+//   } else {
+//     promptsMatch = textBeforeSuggestions.match(promptsRegex);
+//   }
+
+//   if (promptsMatch) {
+//     if (suggestionsMatch) {
+//       const textAfterSuggestionsBeforePrompts = textAfterSuggestions.substring(
+//         0,
+//         promptsMatch.index
+//       );
+//       const textAfterPrompts = textAfterSuggestions.substring(
+//         promptsMatch.index + promptsMatch[0].length
+//       );
+
+//       try {
+//         prompts = JSON.parse(promptsMatch[1]);
+//       } catch (e) {
+//         console.error("Failed to parse prompts JSON:", e);
+//         prompts = null;
+//       }
+
+//       return {
+//         textBeforeSuggestions,
+//         suggestions,
+//         textAfterSuggestionsBeforePrompts,
+//         prompts,
+//         textAfterPrompts,
+//       };
+//     } else {
+//       const textBeforePrompts = textBeforeSuggestions.substring(
+//         0,
+//         promptsMatch.index
+//       );
+//       const textAfterPrompts = textBeforeSuggestions.substring(
+//         promptsMatch.index + promptsMatch[0].length
+//       );
+
+//       try {
+//         prompts = JSON.parse(promptsMatch[1]);
+//       } catch (e) {
+//         console.error("Failed to parse prompts JSON:", e);
+//         prompts = null;
+//       }
+
+//       return {
+//         textBeforeSuggestions: textBeforePrompts,
+//         suggestions: null,
+//         textAfterSuggestionsBeforePrompts: "",
+//         prompts,
+//         textAfterPrompts,
+//       };
+//     }
+//   } else {
+//     if (suggestionsMatch) {
+//       return {
+//         textBeforeSuggestions,
+//         suggestions,
+//         textAfterSuggestionsBeforePrompts: textAfterSuggestions,
+//         prompts: null,
+//         textAfterPrompts: "",
+//       };
+//     } else {
+//       return {
+//         textBeforeSuggestions,
+//         suggestions: null,
+//         textAfterSuggestionsBeforePrompts: "",
+//         prompts: null,
+//         textAfterPrompts: textBeforeSuggestions,
+//       };
+//     }
+//   }
+// };
+
 const parseMessageWithSuggestionsAndPrompts = (message) => {
   if (!message || typeof message !== "string") {
     return {
@@ -80,6 +197,7 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
       textAfterSuggestionsBeforePrompts: "",
       prompts: null,
       textAfterPrompts: "",
+      intent: null,
     };
   }
 
@@ -87,6 +205,7 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
   let textAfterSuggestions = "";
   let suggestions = null;
   let prompts = null;
+  let intent = null;
 
   // Check for suggestions
   const suggestionsRegex =
@@ -143,6 +262,7 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
         textAfterSuggestionsBeforePrompts,
         prompts,
         textAfterPrompts,
+        intent,
       };
     } else {
       const textBeforePrompts = textBeforeSuggestions.substring(
@@ -166,27 +286,47 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
         textAfterSuggestionsBeforePrompts: "",
         prompts,
         textAfterPrompts,
-      };
-    }
-  } else {
-    if (suggestionsMatch) {
-      return {
-        textBeforeSuggestions,
-        suggestions,
-        textAfterSuggestionsBeforePrompts: textAfterSuggestions,
-        prompts: null,
-        textAfterPrompts: "",
-      };
-    } else {
-      return {
-        textBeforeSuggestions,
-        suggestions: null,
-        textAfterSuggestionsBeforePrompts: "",
-        prompts: null,
-        textAfterPrompts: textBeforeSuggestions,
+        intent,
       };
     }
   }
+
+  // Check for intent
+  const intentRegex = /@@INTENT START@@\s*([\s\S]*?)\s*@@INTENT END@@/;
+  const intentMatch = message.match(intentRegex);
+
+  if (intentMatch) {
+    try {
+      intent = JSON.parse(intentMatch[1]);
+    } catch (e) {
+      console.error("Failed to parse intent JSON:", e);
+      intent = null;
+    }
+
+    // Remove intent from the message
+    const textAfterIntent =
+      message.substring(0, intentMatch.index) +
+      message.substring(intentMatch.index + intentMatch[0].length);
+
+    return {
+      textBeforeSuggestions,
+      suggestions,
+      textAfterSuggestionsBeforePrompts: textAfterSuggestions,
+      prompts: null,
+      textAfterPrompts: textAfterIntent,
+      intent,
+    };
+  }
+
+  // Final return for message without intent, suggestions, or prompts
+  return {
+    textBeforeSuggestions,
+    suggestions: null,
+    textAfterSuggestionsBeforePrompts: "",
+    prompts: null,
+    textAfterPrompts: message,
+    intent: null,
+  };
 };
 
 const ProductSuggestions = ({
@@ -356,6 +496,8 @@ const HistoricalMessage = forwardRef(
       handlePrompt,
       setReplyProduct,
       lastMessage,
+      setOpenBottomSheet,
+      setIntent,
     },
     ref
   ) => {
@@ -376,6 +518,7 @@ const HistoricalMessage = forwardRef(
       textAfterSuggestionsBeforePrompts,
       prompts,
       textAfterPrompts,
+      intent,
     } = parsedData;
 
     const isOrderDetailsMessage =
@@ -606,6 +749,77 @@ const HistoricalMessage = forwardRef(
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (intent) {
+      return (
+        <div
+          className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
+        >
+          <div
+            style={{
+              wordBreak: "break-word",
+              backgroundColor: settings.assistantBgColor,
+              marginRight: "5px",
+            }}
+            className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
+          >
+            <div className="allm-flex allm-flex-col">
+              {intent?.response && (
+                <ReactMarkdown
+                  children={intent?.response}
+                  components={{
+                    p: ({ node, ...props }) => (
+                      <p
+                        className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                        style={{
+                          color: settings.botTextColor,
+                        }}
+                        {...props}
+                      />
+                    ),
+                  }}
+                />
+              )}
+            </div>
+            <div
+              style={{
+                color: settings.botTextColor,
+                marginTop: 10,
+              }}
+            >
+              {intent?.intent && (
+                <p
+                  className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                  style={{
+                    color: settings.botTextColor,
+                  }}
+                >
+                  Intent: {intent?.intent}
+                </p>
+              )}
+            </div>
+            {intent?.intent && (
+              <button
+                style={{
+                  backgroundColor: "#2563eb",
+                  borderRadius: 12,
+                  padding: 10,
+                  borderWidth: 0,
+                  marginTop: 15,
+                }}
+                onClick={() => {
+                  setIntent(intent?.intent);
+                  setOpenBottomSheet(true);
+                }}
+              >
+                <span className="allm-text-white">Connect to live agent</span>
+              </button>
+            )}
           </div>
         </div>
       );
@@ -960,7 +1174,7 @@ const OrderDetailsCard = ({
                 className="allm-flex allm-min-w-[260px] allm-border allm-rounded-xl allm-shadow-md allm-p-3 allm-gap-3"
                 style={{
                   backgroundColor: "rgb(250, 250, 250)",
-                  color:'black'
+                  color: "black",
                 }}
               >
                 {/* Image on the left */}

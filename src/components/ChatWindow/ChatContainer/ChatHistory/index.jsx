@@ -11,6 +11,8 @@ export default function ChatHistory({
   history = [],
   handlePrompt,
   setReplyProduct,
+  setOpenBottomSheet,
+  setIntent
 }) {
   const replyRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -115,6 +117,8 @@ export default function ChatHistory({
             }
             handlePrompt={handlePrompt}
             setReplyProduct={setReplyProduct}
+            setIntent={setIntent}
+            setOpenBottomSheet={setOpenBottomSheet}
           />
         );
       })}

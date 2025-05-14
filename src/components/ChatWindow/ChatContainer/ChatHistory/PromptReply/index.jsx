@@ -13,7 +13,7 @@ const PromptReply = forwardRef(
     if (reply.includes("@@SUGGESTIONS START@@")) {
       // Stop display content at the marker
       displayContent = reply.split("@@SUGGESTIONS START@@")[0];
-      isSuggestions = false;
+      isSuggestions = true;
       if (reply.includes('@@SUGGESTIONS START@@\n{\n    "products": [')) {
         if (reply.includes('@@SUGGESTIONS START@@\n{\n    "products": []')) {
           isSuggestions = false;
@@ -153,10 +153,10 @@ const PromptReply = forwardRef(
               /> */}
             </div>
           </div>
-          {isSuggestions && <ProductCardShimmer />}
+          {isSuggestions && <ProductCardShimmer settings />}
           {isProducts && (
             <div className="allm-flex allm-items-end allm-justify-end allm-w-[420px]">
-              <PromptShimmer />
+              <PromptShimmer settings />
             </div>
           )}
         </div>
@@ -167,9 +167,16 @@ const PromptReply = forwardRef(
 
 export default memo(PromptReply);
 
-const ProductCardShimmer = () => {
+const ProductCardShimmer = (settings) => {
   return (
-    <div className="allm-w-[200px] allm-mx-[16px] allm-h-[280px] allm-mt-[8px] allm-bg-[#1d1d1d] allm-rounded-2xl allm-gap-[12px]  allm-animate-pulse">
+    <div
+      style={{
+        backgroundColor: settings.assistantBgColor,
+        height: "280px",
+        width: "200px",
+      }}
+      className=" allm-mx-[16px] allm-mt-[8px] allm-rounded-2xl allm-gap-[12px]  allm-animate-pulse"
+    >
       <div className="allm-w-[100%] allm-h-[180px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-rounded-b-none allm-shimmer"></div>
 
       <div className="allm-flex allm-flex-col allm-gap-[8px] allm-px-[12px]">
@@ -181,7 +188,7 @@ const ProductCardShimmer = () => {
   );
 };
 
-const PromptShimmer = () => {
+const PromptShimmer = (settings) => {
   return (
     <div className="allm-w-[300px] allm-mx-[16px] allm-h-[40px] allm-mt-[8px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-flex allm-flex-col allm-gap-[12px]  allm-animate-pulse "></div>
   );
