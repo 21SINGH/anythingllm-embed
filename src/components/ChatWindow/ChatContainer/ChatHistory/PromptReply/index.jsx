@@ -171,7 +171,7 @@ const ProductCardShimmer = (settings) => {
   return (
     <div
       style={{
-        backgroundColor: settings.assistantBgColor,
+        backgroundColor: '#3a3a3a',
         height: "280px",
         width: "200px",
       }}
@@ -179,7 +179,9 @@ const ProductCardShimmer = (settings) => {
     >
       <div className="allm-w-[100%] allm-h-[180px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-rounded-b-none allm-shimmer"></div>
 
-      <div className="allm-flex allm-flex-col allm-gap-[8px] allm-px-[12px]">
+      <div
+        className="allm-flex allm-flex-col allm-gap-[8px] allm-px-[12px] allm-mt-[10px]"
+      >
         <div className="allm-h-[16px] allm-bg-[#5a5a5a] allm-rounded allm-w-[100%]"></div>
         <div className="allm-h-[16px] allm-bg-[#5a5a5a] allm-rounded allm-w-[50%] "></div>
         <div className="allm-h-[12px] allm-bg-[#5a5a5a] allm-rounded allm-w-[33.33%] allm-mt-[8px]"></div>

@@ -130,10 +130,6 @@ export default function Head() {
         href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap"
         rel="stylesheet"
       />
-      {/* Shopify App Bridge [START] */}
-      {/* <meta name="shopify-api-key" content="9dd988ea203b34da500d62de21c56a48" />
-      <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script> */}
-      {/* Shopify App Bridge [END] */}
     </head>
   );
 }

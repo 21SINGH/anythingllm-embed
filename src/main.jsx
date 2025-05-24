@@ -18,7 +18,6 @@ root.render(
     </QueryClientProvider>
   </React.StrictMode>
 );
-
 const scriptSettings = Object.assign(
   {},
   document?.currentScript?.dataset || {}

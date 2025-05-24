@@ -49,6 +49,7 @@ export default function PromptInput({
 
   const handleSubmit = (e) => {
     setFocused(false);
+    setReplyProduct(null)
     submit(e);
   };
 
@@ -61,6 +62,7 @@ export default function PromptInput({
   const captureEnter = (event) => {
     if (event.keyCode == 13) {
       if (!event.shiftKey) {
+        setReplyProduct(null)
         submit(event);
       }
     }

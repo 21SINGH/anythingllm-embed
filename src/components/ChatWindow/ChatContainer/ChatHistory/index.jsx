@@ -12,7 +12,9 @@ export default function ChatHistory({
   handlePrompt,
   setReplyProduct,
   setOpenBottomSheet,
-  setIntent
+  setIntent,
+  setAwaitingOrderId,
+  handleAwaitingOrderId
 }) {
   const replyRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -119,6 +121,9 @@ export default function ChatHistory({
             setReplyProduct={setReplyProduct}
             setIntent={setIntent}
             setOpenBottomSheet={setOpenBottomSheet}
+            setAwaitingOrderId={setAwaitingOrderId}
+            isLastMessage={isLastMessage}
+            handleAwaitingOrderId={handleAwaitingOrderId}
           />
         );
       })}

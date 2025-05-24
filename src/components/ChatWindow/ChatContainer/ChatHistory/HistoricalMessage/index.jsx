@@ -10,14 +10,15 @@ const parseMessageWithProductByUser = (message) => {
   if (!message || typeof message !== "string")
     return { product: null, textAfterProduct: message };
 
-  const orderBlockRegex =
-    /->ORDER DETAILS START->([\s\S]*?)->ORDER DETAILS END->/;
-  const match = message.match(orderBlockRegex);
+  const questionMatch = message.match(
+    /->QUESTION START->([\s\S]*?)->QUESTION END->/
+  );
+  const orderBlockMatch = message.match(
+    /->ORDER DETAILS START->([\s\S]*?)->ORDER DETAILS END->/
+  );
 
-  if (match) {
-    const content = match[1].trim();
-
-    // Match full `user:` or `bot:` lines using regex (including JSON)
+  if (questionMatch || orderBlockMatch) {
+    const content = orderBlockMatch[1].trim();
     const lineRegex = /(user|bot):([\s\S]*?)(?=,\s*(user|bot):|,\s*$)/g;
     const result = {};
     let userCount = 1;
@@ -26,7 +27,6 @@ const parseMessageWithProductByUser = (message) => {
     let matchLine;
     while ((matchLine = lineRegex.exec(content)) !== null) {
       const [, type, value] = matchLine;
-
       if (type === "user") {
         result[`user${userCount}`] = value.trim();
         userCount++;
@@ -41,14 +41,10 @@ const parseMessageWithProductByUser = (message) => {
       }
     }
 
-    if (result) {
-      return {
-        orderMessage: result,
-        textAfterProduct: message
-          .substring(match.index + match[0].length)
-          .trim(),
-      };
-    }
+    return {
+      orderMessage: result,
+      textAfterProduct: questionMatch[1]?.trim() || "",
+    };
   }
 
   const productRegex = /->REPLY START->\s*([\s\S]*?)\s*->REPLY END->/;
@@ -71,123 +67,6 @@ const parseMessageWithProductByUser = (message) => {
       .trim(),
   };
 };
-
-// const parseMessageWithSuggestionsAndPrompts = (message) => {
-//   if (!message || typeof message !== "string") {
-//     return {
-//       textBeforeSuggestions: message,
-//       suggestions: null,
-//       textAfterSuggestionsBeforePrompts: "",
-//       prompts: null,
-//       textAfterPrompts: "",
-//     };
-//   }
-
-//   let textBeforeSuggestions = "";
-//   let textAfterSuggestions = "";
-//   let suggestions = null;
-//   let prompts = null;
-
-//   // Check for suggestions
-//   const suggestionsRegex =
-//     /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/;
-//   const suggestionsMatch = message.match(suggestionsRegex);
-
-//   if (suggestionsMatch) {
-//     textBeforeSuggestions = message.substring(0, suggestionsMatch.index);
-//     textAfterSuggestions = message.substring(
-//       suggestionsMatch.index + suggestionsMatch[0].length
-//     );
-
-//     try {
-//       suggestions = JSON.parse(suggestionsMatch[1]);
-//     } catch (e) {
-//       console.error("Failed to parse suggestions JSON:", e);
-//       suggestions = { products: [] };
-//     }
-//   } else {
-//     textBeforeSuggestions = message;
-//     textAfterSuggestions = message; // Assign the whole message if no suggestions
-//   }
-
-//   // Check for prompts
-//   const promptsRegex = /@@PROMPTS START@@\s*([\s\S]*?)\s*@@PROMPTS END@@/;
-//   let promptsMatch;
-
-//   if (suggestionsMatch) {
-//     promptsMatch = textAfterSuggestions.match(promptsRegex);
-//   } else {
-//     promptsMatch = textBeforeSuggestions.match(promptsRegex);
-//   }
-
-//   if (promptsMatch) {
-//     if (suggestionsMatch) {
-//       const textAfterSuggestionsBeforePrompts = textAfterSuggestions.substring(
-//         0,
-//         promptsMatch.index
-//       );
-//       const textAfterPrompts = textAfterSuggestions.substring(
-//         promptsMatch.index + promptsMatch[0].length
-//       );
-
-//       try {
-//         prompts = JSON.parse(promptsMatch[1]);
-//       } catch (e) {
-//         console.error("Failed to parse prompts JSON:", e);
-//         prompts = null;
-//       }
-
-//       return {
-//         textBeforeSuggestions,
-//         suggestions,
-//         textAfterSuggestionsBeforePrompts,
-//         prompts,
-//         textAfterPrompts,
-//       };
-//     } else {
-//       const textBeforePrompts = textBeforeSuggestions.substring(
-//         0,
-//         promptsMatch.index
-//       );
-//       const textAfterPrompts = textBeforeSuggestions.substring(
-//         promptsMatch.index + promptsMatch[0].length
-//       );
-
-//       try {
-//         prompts = JSON.parse(promptsMatch[1]);
-//       } catch (e) {
-//         console.error("Failed to parse prompts JSON:", e);
-//         prompts = null;
-//       }
-
-//       return {
-//         textBeforeSuggestions: textBeforePrompts,
-//         suggestions: null,
-//         textAfterSuggestionsBeforePrompts: "",
-//         prompts,
-//         textAfterPrompts,
-//       };
-//     }
-//   } else {
-//     if (suggestionsMatch) {
-//       return {
-//         textBeforeSuggestions,
-//         suggestions,
-//         textAfterSuggestionsBeforePrompts: textAfterSuggestions,
-//         prompts: null,
-//         textAfterPrompts: "",
-//       };
-//     } else {
-//       return {
-//         textBeforeSuggestions,
-//         suggestions: null,
-//         textAfterSuggestionsBeforePrompts: "",
-//         prompts: null,
-//         textAfterPrompts: textBeforeSuggestions,
-//       };
-//     }
-//   }
-// };
 
 const parseMessageWithSuggestionsAndPrompts = (message) => {
   if (!message || typeof message !== "string") {
@@ -498,6 +377,9 @@ const HistoricalMessage = forwardRef(
       lastMessage,
       setOpenBottomSheet,
       setIntent,
+      setAwaitingOrderId,
+      isLastMessage,
+      handleAwaitingOrderId,
     },
     ref
   ) => {
@@ -586,77 +468,8 @@ const HistoricalMessage = forwardRef(
               </div>
             </div>
           </div>
-          {/* asked order id */}
-          <div
-            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-start`}
-          >
-            <div
-              style={{
-                wordBreak: "break-word",
-                backgroundColor: settings.assistantBgColor,
-                marginRight: "5px",
-              }}
-              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
-            >
-              <div className="allm-flex allm-flex-col">
-                {role === "user" && orderMessage?.bot1 && (
-                  <ReactMarkdown
-                    children={orderMessage?.bot1}
-                    components={{
-                      p: ({ node, ...props }) => (
-                        <p
-                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                          style={{
-                            color: settings.botTextColor,
-                          }}
-                          {...props}
-                        />
-                      ),
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-          {/*  order id */}
-          <div
-            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-end alm-mb-[4px]`}
-          >
-            <div
-              style={{
-                wordBreak: "break-word",
-                backgroundColor:
-                  role === "user"
-                    ? settings.userBgColor
-                    : settings.assistantBgColor,
-                marginRight: role === "user" && "5px",
-              }}
-              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${`${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`}`}
-            >
-              <div className="allm-flex allm-flex-col">
-                {role === "user" && orderMessage?.user2 && (
-                  <ReactMarkdown
-                    children={orderMessage?.user2}
-                    components={{
-                      p: ({ node, ...props }) => (
-                        <p
-                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                          style={{
-                            color: settings.userTextColor,
-                          }}
-                          {...props}
-                        />
-                      ),
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
           <OrderDetailsCard
-            orderDetails={orderMessage?.bot2}
+            orderDetails={orderMessage?.bot1}
             settings={settings}
             embedderSettings={embedderSettings}
           />
@@ -755,6 +568,9 @@ const HistoricalMessage = forwardRef(
     }
 
     if (intent) {
+      if (intent?.intent === "order_tracking" && isLastMessage)
+        setAwaitingOrderId(true);
+
       return (
         <div
           className={`allm-flex allm-items-start allm-w-full allm-h-fit 
@@ -786,24 +602,7 @@ const HistoricalMessage = forwardRef(
                 />
               )}
             </div>
-            <div
-              style={{
-                color: settings.botTextColor,
-                marginTop: 10,
-              }}
-            >
-              {intent?.intent && (
-                <p
-                  className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                  style={{
-                    color: settings.botTextColor,
-                  }}
-                >
-                  Intent: {intent?.intent}
-                </p>
-              )}
-            </div>
-            {intent?.intent && (
+            {intent?.intent && intent?.intent !== "order_tracking" ? (
               <button
                 style={{
                   backgroundColor: "#2563eb",
@@ -819,6 +618,54 @@ const HistoricalMessage = forwardRef(
               >
                 <span className="allm-text-white">Connect to live agent</span>
               </button>
+            ) : (
+              <div
+                style={{
+                  color: settings.botTextColor,
+                  marginTop: 10,
+                }}
+              >
+                {settings?.shopifyContext?.customer?.orders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="allm-flex  allm-min-w-[300px] allm-border allm-rounded-xl allm-shadow-md allm-pl-2 allm-pr-[7px] allm-py-2 allm-gap-3"
+                    style={{
+                      backgroundColor: "rgb(250, 250, 250)",
+                      color: "black",
+                      marginBottom: 5,
+                      textAlign: "center",
+                      display: "flex",
+                      gap: 5,
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div className=" allm-flex allm-gap-2">
+                      <span> #{order.order_number}</span>
+                      <span className="allm-text-gray-400">|</span>
+                      <span>{order.total_price}</span>
+                    </div>
+                    <div>
+                      {" "}
+                      <button
+                        style={{
+                          backgroundColor: "#2563eb",
+                          borderRadius: 12,
+                          padding: 10,
+                          borderWidth: 0,
+                        }}
+                        onClick={() => {
+                          if (isLastMessage) {
+                            handleAwaitingOrderId(order.order_number);
+                          }
+                        }}
+                      >
+                        <span className="allm-text-white">Track Order</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

@@ -12,7 +12,7 @@ import { RxCross2 } from "react-icons/rx";
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
   const embedSettings = useGetScriptAttributes();
-  const sessionId = useSessionId(embedSettings);
+  const { sessionId, serialNo } = useSessionId(embedSettings);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
   const [interaction, setInteraction] = useState(false);
   const [startAnimation, setStartAnimation] = useState(false);
@@ -70,6 +70,7 @@ export default function App() {
       embedSettings.inputbarDisabled = true;
     }
     embedSettings.sessionId = sessionId;
+    embedSettings.serialNo = serialNo;
   }, [embedSettings?.loaded, sessionId]);
 
   // useEffect(() => {
@@ -99,14 +100,22 @@ export default function App() {
   //   }
   // }, [embedSettings.loaded, sessionId]);
 
+  console.log("embed settings", embedSettings);
+
   const positionClasses = {
     "bottom-left": "allm-bottom-0 allm-left-0 allm-ml-4",
     "bottom-right": "allm-bottom-0 allm-right-0 allm-mr-4",
-    "top-left": "allm-top-0 allm-left-0 allm-ml-4 allm-mt-4",
-    "top-right": "allm-top-0 allm-right-0 allm-mr-4 allm-mt-4",
   };
 
   const position = embedSettings.position || "bottom-right";
+
+  const positionStyle = {
+    bottom: Number(embedSettings?.bottom) || 30,
+    ...(position === "bottom-left"
+      ? { left: Number(embedSettings?.sides) || 30 }
+      : { right: Number(embedSettings?.sides) || 30 }),
+  };
+
   const windowWidth = embedSettings.windowWidth ?? "450px";
   const windowHeight = embedSettings.windowHeight ?? "80%";
 
@@ -168,7 +177,7 @@ export default function App() {
 
   const transformOrigin = isLargeScreen
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
-    : "center";
+    : "bottom";
 
   if (!embedSettings.loaded || !sessionId) return null;
 
@@ -212,12 +221,16 @@ export default function App() {
                   initial="closed"
                   animate="open"
                   exit="closed"
-                  className={`allm-fixed allm-bottom-[100px] allm-max-w-[250px] md:allm-max-w-[300px] ${positionClasses[position]} allm-bg-transparent`}
-                  style={{ transformOrigin }}
+                  className={`allm-fixed allm-bottom-[100px] allm-max-w-[250px] md:allm-max-w-[300px] allm-bg-transparent`}
+                  style={{
+                    ...positionStyle,
+                    transformOrigin,
+                    bottom: Number(embedSettings.bottom) + 70,
+                  }}
                   // onAnimationStart={playSound}
                 >
                   {embedSettings.openingMessage !== "" && (
-                    <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-p-[16px] allm-mr-[5px] allm-gap-2">
+                    <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-py-[16px] allm-mr-[5px] allm-gap-2">
                       <div
                         onClick={handleCloseFirstMessage}
                         style={{
@@ -261,8 +274,8 @@ export default function App() {
                 animate="open"
                 exit="closed"
                 id="anything-llm-embed-chat-button-container"
-                className={`allm-fixed allm-bottom-[30px] allm-right-[15px] ${positionClasses[position]} allm-z-50`}
-                style={{ transformOrigin }}
+                className={`allm-fixed allm-z-50`}
+                style={{ ...positionStyle, transformOrigin }}
               >
                 <OpenButton
                   settings={embedSettings}

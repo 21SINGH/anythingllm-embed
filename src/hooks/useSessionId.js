@@ -1,50 +1,14 @@
-// import { useEffect, useState } from "react";
-// import { embedderSettings } from "../main";
-// import { v4 } from "uuid";
-
-// export default function useSessionId(embedSettings) {
-//   const [sessionId, setSessionId] = useState("");
-//   useEffect(() => {
-//     function getOrAssignSessionId() {
-//       if (!window || embedSettings.embedId) return null;
-//       console.log("embedSettings", embedSettings);
-
-//       const STORAGE_IDENTIFIER = `allm_${embedSettings.embedId}_session_id`;
-
-//       if (embedSettings?.embedId === "bbc22a75-2033-41a9-8327-6e51caad0c39") {
-//         window.localStorage.setItem(
-//           STORAGE_IDENTIFIER,
-//           "d5c5134a-ab48-458d-bc90-16cb66456426"
-//         );
-//         setSessionId("d5c5134a-ab48-458d-bc90-16cb66456426");
-//       } else {
-//         const currentId = window.localStorage.getItem(STORAGE_IDENTIFIER);
-//         if (!!currentId) {
-//           console.log(`Resuming session id`, currentId);
-//           setSessionId(currentId);
-//           return;
-//         }
-
-//         const newId = v4();
-//         console.log(`Registering new session id`, newId);
-//         window.localStorage.setItem(STORAGE_IDENTIFIER, newId);
-//         setSessionId(newId);
-//       }
-//     }
-//     getOrAssignSessionId();
-//   }, [window]);
-
-//   return sessionId;
-// }
 import { useEffect, useState } from "react";
 
 export default function useSessionId(embedSettings) {
   const [sessionId, setSessionId] = useState("");
+  const [serialNo, setSerialNo] = useState("");
 
   useEffect(() => {
     if (!embedSettings?.embedId || !embedSettings?.host) return;
 
     const STORAGE_IDENTIFIER = `allm_${embedSettings.embedId}_session_id`;
+    const ANONYMOUS_MODE = `allm_${embedSettings.embedId}_anonymous_mode`;
     const currentId = window.localStorage.getItem(STORAGE_IDENTIFIER);
 
     const sendSessionToAPI = async (id) => {
@@ -61,11 +25,17 @@ export default function useSessionId(embedSettings) {
           throw new Error("Failed to send session to API");
         }
 
-        const sessionId = await response.json();
+        const data = await response.json();
 
-        console.log("Received session ID from API:", sessionId);
-        setSessionId(sessionId);
-        window.localStorage.setItem(STORAGE_IDENTIFIER, sessionId);
+        const isSameSession = id === data.session_id;
+
+        if (!isSameSession) {
+          window.localStorage.setItem(ANONYMOUS_MODE, "false");
+        }
+
+        setSessionId(data.session_id);
+        setSerialNo(data.serial_no);
+        window.localStorage.setItem(STORAGE_IDENTIFIER, data.session_id);
       } catch (error) {
         console.error("Error sending session to API:", error);
       }
@@ -74,5 +44,5 @@ export default function useSessionId(embedSettings) {
     sendSessionToAPI(currentId); // send currentId (or undefined)
   }, [embedSettings?.embedId, embedSettings?.host]);
 
-  return sessionId;
+  return { sessionId, serialNo };
 }

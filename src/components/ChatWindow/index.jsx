@@ -34,69 +34,101 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
   }
 
   setEventDelegatorForCodeSnippets();
-  if (!settings.customer?.id)
-    return (
-      <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-[24px] allm-overflow-hidden ">
-        <ChatWindowHeader
-          chatHistory={chatHistory}
-          sessionId={sessionId}
-          settings={settings}
-          iconUrl={settings.brandImageUrl}
-          closeChat={closeChat}
-          setChatHistory={setChatHistory}
-          setOpenBottomSheet={setOpenBottomSheet}
-        />
-        <div
-          className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain allm-pt-10 allm-px-10"
-          style={{
-            backgroundColor: settings.bgColor,
-            color: getContrastColor(settings.bgColor),
-          }}
-        >
-          <p className="allm-text-center allm-text-[18px] allm-leading-7">
-            Since you are not logged in, go login to use the chatbot.
-          </p>
+  // if (!settings.customer?.id && settings.loginRequired)
+  //   return (
+  //     <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-[24px] allm-overflow-hidden ">
+  //       <ChatWindowHeader
+  //         chatHistory={chatHistory}
+  //         sessionId={sessionId}
+  //         settings={settings}
+  //         iconUrl={settings.brandImageUrl}
+  //         closeChat={closeChat}
+  //         setChatHistory={setChatHistory}
+  //         setOpenBottomSheet={setOpenBottomSheet}
+  //       />
+  //       <div
+  //         className="allm-flex-grow allm-pt-10 allm-px-10 allm-flex allm-justify-center allm-items-center"
+  //         style={{
+  //           backgroundColor: settings.bgColor,
+  //           color: getContrastColor(settings.bgColor),
+  //         }}
+  //       >
+  //         <div
+  //           style={{
+  //             marginTop: "-80px",
+  //             display: "flex",
+  //             flexDirection: "column",
+  //             height: "90%",
+  //             justifyContent: "space-between",
+  //             paddingTop: "20px",
+  //           }}
+  //         >
+  //           <div className="allm-flex allm-flex-col allm-gap-3 allm-mb-6">
+  //             {/* Left shimmer (simulating user message) */}
+  //             <div className="allm-flex">
+  //               <div
+  //                 style={{ backgroundColor: settings.headerColor }}
+  //                 className="allm-rounded-xl allm-w-[55%] allm-h-3 allm-animate-pulse"
+  //               />
+  //             </div>
 
-          <div className="allm-flex allm-justify-center allm-gap-4 allm-mt-[25px]">
-            <button
-              style={{
-                all: "unset", // remove all default styles
-                borderRadius: "12px",
-                padding: "14px 22px",
-                cursor: "pointer",
-                border: "1px solid",
-                color: settings.botTextColor,
-                backgroundColor: settings.assistantBgColor,
-                flex: 1,
-                textAlign: "center",
-              }}
-              onClick={closeChat}
-            >
-              Close
-            </button>
-            <button
-              style={{
-                all: "unset",
-                borderRadius: "12px",
-                padding: "14px 22px",
-                cursor: "pointer",
-                border: "1px solid",
-                color: settings.userTextColor,
-                backgroundColor: settings.userBgColor,
-                flex: 1,
-                textAlign: "center",
-              }}
-              onClick={() => {
-                window.location.href =
-                  "https://shopify.com/authentication/63118180419/login?client_id=dfe45144-d8b7-434a-8096-81d63f64425e&locale=en&redirect_uri=https%3A%2F%2Fshopify.com%2Fauthentication%2F63118180419%2Foauth%2Fauthorize%3Fclient_id%3Ddfe45144-d8b7-434a-8096-81d63f64425e%26locale%3Den%26nonce%3Ddeed13db-9783-49de-b701-18311ee8c106%26redirect_uri%3Dhttps%253A%252F%252Fshopify.com%252F63118180419%252Faccount%252Fcallback%253Fsource%253Dcore%26response_type%3Dcode%26scope%3Dopenid%2Bemail%2Bcustomer-account-api%253Afull%26state%3D01JTSYD0NPJY2CD29BM5TV5TPF";
-              }}
-            >
-              Login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  //             {/* Right shimmer (simulating assistant message) */}
+  //             <div className="allm-flex allm-justify-end">
+  //               <div
+  //                 style={{ backgroundColor: settings.headerColor }}
+  //                 className=" allm-rounded-xl allm-w-[55%] allm-h-3 allm-animate-pulse"
+  //               />
+  //             </div>
+
+  //             <p className="allm-text-center allm-text-[18px] allm-leading-7">
+  //               Login to your account to start chatting.
+  //             </p>
+  //           </div>
+
+  //           {/* 
+  //           <p className="allm-text-center allm-text-[18px] allm-leading-7">
+  //             Login to your account to start chatting.
+  //           </p> */}
+
+  //           <div className="allm-flex allm-flex-col allm-justify-center allm-gap-3 allm-mt-[25px] allm-mb-[-10px]">
+  //             <button
+  //               style={{
+  //                 all: "unset", // remove all default styles
+  //                 borderRadius: "12px",
+  //                 padding: "8px 22px",
+  //                 cursor: "pointer",
+  //                 color: settings.botTextColor,
+  //                 backgroundColor: settings.assistantBgColor,
+  //                 flex: 1,
+  //                 textAlign: "center",
+  //               }}
+  //               onClick={closeChat}
+  //             >
+  //               Close chatbot
+  //             </button>
+  //             <button
+  //               style={{
+  //                 all: "unset",
+  //                 borderRadius: "12px",
+  //                 padding: "8px 22px",
+  //                 cursor: "pointer",
+
+  //                 color: settings.userTextColor,
+  //                 backgroundColor: settings.userBgColor,
+  //                 flex: 1,
+  //                 textAlign: "center",
+  //               }}
+  //               onClick={() => {
+  //                 window.location.href = settings.loginLink;
+  //               }}
+  //             >
+  //               Login with your account
+  //             </button>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
 
   return (
     <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-[24px] allm-overflow-hidden ">

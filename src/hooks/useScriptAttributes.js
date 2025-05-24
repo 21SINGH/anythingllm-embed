@@ -12,9 +12,20 @@ const DEFAULT_SETTINGS = {
   model: null,
   temperature: null,
   host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ",
-  customer:{},
-  toggleWhatsapp:false,
-  whatsappNo:'7068835235',
+  customer: {},
+  shopifyContext: {},
+  toggleWhatsapp: false,
+  whatsappNo: "7068835235",
+  loginLink: null,
+  bottom: null,
+  sides: null,
+  position: "bottom-right",
+  serialNo: null,
+  loginRequired: false,
+  ananoymusUser: true,
+  eamilTo: null,
+  emailToggle: false,
+  whatsappToggle: false,
 
   // style parameters
   brandName: null,
@@ -24,7 +35,6 @@ const DEFAULT_SETTINGS = {
   buttonColor: "#262626",
   userBgColor: "#2563eb",
   assistantBgColor: "#1B1B1B",
-  position: "bottom-right",
   assistantName: "AnythingLLM Chat Assistant",
   assistantIcon: null,
   windowHeight: null,
@@ -49,7 +59,7 @@ const DEFAULT_SETTINGS = {
   suggestion2: null,
   nudgeBgColor: null,
   nudgeTextColor: null,
-  logoBackgroundColor:'black',
+  logoBackgroundColor: "black",
 
   // behaviors
   inputbarDisabled: false,
@@ -89,7 +99,15 @@ export default function useGetScriptAttributes() {
           rawSettings.customer = {}; // fallback
         }
       }
-  
+
+      if (typeof rawSettings.shopifyContext === "string") {
+        try {
+          rawSettings.shopifyContext = JSON.parse(rawSettings.shopifyContext);
+        } catch (e) {
+          console.warn("Failed to parse customer data:", e);
+          rawSettings.shopifyContext = {}; // fallback
+        }
+      }
 
       setSettings((prevSettings) => ({
         ...prevSettings,
@@ -113,18 +131,25 @@ export default function useGetScriptAttributes() {
     queryFn: () => BrandBotConfigure.getBotDetails(host),
     enabled: !!host, // avoid running if host is not ready
   });
-  
+
   useEffect(() => {
     if (data?.embed_id) {
       setSettings((prevSettings) => ({
         ...prevSettings,
         embedId: data.embed_id,
+        loginLink: data.login_link,
+        loginRequired: data.login_required,
+        whatsappNo: data.mobile_number,
+        eamilTo: data.email_contact,
+        emailToggle: data.email_toggle,
+        whatsappToggle: data.whatsapp_toggle,
+        anonymous: data.anonymous,
         loaded: true,
       }));
     }
   }, [data]);
-  
-  useEffect(()=>{
+
+  useEffect(() => {
     if (brandConfig) {
       setSettings((prevSettings) => ({
         ...prevSettings,
@@ -132,7 +157,7 @@ export default function useGetScriptAttributes() {
         loaded: true,
       }));
     }
-  },[brandConfig])
+  }, [brandConfig]);
 
   return settings;
 }
@@ -176,4 +201,3 @@ function parseAndValidateEmbedSettings(settings = {}) {
 
   return validated;
 }
-
