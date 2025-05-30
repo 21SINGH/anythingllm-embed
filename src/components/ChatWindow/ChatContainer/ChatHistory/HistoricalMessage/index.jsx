@@ -175,8 +175,15 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
   const intentMatch = message.match(intentRegex);
 
   if (intentMatch) {
+    let rawIntent = intentMatch[1];
     try {
-      intent = JSON.parse(intentMatch[1]);
+      // Fix single quotes to double quotes if needed
+      // NOTE: This is a basic replacement and assumes no nested quotes
+      if (rawIntent.includes("'") && !rawIntent.includes('"')) {
+        rawIntent = rawIntent.replace(/'/g, '"');
+      }
+
+      intent = JSON.parse(rawIntent);
     } catch (e) {
       console.error("Failed to parse intent JSON:", e);
       intent = null;
@@ -421,6 +428,8 @@ const HistoricalMessage = forwardRef(
           orderDetails={orderDetails}
           settings={settings}
           embedderSettings={embedderSettings}
+          setIntent={setIntent}
+          setOpenBottomSheet={setOpenBottomSheet}
         />
       );
     }
@@ -472,6 +481,8 @@ const HistoricalMessage = forwardRef(
             orderDetails={orderMessage?.bot1}
             settings={settings}
             embedderSettings={embedderSettings}
+            setIntent={setIntent}
+            setOpenBottomSheet={setOpenBottomSheet}
           />
           <div className="allm-h-[6px]  allm-w-full" />
           <div
@@ -969,7 +980,10 @@ const OrderDetailsCard = ({
   orderDetails,
   settings = {},
   embedderSettings = {},
+  setIntent,
+  setOpenBottomSheet
 }) => {
+  console.log("orderDetails", orderDetails);
   return (
     <div
       style={{
@@ -1074,6 +1088,33 @@ const OrderDetailsCard = ({
           >
             Track your order
           </a>
+        </button>
+      )}
+      {orderDetails?.delay && (
+        <span
+          style={{
+            color: settings.botTextColor,
+            marginTop: 5,
+          }}
+        >
+          <span className="allm-font-semibold">Order is delayed</span>{" "}
+        </span>
+      )}
+      {orderDetails?.delay && (
+        <button
+          style={{
+            backgroundColor: "#2563eb",
+            borderRadius: 12,
+            padding: 10,
+            borderWidth: 0,
+            marginTop: 5,
+          }}
+          onClick={() => {
+            setIntent("Delivery Delay");
+            setOpenBottomSheet(true);
+          }}
+        >
+          <span className="allm-text-white">Connect to Agent</span>
         </button>
       )}
     </div>

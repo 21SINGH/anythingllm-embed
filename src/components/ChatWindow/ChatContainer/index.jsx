@@ -108,9 +108,29 @@ export default function ChatContainer({
           .then((res) => res.json())
           .then((data) => {
             const shipment = data?.shipments?.track;
+            const shipmentStatus = shipment?.status;
             const desc = shipment?.desc || "";
-
             const eddMs = data.shipments?.edd;
+
+            let delay = false;
+
+            if (shipmentStatus !== "Delivered") {
+              const transitEntry = shipment?.details?.find(
+                (entry) => entry.status === "In Transit"
+              );
+
+              const inTransitStartTime = transitEntry?.ctime;
+              const now = Date.now();
+              const msIn7Days = 7 * 24 * 60 * 60 * 1000;
+
+              if (inTransitStartTime) {
+                const delayDuration = now - inTransitStartTime;
+                if (delayDuration >= msIn7Days) {
+                  delay = true;
+                }
+              }
+            }
+
             const eddDate = eddMs
               ? new Date(eddMs).toLocaleDateString("en-IN", {
                   year: "numeric",
@@ -126,6 +146,7 @@ export default function ChatContainer({
               status: shipment?.status || "",
               tracking_url: data?.tracking_url,
               edd: eddDate,
+              delay: delay,
             };
 
             // If status is "Delivered", extract extra info
@@ -235,9 +256,32 @@ export default function ChatContainer({
           .then((res) => res.json())
           .then((data) => {
             const shipment = data?.shipments?.track;
+            const shipmentStatus = shipment?.status;
             const desc = shipment?.desc || "";
-
             const eddMs = data.shipments?.edd;
+
+            let delay = false;
+
+            if (shipmentStatus !== "Delivered") {
+              const transitEntry = shipment?.details?.find(
+                (entry) => entry.status === "In Transit"
+              );
+
+              const inTransitStartTime = transitEntry?.ctime;
+              const now = Date.now();
+              const msIn7Days = 7 * 24 * 60 * 60 * 1000;
+
+              if (inTransitStartTime) {
+                const delayDuration = now - inTransitStartTime;
+                if (delayDuration >= msIn7Days) {
+                  delay = true;
+                  console.log(
+                    "⚠️ Order Delayed: More than 7 days since entering In Transit."
+                  );
+                }
+              }
+            }
+
             const eddDate = eddMs
               ? new Date(eddMs).toLocaleDateString("en-IN", {
                   year: "numeric",
@@ -253,6 +297,7 @@ export default function ChatContainer({
               status: shipment?.status || "",
               tracking_url: data?.tracking_url,
               edd: eddDate,
+              delay: delay,
             };
 
             // If status is "Delivered", extract extra info
@@ -642,11 +687,6 @@ export default function ChatContainer({
 
       let chatText = "";
 
-      // if (intent) {
-      //   chatText = `*Session id:* ${settings.serialNo}\n\n*Summary:*\n${data.summary}\n\n*Tags:* ${intent}\n\n*chats:*\n\n${formattedMessages}`;
-      // } else
-      //   chatText = `*Session id:* ${settings.serialNo}\n\n*Summary:*\n${data.summary}\n\n*Tags:* ${data.tags.join(", ")}\n\n*chats:*\n\n${formattedMessages}`;
-
       const summary = intent
         ? `*${intent}* - ${data.summary}`
         : `*${data.tags.join(", ")}* - ${data.summary}`;
@@ -656,7 +696,7 @@ export default function ChatContainer({
       const userDetails =
         customer && Object.values(customer).some((val) => val)
           ? Object.entries(customer)
-              .filter(([_, value]) => value)
+              .filter(([key, value]) => key !== "shop" && value) // exclude `shop`
               .map(([key, value]) => `${key}: ${value}`)
               .join(",\n ")
           : "anonymous";

@@ -159,6 +159,13 @@ export default function useGetScriptAttributes() {
     }
   }, [brandConfig]);
 
+  // useEffect(() => {
+  //   setSettings((prevSettings) => ({
+  //     ...prevSettings,
+  //     embedId: "e10f1118-acdb-444d-9c84-fd60828a0a28",
+  //   }));
+  // }, []);
+
   return settings;
 }
 
