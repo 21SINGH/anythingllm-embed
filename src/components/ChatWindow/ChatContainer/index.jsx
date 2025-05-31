@@ -114,7 +114,9 @@ export default function ChatContainer({
 
             let delay = false;
 
-            if (shipmentStatus !== "Delivered") {
+            console.log('shipment',shipment);
+
+            if (shipmentStatus === "In Transit") {
               const transitEntry = shipment?.details?.find(
                 (entry) => entry.status === "In Transit"
               );
@@ -262,7 +264,11 @@ export default function ChatContainer({
 
             let delay = false;
 
-            if (shipmentStatus !== "Delivered") {
+            console.log('shipment',shipment);
+            
+
+
+            if (shipmentStatus === "In Transit") {
               const transitEntry = shipment?.details?.find(
                 (entry) => entry.status === "In Transit"
               );
