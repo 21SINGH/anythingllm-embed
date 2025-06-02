@@ -114,7 +114,7 @@ export default function ChatContainer({
 
             let delay = false;
 
-            console.log('shipment',shipment);
+            console.log("shipment", shipment);
 
             if (shipmentStatus === "In Transit") {
               const transitEntry = shipment?.details?.find(
@@ -257,6 +257,28 @@ export default function ChatContainer({
         )
           .then((res) => res.json())
           .then((data) => {
+            console.log("data", data);
+
+            if (data?.detail?.includes("Order not found")) {
+              const notFoundChat = [
+                ...chatHistory,
+                {
+                  content: orderId,
+                  role: "user",
+                  sentAt: Math.floor(Date.now() / 1000),
+                },
+                {
+                  content: `❌ Order for ID "${orderId}" not found. Please enter the correct Order ID.`,
+                  role: "assistant",
+                  pending: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                },
+              ];
+              setChatHistory(notFoundChat);
+              setAwaitingOrderId(true)
+              return; // ⛔ Stop further execution
+            }
+
             const shipment = data?.shipments?.track;
             const shipmentStatus = shipment?.status;
             const desc = shipment?.desc || "";
@@ -264,9 +286,7 @@ export default function ChatContainer({
 
             let delay = false;
 
-            console.log('shipment',shipment);
-            
-
+            console.log("shipment", shipment);
 
             if (shipmentStatus === "In Transit") {
               const transitEntry = shipment?.details?.find(
@@ -885,7 +905,7 @@ export default function ChatContainer({
         style={{
           boxSizing: "content-box",
         }}
-        className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
+        className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain "
         // allm-overflow-y-auto allm-overscroll-contain
       >
         <ChatHistory
