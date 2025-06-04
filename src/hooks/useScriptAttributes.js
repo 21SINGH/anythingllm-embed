@@ -27,6 +27,11 @@ const DEFAULT_SETTINGS = {
   emailToggle: false,
   whatsappToggle: false,
 
+  // nudge
+
+  nudgeAppear: false,
+  nudgeText: "",
+
   // style parameters
   brandName: null,
   chatIcon: "plus",

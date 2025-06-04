@@ -5,7 +5,6 @@ import Head from "@/components/Head";
 import OpenButton from "@/components/OpenButton";
 import ChatWindow from "./components/ChatWindow";
 import { useEffect, useState } from "react";
-import BrandAnalytics from "@/models/brandAnalytics";
 import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
 
@@ -15,8 +14,12 @@ export default function App() {
   const { sessionId, serialNo } = useSessionId(embedSettings);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
   const [interaction, setInteraction] = useState(false);
-  const [startAnimation, setStartAnimation] = useState(false);
   const [showFirstMessage, setShowFirstMessage] = useState(false);
+  const [nudgeAppear, setNudgeAppear] = useState(false);
+
+  useEffect(() => {
+    setNudgeAppear(embedSettings?.nudgeAppear);
+  }, [embedSettings]);
 
   useEffect(() => {
     const firstMessageShown = sessionStorage.getItem("firstMessageShown");
@@ -37,6 +40,7 @@ export default function App() {
   const handleCloseFirstMessage = () => {
     sessionStorage.setItem("firstMessageShown", "true");
     setShowFirstMessage(false);
+    setNudgeAppear(false);
   };
 
   useEffect(() => {
@@ -53,16 +57,6 @@ export default function App() {
       window.removeEventListener("click", handleUserInteraction);
       window.removeEventListener("keydown", handleUserInteraction);
     };
-  }, [interaction]);
-
-  useEffect(() => {
-    if (interaction) {
-      const timer = setTimeout(() => {
-        setStartAnimation(true);
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
   }, [interaction]);
 
   useEffect(() => {
@@ -214,7 +208,7 @@ export default function App() {
         {!isChatOpen && (
           <div>
             <AnimatePresence>
-              {showFirstMessage && (
+              {(showFirstMessage || nudgeAppear) && (
                 <motion.div
                   key="welcome-message"
                   variants={openingMessageVariants}
@@ -258,7 +252,9 @@ export default function App() {
                           }}
                           className="allm-text-[14px]  allm-line-clamp-3 allm-leading-[20px]"
                         >
-                          {embedSettings.openingMessage}
+                          {showFirstMessage
+                            ? embedSettings.openingMessage
+                            : embedSettings?.nudgeText}
                         </span>
                       </div>
                     </div>
