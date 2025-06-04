@@ -16,7 +16,7 @@ const BrandService = {
       }
 
       const data = await response.json();
-            
+                  
       return data;
     } catch (error) {
       console.error("Error fetching brand details:", error);

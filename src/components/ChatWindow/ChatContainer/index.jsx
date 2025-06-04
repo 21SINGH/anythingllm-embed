@@ -19,13 +19,17 @@ export default function ChatContainer({
   const [replyProduct, setReplyProduct] = useState();
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
-  const [awaitingOrderId, setAwaitingOrderId] = useState(false);
+  const [orderTrackingInProgress, setOrderTrackingInProgress] = useState(false);
   const [orderData, setOrderData] = useState(null);
   const [orderId, setOrderId] = useState("");
   const [intent, setIntent] = useState("");
   const [allowAnonymous, setAllowAnonymus] = useState(false);
   const [loading, setLoading] = useState(false);
   const ANONYMOUS_MODE = `allm_${settings.embedId}_anonymous_mode`;
+  const [methodOfOrderTracking, setMethodOfOrderTracking] = useState("");
+  const [phoneNo, setPhoneNo] = useState("");
+  const [email, setEmail] = useState("");
+
 
   useEffect(() => {
     const stored = window.localStorage.getItem(ANONYMOUS_MODE);
@@ -82,146 +86,241 @@ export default function ChatContainer({
     }
   }, [chatHistory]);
 
-  const handleAwaitingOrderId = async (mess) => {
-    if (awaitingOrderId) {
-      const orderIdPattern = /^(?=.*[0-9])[a-zA-Z0-9.]+$/;
-      if (orderIdPattern.test(mess.trim())) {
-        const orderId = mess.trim();
-        // Show loading message in chat
-        const userEntry = {
-          content: orderId,
-          role: "user",
-          sentAt: Math.floor(Date.now() / 1000),
-        };
-        const loadingEntry = {
-          content: "Fetching order details...",
+  const handleOrderTracking = async (type, value) => {
+    const userEntry = {
+      content: value,
+      role: "user",
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+    const loadingEntry = {
+      content: "Fetching order details...",
+      role: "assistant",
+      pending: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, userEntry, loadingEntry]);
+
+    const queryParam = type !== "phone" ? `email=${value}` : `phone=${value}`;
+
+    setMethodOfOrderTracking(type !== "phone" ? `email` : `phone`);
+    if (type !== "phone") {
+      setEmail(value);
+    } else setPhoneNo(value);
+
+    fetch(
+      `https://shoppie-backend.aroundme.global/api/stores/order-names?host=${settings.host}&${queryParam}`,
+      {
+        method: "GET",
+      }
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        const message1 = {
+          content: `**${data?.name}** please select from following order ids:`,
           role: "assistant",
           pending: false,
           sentAt: Math.floor(Date.now() / 1000),
         };
-        setChatHistory([...chatHistory, userEntry, loadingEntry]);
 
-        // Fetch order detail
-        fetch(
-          `https://shoppie-backend.aroundme.global/api/stores/order-detail?order_name=${orderId}&host=${host}`
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            const shipment = data?.shipments?.track;
-            const shipmentStatus = shipment?.status;
-            const desc = shipment?.desc || "";
-            const eddMs = data.shipments?.edd;
+        const intentPayload = {
+          order_names: data?.order_names || [],
+          intent: "order_tracking",
+        };
 
-            let delay = false;
+        const message2 = {
+          content: `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`,
+          role: "assistant",
+          pending: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
 
-            console.log("shipment", shipment);
-
-            if (shipmentStatus === "In Transit") {
-              const transitEntry = shipment?.details?.find(
-                (entry) => entry.status === "In Transit"
-              );
-
-              const inTransitStartTime = transitEntry?.ctime;
-              const now = Date.now();
-              const msIn7Days = 7 * 24 * 60 * 60 * 1000;
-
-              if (inTransitStartTime) {
-                const delayDuration = now - inTransitStartTime;
-                if (delayDuration >= msIn7Days) {
-                  delay = true;
-                }
-              }
-            }
-
-            const eddDate = eddMs
-              ? new Date(eddMs).toLocaleDateString("en-IN", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })
-              : "";
-
-            const extracted = {
-              products: data?.products,
-              tracking_number: data.shipments?._id || "",
-              payment_mode: data.payment_mode || "",
-              status: shipment?.status || "",
-              tracking_url: data?.tracking_url,
-              edd: eddDate,
-              delay: delay,
-            };
-
-            // If status is "Delivered", extract extra info
-            if (
-              shipment?.status === "Delivered" &&
-              desc.includes("Shipment Delivered by SR")
-            ) {
-              const match = desc.match(
-                /Shipment Delivered by SR:\s*(.+?),\s*DeliveryDate:\s*([\d\- :]+),\s*Receiver Name:\s*(.+)/
-              );
-              if (match) {
-                extracted.delivered_by = match[1].trim();
-                extracted.delivery_date = match[2].trim();
-                extracted.receiver_name = match[3].trim();
-              }
-            }
-
-            setOrderData(extracted);
-
-            const updatedChat = [
-              ...chatHistory,
-              {
-                content: orderId,
-                role: "user",
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-              {
-                content: `Order details:\n${JSON.stringify(extracted, null, 2)}`,
-                role: "assistant",
-                pending: false,
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-            ];
-            setChatHistory(updatedChat);
-          })
-          .catch((err) => {
-            const errorChat = [
-              ...chatHistory,
-              {
-                content: orderId,
-                role: "user",
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-              {
-                content: `Could not fetch order details. Please try after soem time. Error: ${err.message}`,
-                role: "assistant",
-                pending: false,
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-            ];
-            setChatHistory(errorChat);
-          });
-        setOrderId(orderId);
-      } else {
-        const prevChatHistory = [
+        setChatHistory((prev) => {
+          const withoutLast = prev.slice(0, -1);
+          return [...withoutLast, message1, message2];
+        });
+      })
+      .catch((err) => {
+        const errorChat = [
           ...chatHistory,
           {
-            content: mess,
+            content: value,
             role: "user",
             sentAt: Math.floor(Date.now() / 1000),
           },
           {
-            content:
-              "Invalid Order ID.Only enter order id nothign else. Please enter a valid alphanumeric order ID.",
+            content: `Could not fetch order details. Please try again later. Error: ${err.message}`,
             role: "assistant",
             pending: false,
-            animate: false,
             sentAt: Math.floor(Date.now() / 1000),
           },
         ];
-        setChatHistory(prevChatHistory);
-      }
-      setAwaitingOrderId(false);
+        setOrderTrackingInProgress(false);
+        setChatHistory(errorChat);
+      });
+  };
+
+  const handledirectOrderTrackingViaId = async (mess) => {
+    const orderIdPattern = /^(?=.*[0-9])[a-zA-Z0-9.]+$/;
+
+    const orderId = mess.trim().replace(/^#/, "");
+    if (orderIdPattern.test(orderId)) {
+      // Show loading message in chat
+      const userEntry = {
+        content: orderId,
+        role: "user",
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+      const loadingEntry = {
+        content: "Fetching order details...",
+        role: "assistant",
+        pending: false,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+      setChatHistory([...chatHistory, userEntry, loadingEntry]);
+
+      setOrderId(orderId);
+
+      // Fetch order detail
+      fetch(
+        `https://shoppie-backend.aroundme.global/api/stores/order-detail?order_name=${orderId}&host=${host}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.detail?.includes("Order not found")) {
+            const notFoundChat = [
+              ...chatHistory,
+              {
+                content: orderId,
+                role: "user",
+                sentAt: Math.floor(Date.now() / 1000),
+              },
+              {
+                content: `❌ Order for ID "${orderId}" not found. Please enter the correct Order ID.`,
+                role: "assistant",
+                pending: false,
+                sentAt: Math.floor(Date.now() / 1000),
+              },
+            ];
+            setChatHistory(notFoundChat);
+            return; // ⛔ Stop further execution
+          }
+
+          const shipment = data?.shipments?.track;
+          const shipmentStatus = shipment?.status;
+          const desc = shipment?.desc || "";
+          const eddMs = data.shipments?.edd;
+
+          let delay = false;
+
+          if (shipmentStatus === "In Transit") {
+            const transitEntry = shipment?.details?.find(
+              (entry) => entry.status === "In Transit"
+            );
+
+            const inTransitStartTime = transitEntry?.ctime;
+            const now = Date.now();
+            const msIn7Days = 7 * 24 * 60 * 60 * 1000;
+
+            if (inTransitStartTime) {
+              const delayDuration = now - inTransitStartTime;
+              if (delayDuration >= msIn7Days) {
+                delay = true;
+              }
+            }
+          }
+
+          const eddDate = eddMs
+            ? new Date(eddMs).toLocaleDateString("en-IN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : "";
+
+          const extracted = {
+            products: data?.products,
+            tracking_number: data.shipments?._id || "",
+            payment_mode: data.payment_mode || "",
+            status: shipment?.status || "",
+            tracking_url: data?.tracking_url,
+            edd: eddDate,
+            delay: delay,
+          };
+
+          // If status is "Delivered", extract extra info
+          if (
+            shipment?.status === "Delivered" &&
+            desc.includes("Shipment Delivered by SR")
+          ) {
+            const match = desc.match(
+              /Shipment Delivered by SR:\s*(.+?),\s*DeliveryDate:\s*([\d\- :]+),\s*Receiver Name:\s*(.+)/
+            );
+            if (match) {
+              extracted.delivered_by = match[1].trim();
+              extracted.delivery_date = match[2].trim();
+              extracted.receiver_name = match[3].trim();
+            }
+          }
+
+          setOrderData(extracted);
+
+          const updatedChat = [
+            ...chatHistory,
+            {
+              content: orderId,
+              role: "user",
+              sentAt: Math.floor(Date.now() / 1000),
+            },
+            {
+              content: `Order details:\n${JSON.stringify(extracted, null, 2)}`,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            },
+          ];
+          setChatHistory(updatedChat);
+        })
+        .catch((err) => {
+          const errorChat = [
+            ...chatHistory,
+            {
+              content: orderId,
+              role: "user",
+              sentAt: Math.floor(Date.now() / 1000),
+            },
+            {
+              content: `Could not fetch order details. Please try after soem time. Error: ${err.message}`,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            },
+          ];
+          setOrderTrackingInProgress(false);
+          setChatHistory(errorChat);
+        });
+      setOrderId(orderId);
+    } else {
+      const prevChatHistory = [
+        ...chatHistory,
+        {
+          content: mess,
+          role: "user",
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+        {
+          content:
+            "Invalid Order ID.Only enter order id nothign else. Please enter a valid alphanumeric order ID.",
+          role: "assistant",
+          pending: false,
+          animate: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+      setChatHistory(prevChatHistory);
     }
   };
 
@@ -233,179 +332,38 @@ export default function ChatContainer({
     const mess = message;
     setMessage("");
 
-    if (awaitingOrderId) {
-      const orderIdPattern = /^(?=.*[0-9])[a-zA-Z0-9.]+$/;
-      if (orderIdPattern.test(mess.trim())) {
-        const orderId = mess.trim();
-        // Show loading message in chat
-        const userEntry = {
-          content: orderId,
-          role: "user",
-          sentAt: Math.floor(Date.now() / 1000),
-        };
-        const loadingEntry = {
-          content: "Fetching order details...",
-          role: "assistant",
-          pending: false,
-          sentAt: Math.floor(Date.now() / 1000),
-        };
-        setChatHistory([...chatHistory, userEntry, loadingEntry]);
-
-        // Fetch order detail
-        fetch(
-          `https://shoppie-backend.aroundme.global/api/stores/order-detail?order_name=${orderId}&host=${host}`
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            console.log("data", data);
-
-            if (data?.detail?.includes("Order not found")) {
-              const notFoundChat = [
-                ...chatHistory,
-                {
-                  content: orderId,
-                  role: "user",
-                  sentAt: Math.floor(Date.now() / 1000),
-                },
-                {
-                  content: `❌ Order for ID "${orderId}" not found. Please enter the correct Order ID.`,
-                  role: "assistant",
-                  pending: false,
-                  sentAt: Math.floor(Date.now() / 1000),
-                },
-              ];
-              setChatHistory(notFoundChat);
-              setAwaitingOrderId(true)
-              return; // ⛔ Stop further execution
-            }
-
-            const shipment = data?.shipments?.track;
-            const shipmentStatus = shipment?.status;
-            const desc = shipment?.desc || "";
-            const eddMs = data.shipments?.edd;
-
-            let delay = false;
-
-            console.log("shipment", shipment);
-
-            if (shipmentStatus === "In Transit") {
-              const transitEntry = shipment?.details?.find(
-                (entry) => entry.status === "In Transit"
-              );
-
-              const inTransitStartTime = transitEntry?.ctime;
-              const now = Date.now();
-              const msIn7Days = 7 * 24 * 60 * 60 * 1000;
-
-              if (inTransitStartTime) {
-                const delayDuration = now - inTransitStartTime;
-                if (delayDuration >= msIn7Days) {
-                  delay = true;
-                  console.log(
-                    "⚠️ Order Delayed: More than 7 days since entering In Transit."
-                  );
-                }
-              }
-            }
-
-            const eddDate = eddMs
-              ? new Date(eddMs).toLocaleDateString("en-IN", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })
-              : "";
-
-            const extracted = {
-              products: data?.products,
-              tracking_number: data.shipments?._id || "",
-              payment_mode: data.payment_mode || "",
-              status: shipment?.status || "",
-              tracking_url: data?.tracking_url,
-              edd: eddDate,
-              delay: delay,
-            };
-
-            // If status is "Delivered", extract extra info
-            if (
-              shipment?.status === "Delivered" &&
-              desc.includes("Shipment Delivered by SR")
-            ) {
-              const match = desc.match(
-                /Shipment Delivered by SR:\s*(.+?),\s*DeliveryDate:\s*([\d\- :]+),\s*Receiver Name:\s*(.+)/
-              );
-              if (match) {
-                extracted.delivered_by = match[1].trim();
-                extracted.delivery_date = match[2].trim();
-                extracted.receiver_name = match[3].trim();
-              }
-            }
-
-            setOrderData(extracted);
-
-            const updatedChat = [
-              ...chatHistory,
-              {
-                content: orderId,
-                role: "user",
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-              {
-                content: `Order details:\n${JSON.stringify(extracted, null, 2)}`,
-                role: "assistant",
-                pending: false,
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-            ];
-            setChatHistory(updatedChat);
-          })
-          .catch((err) => {
-            const errorChat = [
-              ...chatHistory,
-              {
-                content: orderId,
-                role: "user",
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-              {
-                content: `Could not fetch order details. Please try after soem time. Error: ${err.message}`,
-                role: "assistant",
-                pending: false,
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-            ];
-            setChatHistory(errorChat);
-          });
-        setOrderId(orderId);
-      } else {
-        const prevChatHistory = [
-          ...chatHistory,
-          {
-            content: mess,
-            role: "user",
-            sentAt: Math.floor(Date.now() / 1000),
-          },
-          {
-            content:
-              "Invalid Order ID.Only enter order id nothign else. Please enter a valid alphanumeric order ID.",
-            role: "assistant",
-            pending: false,
-            animate: false,
-            sentAt: Math.floor(Date.now() / 1000),
-          },
-        ];
-        setChatHistory(prevChatHistory);
-      }
-      setAwaitingOrderId(false);
-    } else if (orderData) {
+    if (orderData) {
       const order = JSON.stringify(orderData);
-      const orderText = `->QUESTION START-> ${mess} ->QUESTION END->
+      let orderText = "";
+      if (methodOfOrderTracking === "phone") {
+        orderText = `->QUESTION START-> ${mess} ->QUESTION END->
        ->NOTE START-> Store the context of order details, and reply to what's asked above ->NOTE END->
        ->ORDER DETAILS START->
-        user:${orderId},
-        bot:${order},
-       ->ORDER DETAILS END->
-        d`;
+        method:phone
+        user1:${phoneNo}
+        bot1:selected order id : 
+        user2:${orderId},
+        bot2:${order},
+       ->ORDER DETAILS END->`;
+      } else if (methodOfOrderTracking === "email") {
+        orderText = `->QUESTION START-> ${mess} ->QUESTION END->
+       ->NOTE START-> Store the context of order details, and reply to what's asked above ->NOTE END->
+       ->ORDER DETAILS START->
+        method:email
+        user1:${email}
+        bot1:selected order id : 
+        user2:${orderId},
+        bot2:${order},
+       ->ORDER DETAILS END->`;
+      } else {
+        orderText = `->QUESTION START-> ${mess} ->QUESTION END->
+       ->NOTE START-> Store the context of order details, and reply to what's asked above ->NOTE END->
+       ->ORDER DETAILS START->
+        method:orderId
+        user1:${orderId},
+        bot1:${order},
+       ->ORDER DETAILS END->`;
+      }
       const prevChatHistory = [
         ...chatHistory,
         {
@@ -915,8 +873,10 @@ export default function ChatContainer({
           setReplyProduct={setReplyProduct}
           setOpenBottomSheet={setOpenBottomSheet}
           setIntent={setIntent}
-          setAwaitingOrderId={setAwaitingOrderId}
-          handleAwaitingOrderId={handleAwaitingOrderId}
+          handledirectOrderTrackingViaId={handledirectOrderTrackingViaId}
+          handleOrderTracking={handleOrderTracking}
+          orderTrackingInProgress={orderTrackingInProgress}
+          setOrderTrackingInProgress={setOrderTrackingInProgress}
         />
       </div>
       <PromptInput
@@ -928,6 +888,7 @@ export default function ChatContainer({
         replyProduct={replyProduct}
         setReplyProduct={setReplyProduct}
         settings={settings}
+        orderTrackingInProgress={orderTrackingInProgress}
       />
       <AnimatePresence>
         {!settings.customer?.id &&
@@ -1325,3 +1286,178 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
     intent: null,
   };
 };
+
+// if (awaitingOrderId) {
+//     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     const phonePattern = /^(?:\+91|91)?[6-9]\d{9}$/;
+//     const orderIdPattern = /^(?=.*[0-9])[a-zA-Z0-9.]+$/;
+
+//     if (emailPattern.test(mess.trim())) {
+//       const email = mess.trim();
+//       console.log("email", email);
+//     } else if (phonePattern.test(mess.trim())) {
+//       const phoneNo = mess.trim();
+//       console.log("phoneNo", phoneNo);
+//     } else if (orderIdPattern.test(mess.trim())) {
+//       const orderId = mess.trim();
+//       // Show loading message in chat
+//       const userEntry = {
+//         content: orderId,
+//         role: "user",
+//         sentAt: Math.floor(Date.now() / 1000),
+//       };
+//       const loadingEntry = {
+//         content: "Fetching order details...",
+//         role: "assistant",
+//         pending: false,
+//         sentAt: Math.floor(Date.now() / 1000),
+//       };
+//       setChatHistory([...chatHistory, userEntry, loadingEntry]);
+
+//       // Fetch order detail
+//       fetch(
+//         `https://shoppie-backend.aroundme.global/api/stores/order-detail?order_name=${orderId}&host=${host}`
+//       )
+//         .then((res) => res.json())
+//         .then((data) => {
+//           console.log("data", data);
+
+//           if (data?.detail?.includes("Order not found")) {
+//             const notFoundChat = [
+//               ...chatHistory,
+//               {
+//                 content: orderId,
+//                 role: "user",
+//                 sentAt: Math.floor(Date.now() / 1000),
+//               },
+//               {
+//                 content: `❌ Order for ID "${orderId}" not found. Please enter the correct Order ID.`,
+//                 role: "assistant",
+//                 pending: false,
+//                 sentAt: Math.floor(Date.now() / 1000),
+//               },
+//             ];
+//             setChatHistory(notFoundChat);
+//             setAwaitingOrderId(true);
+//             return; // ⛔ Stop further execution
+//           }
+
+//           const shipment = data?.shipments?.track;
+//           const shipmentStatus = shipment?.status;
+//           const desc = shipment?.desc || "";
+//           const eddMs = data.shipments?.edd;
+
+//           let delay = false;
+
+//           console.log("shipment", shipment);
+
+//           if (shipmentStatus === "In Transit") {
+//             const transitEntry = shipment?.details?.find(
+//               (entry) => entry.status === "In Transit"
+//             );
+
+//             const inTransitStartTime = transitEntry?.ctime;
+//             const now = Date.now();
+//             const msIn7Days = 7 * 24 * 60 * 60 * 1000;
+
+//             if (inTransitStartTime) {
+//               const delayDuration = now - inTransitStartTime;
+//               if (delayDuration >= msIn7Days) {
+//                 delay = true;
+//                 console.log(
+//                   "⚠️ Order Delayed: More than 7 days since entering In Transit."
+//                 );
+//               }
+//             }
+//           }
+
+//           const eddDate = eddMs
+//             ? new Date(eddMs).toLocaleDateString("en-IN", {
+//                 year: "numeric",
+//                 month: "long",
+//                 day: "numeric",
+//               })
+//             : "";
+
+//           const extracted = {
+//             products: data?.products,
+//             tracking_number: data.shipments?._id || "",
+//             payment_mode: data.payment_mode || "",
+//             status: shipment?.status || "",
+//             tracking_url: data?.tracking_url,
+//             edd: eddDate,
+//             delay: delay,
+//           };
+
+//           // If status is "Delivered", extract extra info
+//           if (
+//             shipment?.status === "Delivered" &&
+//             desc.includes("Shipment Delivered by SR")
+//           ) {
+//             const match = desc.match(
+//               /Shipment Delivered by SR:\s*(.+?),\s*DeliveryDate:\s*([\d\- :]+),\s*Receiver Name:\s*(.+)/
+//             );
+//             if (match) {
+//               extracted.delivered_by = match[1].trim();
+//               extracted.delivery_date = match[2].trim();
+//               extracted.receiver_name = match[3].trim();
+//             }
+//           }
+
+//           setOrderData(extracted);
+
+//           const updatedChat = [
+//             ...chatHistory,
+//             {
+//               content: orderId,
+//               role: "user",
+//               sentAt: Math.floor(Date.now() / 1000),
+//             },
+//             {
+//               content: `Order details:\n${JSON.stringify(extracted, null, 2)}`,
+//               role: "assistant",
+//               pending: false,
+//               sentAt: Math.floor(Date.now() / 1000),
+//             },
+//           ];
+//           setChatHistory(updatedChat);
+//         })
+//         .catch((err) => {
+//           const errorChat = [
+//             ...chatHistory,
+//             {
+//               content: orderId,
+//               role: "user",
+//               sentAt: Math.floor(Date.now() / 1000),
+//             },
+//             {
+//               content: `Could not fetch order details. Please try after soem time. Error: ${err.message}`,
+//               role: "assistant",
+//               pending: false,
+//               sentAt: Math.floor(Date.now() / 1000),
+//             },
+//           ];
+//           setChatHistory(errorChat);
+//         });
+//       setOrderId(orderId);
+//     } else {
+//       const prevChatHistory = [
+//         ...chatHistory,
+//         {
+//           content: mess,
+//           role: "user",
+//           sentAt: Math.floor(Date.now() / 1000),
+//         },
+//         {
+//           content:
+//             "Invalid Order ID.Only enter order id nothign else. Please enter a valid alphanumeric order ID.",
+//           role: "assistant",
+//           pending: false,
+//           animate: false,
+//           sentAt: Math.floor(Date.now() / 1000),
+//         },
+//       ];
+//       setChatHistory(prevChatHistory);
+//     }
+//     setAwaitingOrderId(false);
+//   }

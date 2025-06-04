@@ -116,8 +116,8 @@ export default function App() {
       : { right: Number(embedSettings?.sides) || 30 }),
   };
 
-  const windowWidth = embedSettings.windowWidth ?? "450px";
-  const windowHeight = embedSettings.windowHeight ?? "80%";
+  const windowWidth = embedSettings.windowWidth ?? "410px";
+  const windowHeight = embedSettings.windowHeight ?? "85%";
 
   const openBot = async () => {
     toggleOpenChat(true);

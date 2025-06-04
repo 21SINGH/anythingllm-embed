@@ -13,8 +13,10 @@ export default function ChatHistory({
   setReplyProduct,
   setOpenBottomSheet,
   setIntent,
-  setAwaitingOrderId,
-  handleAwaitingOrderId
+  handledirectOrderTrackingViaId,
+  handleOrderTracking,
+  setOrderTrackingInProgress,
+  orderTrackingInProgress
 }) {
   const replyRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -74,7 +76,7 @@ export default function ChatHistory({
       id="chat-history"
       ref={chatHistoryRef}
     >
-      {history.map((props, index) => {        
+      {history.map((props, index) => {
         const isLastMessage = index === history.length - 1;
         const isLastBotReply =
           index === history.length - 1 && props.role === "assistant";
@@ -121,9 +123,11 @@ export default function ChatHistory({
             setReplyProduct={setReplyProduct}
             setIntent={setIntent}
             setOpenBottomSheet={setOpenBottomSheet}
-            setAwaitingOrderId={setAwaitingOrderId}
             isLastMessage={isLastMessage}
-            handleAwaitingOrderId={handleAwaitingOrderId}
+            handledirectOrderTrackingViaId={handledirectOrderTrackingViaId}
+            handleOrderTracking={handleOrderTracking}
+            setOrderTrackingInProgress={setOrderTrackingInProgress}
+            orderTrackingInProgress={orderTrackingInProgress}
           />
         );
       })}

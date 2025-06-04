@@ -1,4 +1,4 @@
-import React, { memo, forwardRef } from "react";
+import React, { memo, forwardRef, useState } from "react";
 import { Warning } from "@phosphor-icons/react";
 import { embedderSettings } from "@/main";
 import { v4 } from "uuid";
@@ -18,26 +18,29 @@ const parseMessageWithProductByUser = (message) => {
   );
 
   if (questionMatch || orderBlockMatch) {
-    const content = orderBlockMatch[1].trim();
-    const lineRegex = /(user|bot):([\s\S]*?)(?=,\s*(user|bot):|,\s*$)/g;
+    const content = orderBlockMatch?.[1]?.trim();
     const result = {};
-    let userCount = 1;
-    let botCount = 1;
 
-    let matchLine;
-    while ((matchLine = lineRegex.exec(content)) !== null) {
-      const [, type, value] = matchLine;
-      if (type === "user") {
-        result[`user${userCount}`] = value.trim();
-        userCount++;
-      } else if (type === "bot") {
-        const botValue = value.trim();
-        try {
-          result[`bot${botCount}`] = JSON.parse(botValue);
-        } catch {
-          result[`bot${botCount}`] = botValue;
+    if (content) {
+      const lines = content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      for (const line of lines) {
+        const [key, ...rest] = line.split(":");
+        const value = rest.join(":").trim();
+        if (!key || !value) continue;
+
+        if (key.startsWith("bot")) {
+          try {
+            const fixedJson = value.replace(/,\s*$/, "");
+            result[key] = JSON.parse(fixedJson);
+          } catch {
+            result[key] = value;
+          }
+        } else {
+          result[key] = value;
         }
-        botCount++;
       }
     }
 
@@ -67,6 +70,24 @@ const parseMessageWithProductByUser = (message) => {
       .trim(),
   };
 };
+
+function fixMalformedJson(str) {
+  try {
+    // First, normalize quotes if it's single-quoted
+    if (str.includes("'") && !str.includes('"')) {
+      // Replace outer quotes and inner keys/values
+      str = str.replace(/'/g, '"');
+    }
+
+    // Escape unescaped control characters like newlines
+    str = str.replace(/[\u0000-\u001F]+/g, ""); // removes control characters
+
+    return JSON.parse(str);
+  } catch (e) {
+    console.error("Failed to parse fixed JSON:", e);
+    return null;
+  }
+}
 
 const parseMessageWithSuggestionsAndPrompts = (message) => {
   if (!message || typeof message !== "string") {
@@ -176,20 +197,7 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
 
   if (intentMatch) {
     let rawIntent = intentMatch[1];
-    try {
-      // Fix single quotes to double quotes if needed
-      // NOTE: This is a basic replacement and assumes no nested quotes
-      if (rawIntent.includes("'") && !rawIntent.includes('"')) {
-        rawIntent = rawIntent.replace(/'/g, '"');
-      }
-
-      intent = JSON.parse(rawIntent);
-    } catch (e) {
-      console.error("Failed to parse intent JSON:", e);
-      intent = null;
-    }
-
-    // Remove intent from the message
+    const intent = fixMalformedJson(rawIntent);
     const textAfterIntent =
       message.substring(0, intentMatch.index) +
       message.substring(intentMatch.index + intentMatch[0].length);
@@ -384,9 +392,11 @@ const HistoricalMessage = forwardRef(
       lastMessage,
       setOpenBottomSheet,
       setIntent,
-      setAwaitingOrderId,
       isLastMessage,
-      handleAwaitingOrderId,
+      handleOrderTracking,
+      handledirectOrderTrackingViaId,
+      setOrderTrackingInProgress,
+      orderTrackingInProgress,
     },
     ref
   ) => {
@@ -410,6 +420,9 @@ const HistoricalMessage = forwardRef(
       intent,
     } = parsedData;
 
+    const [selectedOption, setSelectedOption] = useState("orderId");
+    const [formValue, setFormValue] = useState("");
+
     const isOrderDetailsMessage =
       textBeforeSuggestions?.startsWith("Order details:\n");
     let orderDetails;
@@ -423,6 +436,7 @@ const HistoricalMessage = forwardRef(
     }
 
     if (orderDetails && role !== "user") {
+      setOrderTrackingInProgress(false);
       return (
         <OrderDetailsCard
           orderDetails={orderDetails}
@@ -443,8 +457,7 @@ const HistoricalMessage = forwardRef(
         <div key={uuid} ref={ref}>
           {/* user order inquiry message */}
           <div
-            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-end`}
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end`}
           >
             <div
               style={{
@@ -477,13 +490,97 @@ const HistoricalMessage = forwardRef(
               </div>
             </div>
           </div>
-          <OrderDetailsCard
-            orderDetails={orderMessage?.bot1}
-            settings={settings}
-            embedderSettings={embedderSettings}
-            setIntent={setIntent}
-            setOpenBottomSheet={setOpenBottomSheet}
-          />
+          {orderMessage?.bot1 &&
+            (orderMessage?.method === "orderId" ? (
+              <OrderDetailsCard
+                orderDetails={orderMessage?.bot1}
+                settings={settings}
+                embedderSettings={embedderSettings}
+                setIntent={setIntent}
+                setOpenBottomSheet={setOpenBottomSheet}
+              />
+            ) : (
+              <div
+                className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start `}
+              >
+                <div
+                  style={{
+                    wordBreak: "break-word",
+                    backgroundColor: settings.assistantBgColor,
+                    color: settings.botTextColor,
+                  }}
+                  className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col allm-gap-2 allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-text-[14px] allm-mb-[8px]`}
+                >
+                  <div className="allm-flex allm-flex-col">
+                    {orderMessage?.bot1 && (
+                      <ReactMarkdown
+                        children={orderMessage?.bot1}
+                        components={{
+                          p: ({ node, ...props }) => (
+                            <p
+                              className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.userTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          {orderMessage?.user2 && (
+            <div
+              className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-end`}
+            >
+              <div
+                style={{
+                  wordBreak: "break-word",
+                  backgroundColor:
+                    role === "user"
+                      ? settings.userBgColor
+                      : settings.assistantBgColor,
+                  marginRight: role === "user" && "5px",
+                }}
+                className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${`${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`}`}
+              >
+                <div className="allm-flex allm-flex-col">
+                  {role === "user" && orderMessage?.user2 && (
+                    <ReactMarkdown
+                      children={orderMessage?.user2}
+                      components={{
+                        p: ({ node, ...props }) => (
+                          <p
+                            className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.userTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {orderMessage?.bot2 && (
+            <OrderDetailsCard
+              orderDetails={orderMessage?.bot2}
+              settings={settings}
+              embedderSettings={embedderSettings}
+              setIntent={setIntent}
+              setOpenBottomSheet={setOpenBottomSheet}
+            />
+          )}
+
           <div className="allm-h-[6px]  allm-w-full" />
           <div
             className={`allm-flex allm-items-start allm-w-full allm-h-fit 
@@ -579,8 +676,60 @@ const HistoricalMessage = forwardRef(
     }
 
     if (intent) {
-      if (intent?.intent === "order_tracking" && isLastMessage)
-        setAwaitingOrderId(true);
+      if (intent?.intent === "order_tracking" && isLastMessage) {
+        // setAwaitingOrderId(true);
+      }
+
+      if (intent?.order_names) {
+        return (
+          <div
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
+          >
+            <div
+              style={{
+                wordBreak: "break-word",
+                backgroundColor: settings.assistantBgColor,
+                marginRight: "5px",
+              }}
+              className={`allm-py-[16px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-gap-2`}
+            >
+              {intent?.order_names.map((order) => (
+                <div
+                  key={order.id}
+                  className="allm-flex  allm-min-w-[300px] allm-border allm-rounded-xl allm-shadow-md allm-pl-2 allm-pr-1 allm-py-[2px] allm-gap-3"
+                  style={{
+                    backgroundColor: "rgb(250, 250, 250)",
+                    color: "black",
+                    textAlign: "center",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <span>{order}</span>
+
+                  <button
+                    style={{
+                      backgroundColor: "#2563eb",
+                      borderRadius: 12,
+                      padding: 10,
+                      borderWidth: 0,
+                    }}
+                    onClick={() => {
+                      if (isLastMessage) {
+                        handledirectOrderTrackingViaId(order);
+                      }
+                    }}
+                  >
+                    <span className="allm-text-white">Track Order</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div
@@ -636,46 +785,109 @@ const HistoricalMessage = forwardRef(
                   marginTop: 10,
                 }}
               >
-                {settings?.shopifyContext?.customer?.orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="allm-flex  allm-min-w-[300px] allm-border allm-rounded-xl allm-shadow-md allm-pl-2 allm-pr-[7px] allm-py-2 allm-gap-3"
+                <div className="allm-flex allm-flex-col allm-gap-4 allm-min-w-[300px] ">
+                  {/* Radio options with larger buttons */}
+                  <div className="allm-flex allm-gap-6 allm-items-center">
+                    {[
+                      { value: "orderId", label: "Order ID" },
+                      { value: "phone", label: "Phone No" },
+                      { value: "email", label: "Email" },
+                    ].map(({ value, label }) => (
+                      <label
+                        key={value}
+                        className="allm-flex allm-items-center allm-gap-[4px] allm-text-[14px]"
+                        style={{ cursor: "pointer" }}
+                      >
+                        <input
+                          type="radio"
+                          value={value}
+                          checked={selectedOption === value}
+                          onChange={() => {
+                            setSelectedOption(value);
+                            setFormValue(""); // Reset input when changing type
+                          }}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            accentColor: "#2563eb",
+                          }}
+                        />
+                        <span>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Dynamic input field with enforced prefix */}
+                  <input
+                    type="text"
+                    disabled={!isLastMessage}
                     style={{
-                      backgroundColor: "rgb(250, 250, 250)",
-                      color: "black",
-                      marginBottom: 5,
-                      textAlign: "center",
-                      display: "flex",
-                      gap: 5,
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      borderRadius: 12,
                     }}
-                  >
-                    <div className=" allm-flex allm-gap-2">
-                      <span> #{order.order_number}</span>
-                      <span className="allm-text-gray-400">|</span>
-                      <span>{order.total_price}</span>
-                    </div>
-                    <div>
-                      {" "}
+                    placeholder={
+                      selectedOption === "orderId"
+                        ? "Enter Order ID #RM123456"
+                        : selectedOption === "phone"
+                          ? "Enter Phone Number "
+                          : "Enter Email"
+                    }
+                    className="allm-p-2 allm-border allm-rounded"
+                    value={formValue}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      setFormValue(val);
+                    }}
+                  />
+
+                  {/* Submit button */}
+                  <div className="allm-flex allm-gap-[8px] ">
+                    {orderTrackingInProgress && (
                       <button
+                        className="allm-flex-1"
                         style={{
-                          backgroundColor: "#2563eb",
+                          backgroundColor: "#330000",
+                          borderColor: "#ff1a1a",
                           borderRadius: 12,
                           padding: 10,
-                          borderWidth: 0,
+                          borderWidth: 1,
+                          borderStyle: "solid",
                         }}
                         onClick={() => {
-                          if (isLastMessage) {
-                            handleAwaitingOrderId(order.order_number);
-                          }
+                          setOrderTrackingInProgress(false);
                         }}
                       >
-                        <span className="allm-text-white">Track Order</span>
+                        <span className="allm-text-white">Cancel Tracking</span>
                       </button>
-                    </div>
+                    )}
+
+                    <button
+                      className="allm-flex-1"
+                      disabled={!formValue.trim() || !isLastMessage}
+                      style={{
+                        backgroundColor: "#2563eb",
+                        borderRadius: 12,
+                        padding: 10,
+                        borderWidth: 0,
+                        opacity: formValue.trim() && isLastMessage ? 1 : 0.5,
+                        cursor:
+                          formValue.trim() && isLastMessage
+                            ? "pointer"
+                            : "not-allowed",
+                      }}
+                      onClick={() => {
+                        if (isLastMessage) {
+                          if (selectedOption === "orderId") {
+                            handledirectOrderTrackingViaId(formValue);
+                          } else handleOrderTracking(selectedOption, formValue);
+
+                          setOrderTrackingInProgress(true);
+                        }
+                      }}
+                    >
+                      <span className="allm-text-white">Track Order</span>
+                    </button>
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </div>
@@ -981,9 +1193,8 @@ const OrderDetailsCard = ({
   settings = {},
   embedderSettings = {},
   setIntent,
-  setOpenBottomSheet
+  setOpenBottomSheet,
 }) => {
-  console.log("orderDetails", orderDetails);
   return (
     <div
       style={{

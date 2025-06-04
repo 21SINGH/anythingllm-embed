@@ -11,7 +11,8 @@ export default function PromptInput({
   buttonDisabled,
   replyProduct,
   setReplyProduct,
-  settings
+  settings,
+  orderTrackingInProgress,
 }) {
   const formRef = useRef(null);
   const textareaRef = useRef(null);
@@ -39,7 +40,6 @@ export default function PromptInput({
     resetTextAreaHeight();
   }, [inputDisabled, isLargeScreen]); // Add isLargeScreen as a dependency
 
-
   // useEffect(() => {
   //   if (!inputDisabled && textareaRef.current) {
   //     textareaRef.current.focus();
@@ -49,7 +49,7 @@ export default function PromptInput({
 
   const handleSubmit = (e) => {
     setFocused(false);
-    setReplyProduct(null)
+    setReplyProduct(null);
     submit(e);
   };
 
@@ -62,7 +62,7 @@ export default function PromptInput({
   const captureEnter = (event) => {
     if (event.keyCode == 13) {
       if (!event.shiftKey) {
-        setReplyProduct(null)
+        setReplyProduct(null);
         submit(event);
       }
     }
@@ -87,14 +87,17 @@ export default function PromptInput({
         <div className="allm-flex allm-items-center allm-w-full ">
           <div className="allm-flex allm-flex-col allm-px-[13px] allm-py-[13px] allm-overflow-hidden allm-w-full">
             {replyProduct && (
-              <div style={{
-                backgroundColor:settings.inputbarColor,
-                marginRight:'0.5px'
-              }} className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2  allm-rounded-t-lg ">
+              <div
+                style={{
+                  backgroundColor: settings.inputbarColor,
+                  marginRight: "0.5px",
+                }}
+                className="allm-flex allm-flex-1 allm-mr-[-2px] allm-gap-3 allm-p-2  allm-rounded-t-lg "
+              >
                 <div className="allm-flex allm-items-center allm-justify-center  allm-min-w-[80px] allm-rounded-[10px] overflow-hidden">
                   <img
                     src={
-                      replyProduct?.image_url ||  replyProduct?.images
+                      replyProduct?.image_url || replyProduct?.images
                       // replyProduct?.product_images[0]
                     }
                     alt={replyProduct?.title || replyProduct?.product_name}
@@ -102,7 +105,10 @@ export default function PromptInput({
                   />
                 </div>
                 <div className="allm-flex allm-flex-col allm-gap-1 ">
-                  <span style={{color:settings.cardTextColor}} className="allm-font-semibold allm-text-[18px] allm-line-clamp-2">
+                  <span
+                    style={{ color: settings.cardTextColor }}
+                    className="allm-font-semibold allm-text-[18px] allm-line-clamp-2"
+                  >
                     {replyProduct?.title || replyProduct?.product_name}
                   </span>
                   {/* <span style={{color:settings.cardTextSubColour}} className="allm-text-[12px] allm-line-clamp-2">
@@ -126,11 +132,11 @@ export default function PromptInput({
             <div
               style={{
                 backgroundColor: settings.inputbarColor,
-                color : settings.inputTextColor,
-                borderTopLeftRadius:replyProduct ? 0 : '10px',
-                borderTopRightRadius:replyProduct ? 0 : '10px',
-                borderBottomRightRadius:'10px',
-                borderBottomLeftRadius:'10px'
+                color: settings.inputTextColor,
+                borderTopLeftRadius: replyProduct ? 0 : "10px",
+                borderTopRightRadius: replyProduct ? 0 : "10px",
+                borderBottomRightRadius: "10px",
+                borderBottomLeftRadius: "10px",
               }}
               className={`allm-flex  allm-w-full allm-items-center allm-py-[10px] ${replyProduct?.id && "allm-rounded-tr-none allm-rounded-tl-none"}`}
             >
@@ -140,34 +146,40 @@ export default function PromptInput({
                 onKeyDown={captureEnter}
                 onChange={onChange}
                 required={true}
-                disabled={inputDisabled}
+                disabled={inputDisabled || orderTrackingInProgress}
                 onFocus={() => setFocused(true)}
                 onBlur={(e) => {
                   setFocused(false);
                   adjustTextArea(e);
                 }}
                 value={message}
-                className="allm-border-none allm-cursor-text allm-text-[16px] allm-min-h-[24px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-0  focus:allm-outline-0  allm-flex-grow"
+                className={`allm-border-none allm-cursor-text allm-text-[16px] allm-min-h-[24px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-0  focus:allm-outline-0  allm-flex-grow ${
+                  orderTrackingInProgress && "allm-placeholder-red-500 allm-placeholder-[8px]"
+                }`}
                 style={{
-                  color : settings.inputTextColor
+                  color: settings.inputTextColor,
                 }}
-                placeholder={"Ask me anything..."}
+                placeholder={
+                  orderTrackingInProgress
+                    ? "Tracking in progress "
+                    : "Ask me anything..."
+                }
                 id="message-input"
               />
-              <button
-                ref={formRef}
-                type="submit"
-                className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-[5px] allm-rounded-full allm-mr-[12px] allm-outline-none allm-border-0`}
-                style={{
-                  backgroundColor: message
-                    ? settings.userBgColor
-                    : "#5a5a5a",
-                }}
-                id="send-message-button"
-                aria-label="Send message"
-              >
-                <IoMdArrowUp size={17} color="#fff" />
-              </button>
+              {!orderTrackingInProgress && (
+                <button
+                  ref={formRef}
+                  type="submit"
+                  className={`allm-flex allm-justify-center allm-items-center allm-cursor-pointer allm-p-[5px] allm-rounded-full allm-mr-[12px] allm-outline-none allm-border-0`}
+                  style={{
+                    backgroundColor: message ? settings.userBgColor : "#5a5a5a",
+                  }}
+                  id="send-message-button"
+                  aria-label="Send message"
+                >
+                  <IoMdArrowUp size={17} color="#fff" />
+                </button>
+              )}
             </div>
           </div>
         </div>
