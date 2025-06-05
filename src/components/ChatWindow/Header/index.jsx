@@ -13,6 +13,7 @@ export default function ChatWindowHeader({
   closeChat,
   setChatHistory,
   setOpenBottomSheet,
+  isLargeScreen,
 }) {
   const [showingOptions, setShowOptions] = useState(false);
   const [brandDetails, setBrandDetails] = useState(null);
@@ -55,11 +56,13 @@ export default function ChatWindowHeader({
       className={`allm-flex allm-items-center`}
       id="anything-llm-header"
     >
-      <div className="allm-flex allm-pl-3 allm-items-center allm-w-full allm-h-[76px]">
+      <div style={{
+        height:isLargeScreen ? '76px' : '65px'
+      }} className="allm-flex allm-pl-3 allm-items-center allm-w-full ">
         <img
           style={{
-            maxWidth: 48,
-            maxHeight: 48,
+            maxWidth: isLargeScreen ? 48 : 40,
+            maxHeight: isLargeScreen ? 48 : 40,
             borderRadius: 25,
             backgroundColor: settings.logoBackgroundColor,
           }}
@@ -67,8 +70,11 @@ export default function ChatWindowHeader({
           alt={brandDetails?.logo ? "Brand" : "AnythingLLM Logo"}
         />
         <div
-          className="allm-text-[21px] allm-font-semibold allm-ml-3 "
-          style={{ color: settings.textHeaderColor }}
+          className="allm-font-semibold allm-ml-3 "
+          style={{
+            color: settings.textHeaderColor,
+            fontSize: isLargeScreen ? "21px" : "17px",
+          }}
         >
           {settings?.brandName ?? brandDetails?.name}
         </div>

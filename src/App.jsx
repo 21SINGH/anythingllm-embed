@@ -199,6 +199,7 @@ export default function App() {
                   closeChat={() => toggleOpenChat(false)}
                   settings={embedSettings}
                   sessionId={sessionId}
+                  isLargeScreen={isLargeScreen}
                 />
               </motion.div>
             )}

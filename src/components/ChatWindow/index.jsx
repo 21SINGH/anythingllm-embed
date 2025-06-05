@@ -4,7 +4,7 @@ import ChatContainer from "./ChatContainer";
 import { ChatHistoryLoading } from "./ChatContainer/ChatHistory";
 import { useState } from "react";
 
-export default function ChatWindow({ closeChat, settings, sessionId }) {
+export default function ChatWindow({ closeChat, settings, sessionId,isLargeScreen }) {
   const { chatHistory, setChatHistory, loading } = useChatHistory(
     settings,
     sessionId
@@ -22,6 +22,7 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
           closeChat={closeChat}
           setChatHistory={setChatHistory}
           setOpenBottomSheet={setOpenBottomSheet}
+          isLargeScreen={isLargeScreen}
         />
         <div
           className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
@@ -45,6 +46,7 @@ export default function ChatWindow({ closeChat, settings, sessionId }) {
         closeChat={closeChat}
         setChatHistory={setChatHistory}
         setOpenBottomSheet={setOpenBottomSheet}
+        isLargeScreen={isLargeScreen}
       />
       <div
         className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
