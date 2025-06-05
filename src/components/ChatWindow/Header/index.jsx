@@ -56,9 +56,12 @@ export default function ChatWindowHeader({
       className={`allm-flex allm-items-center`}
       id="anything-llm-header"
     >
-      <div style={{
-        height:isLargeScreen ? '76px' : '65px'
-      }} className="allm-flex allm-pl-3 allm-items-center allm-w-full ">
+      <div
+        style={{
+          height: isLargeScreen ? "76px" : "65px",
+        }}
+        className="allm-flex allm-pl-3 allm-items-center allm-w-full "
+      >
         <img
           style={{
             maxWidth: isLargeScreen ? 48 : 40,

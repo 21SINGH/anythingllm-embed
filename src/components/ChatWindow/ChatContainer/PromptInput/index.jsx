@@ -1,12 +1,11 @@
 import { IoMdArrowUp } from "react-icons/io";
 import { RxCross2 } from "react-icons/rx";
 import React, { useState, useRef, useEffect } from "react";
-import { useAppBridge } from "@shopify/app-bridge-react";
 
-export default function PromptInput({
-  message,
+function PromptInput({
+  // message,
   submit,
-  onChange,
+  // onChange,
   inputDisabled,
   buttonDisabled,
   replyProduct,
@@ -17,9 +16,14 @@ export default function PromptInput({
   const formRef = useRef(null);
   const textareaRef = useRef(null);
   const [_, setFocused] = useState(false);
-  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768); // Check if screen is md or larger
+  const [message, setMessage] = useState("");
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768);
 
-  // const shopify = useAppBridge()
+  // handleMessageChange;
+
+  const onChange = (event) => {
+    setMessage(event.target.value);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -40,17 +44,10 @@ export default function PromptInput({
     resetTextAreaHeight();
   }, [inputDisabled, isLargeScreen]); // Add isLargeScreen as a dependency
 
-  // useEffect(() => {
-  //   if (!inputDisabled && textareaRef.current) {
-  //     textareaRef.current.focus();
-  //   }
-  //   resetTextAreaHeight();
-  // }, [inputDisabled]);
-
   const handleSubmit = (e) => {
     setFocused(false);
     setReplyProduct(null);
-    submit(e);
+    submit(e, message, setMessage);
   };
 
   const resetTextAreaHeight = () => {
@@ -63,7 +60,7 @@ export default function PromptInput({
     if (event.keyCode == 13) {
       if (!event.shiftKey) {
         setReplyProduct(null);
-        submit(event);
+        submit(event, message, setMessage);
       }
     }
   };
@@ -154,7 +151,8 @@ export default function PromptInput({
                 }}
                 value={message}
                 className={`allm-border-none allm-cursor-text allm-text-[16px] allm-min-h-[24px] allm-mx-2 allm-w-full  allm-bg-transparent  allm-resize-none active:allm-outline-0  focus:allm-outline-0  allm-flex-grow ${
-                  orderTrackingInProgress && "allm-placeholder-red-500 allm-placeholder-[8px]"
+                  orderTrackingInProgress &&
+                  "allm-placeholder-red-500 allm-placeholder-[8px]"
                 }`}
                 style={{
                   color: settings.inputTextColor,
@@ -187,3 +185,5 @@ export default function PromptInput({
     </div>
   );
 }
+
+export default React.memo(PromptInput);

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function useChatHistory(settings = null, sessionId = null) {
   const [loading, setLoading] = useState(true);
-  const [messages, setMessages] = useState([]);  
+  const [messages, setMessages] = useState([]);
   useEffect(() => {
     async function fetchChatHistory() {
       if (!sessionId || !settings) return;
@@ -15,9 +15,8 @@ export default function useChatHistory(settings = null, sessionId = null) {
         const welcomeMessage = {
           type: "chat",
           role: "assistant",
-          content:
-            `${settings.openingMessage}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n    
-            ${settings?.suggestion1},\n   ${settings?.suggestion2}\n]\n@@PROMPTS END@@`,
+          content: `${settings.openingMessage}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n    
+            "${settings?.suggestion1}",\n  " ${settings?.suggestion2}"\n,\n  " ${settings?.suggestion3}"\n,\n  " ${settings?.suggestion4}"\n,\n  " ${settings?.suggestion5}"\n]\n@@PROMPTS END@@`,
           sources: [],
           chatId: 1142,
           sentAt: 1742638816,
@@ -31,16 +30,15 @@ export default function useChatHistory(settings = null, sessionId = null) {
           },
           id: "f3060caf-26e7-4de7-a8bf-e2fdf8e93932",
           sender: "system",
-          textResponse:
-            `${settings.openingMessage}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n    
-            "${settings?.suggestion1}",\n  " ${settings?.suggestion2}"\n]\n@@PROMPTS END@@`,
+          textResponse: `${settings.openingMessage}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n    
+            "${settings?.suggestion1}",\n  " ${settings?.suggestion2}"\n,\n  " ${settings?.suggestion3}"\n,\n  " ${settings?.suggestion4}"\n,\n  " ${settings?.suggestion5}"\n]\n@@PROMPTS END@@`,
           close: false,
         };
-        try {          
+        try {
           const formattedMessages = await ChatService.embedSessionHistory(
             settings,
             sessionId
-          );          
+          );
           setMessages([welcomeMessage, ...formattedMessages]);
           setLoading(false);
         } catch (error) {
@@ -51,6 +49,6 @@ export default function useChatHistory(settings = null, sessionId = null) {
     }
     fetchChatHistory();
   }, [sessionId, settings]);
-  
+
   return { chatHistory: messages, setChatHistory: setMessages, loading };
 }

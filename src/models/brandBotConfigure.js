@@ -15,7 +15,7 @@ const BrandBotConfigure = {
       }
 
       const data = await response.json();
-      
+            
       const body = {
         brandName: data.theme.name,
         brandImageUrl: data.theme.brandLogo,
@@ -37,6 +37,9 @@ const BrandBotConfigure = {
         inputTextColor: data.theme.inputTextColor,
         suggestion1: data.theme.suggestion1,
         suggestion2: data.theme.suggestion2,
+        suggestion3: data.theme.suggestion3,
+        suggestion4: data.theme.suggestion4,
+        suggestion5: data.theme.suggestion5,
         nudgeBgColor: data.theme.displayMessageBackgroundColor,
         nudgeTextColor: data.theme.displayMessageTextColor,
         logoBackgroundColor:data.theme.logoBackgroundColor,

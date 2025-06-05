@@ -676,10 +676,6 @@ const HistoricalMessage = forwardRef(
     }
 
     if (intent) {
-      if (intent?.intent === "order_tracking" && isLastMessage) {
-        // setAwaitingOrderId(true);
-      }
-
       if (intent?.order_names) {
         return (
           <div
@@ -785,9 +781,12 @@ const HistoricalMessage = forwardRef(
                   marginTop: 10,
                 }}
               >
-                <div className="allm-flex allm-flex-col allm-gap-4 allm-min-w-[300px] ">
+                <div
+                  className="allm-flex allm-flex-col allm-gap-4"
+                  // allm-min-w-[200px]
+                >
                   {/* Radio options with larger buttons */}
-                  <div className="allm-flex allm-gap-6 allm-items-center">
+                  <div className="allm-flex allm-justify-between allm-items-center">
                     {[
                       { value: "orderId", label: "Order ID" },
                       { value: "phone", label: "Phone No" },
@@ -878,9 +877,11 @@ const HistoricalMessage = forwardRef(
                         if (isLastMessage) {
                           if (selectedOption === "orderId") {
                             handledirectOrderTrackingViaId(formValue);
-                          } else handleOrderTracking(selectedOption, formValue);
-
-                          setOrderTrackingInProgress(true);
+                            setOrderTrackingInProgress(true);
+                          } else {
+                            handleOrderTracking(selectedOption, formValue);
+                            setOrderTrackingInProgress(true);
+                          }
                         }
                       }}
                     >
@@ -1131,7 +1132,7 @@ const HistoricalMessage = forwardRef(
         {/* Display prompts if available */}
         {isLastBotReply && prompts?.length > 0 && (
           <div className="allm-my-4 allm-flex allm-flex-col allm-gap-y-2 allm-self-end allm-items-end  ">
-            {prompts.slice(0, 3).map((prompt, index) => (
+            {prompts.slice(0, 5).map((prompt, index) => (
               <div
                 key={index}
                 style={{
@@ -1280,25 +1281,24 @@ const OrderDetailsCard = ({
 
       {orderDetails?.tracking_url && (
         <button
+          onClick={() =>
+            window.open(
+              orderDetails.tracking_url,
+              "_blank",
+              "noopener,noreferrer"
+            )
+          }
+          className="allm-flex-1"
           style={{
             backgroundColor: "#2563eb",
             borderRadius: 12,
             padding: 10,
             borderWidth: 0,
+
+            cursor: "pointer",
           }}
         >
-          {/* <span className="allm-text-bold">Track your shipment:</span>{" "} */}
-          <a
-            href={orderDetails.tracking_url}
-            className="allm-text-white allm-text-sm allm-line-clamp-2"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              textDecoration: "none",
-            }}
-          >
-            Track your order
-          </a>
+          <span className="allm-text-white">Track Order</span>
         </button>
       )}
       {orderDetails?.delay && (

@@ -15,7 +15,6 @@ export default function ChatContainer({
   openBottomSheet,
   setOpenBottomSheet,
 }) {
-  const [message, setMessage] = useState("");
   const [replyProduct, setReplyProduct] = useState();
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
@@ -30,6 +29,7 @@ export default function ChatContainer({
   const [phoneNo, setPhoneNo] = useState("");
   const [email, setEmail] = useState("");
 
+  console.log("chat container",chatHistory);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(ANONYMOUS_MODE);
@@ -42,10 +42,6 @@ export default function ChatContainer({
     if (knownHistory.length !== chatHistory.length)
       setChatHistory([...knownHistory]);
   }, [knownHistory]);
-
-  const handleMessageChange = (event) => {
-    setMessage(event.target.value);
-  };
 
   useEffect(() => {
     if (chatHistory.length === 3) {
@@ -324,12 +320,13 @@ export default function ChatContainer({
     }
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event, message ,setMessage) => {
     event.preventDefault();
 
     if (!message || message === "") return false;
 
     const mess = message;
+    
     setMessage("");
 
     if (orderData) {
@@ -445,11 +442,9 @@ export default function ChatContainer({
       },
     ];
     setChatHistory(prevChatHistory);
-    setMessage("");
     setReplyProduct(null);
     setLoadingResponse(true);
     await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
-    // await BrandAnalytics.sendTokenAnalytics(settings, sessionId,);
   };
 
   const sendCommand = (command, history = [], attachments = []) => {
@@ -880,9 +875,7 @@ export default function ChatContainer({
         />
       </div>
       <PromptInput
-        message={message}
         submit={handleSubmit}
-        onChange={handleMessageChange}
         inputDisabled={settings.inputbarDisabled || loadingResponse}
         buttonDisabled={loadingResponse}
         replyProduct={replyProduct}
@@ -1286,178 +1279,3 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
     intent: null,
   };
 };
-
-// if (awaitingOrderId) {
-//     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//     const phonePattern = /^(?:\+91|91)?[6-9]\d{9}$/;
-//     const orderIdPattern = /^(?=.*[0-9])[a-zA-Z0-9.]+$/;
-
-//     if (emailPattern.test(mess.trim())) {
-//       const email = mess.trim();
-//       console.log("email", email);
-//     } else if (phonePattern.test(mess.trim())) {
-//       const phoneNo = mess.trim();
-//       console.log("phoneNo", phoneNo);
-//     } else if (orderIdPattern.test(mess.trim())) {
-//       const orderId = mess.trim();
-//       // Show loading message in chat
-//       const userEntry = {
-//         content: orderId,
-//         role: "user",
-//         sentAt: Math.floor(Date.now() / 1000),
-//       };
-//       const loadingEntry = {
-//         content: "Fetching order details...",
-//         role: "assistant",
-//         pending: false,
-//         sentAt: Math.floor(Date.now() / 1000),
-//       };
-//       setChatHistory([...chatHistory, userEntry, loadingEntry]);
-
-//       // Fetch order detail
-//       fetch(
-//         `https://shoppie-backend.aroundme.global/api/stores/order-detail?order_name=${orderId}&host=${host}`
-//       )
-//         .then((res) => res.json())
-//         .then((data) => {
-//           console.log("data", data);
-
-//           if (data?.detail?.includes("Order not found")) {
-//             const notFoundChat = [
-//               ...chatHistory,
-//               {
-//                 content: orderId,
-//                 role: "user",
-//                 sentAt: Math.floor(Date.now() / 1000),
-//               },
-//               {
-//                 content: `❌ Order for ID "${orderId}" not found. Please enter the correct Order ID.`,
-//                 role: "assistant",
-//                 pending: false,
-//                 sentAt: Math.floor(Date.now() / 1000),
-//               },
-//             ];
-//             setChatHistory(notFoundChat);
-//             setAwaitingOrderId(true);
-//             return; // ⛔ Stop further execution
-//           }
-
-//           const shipment = data?.shipments?.track;
-//           const shipmentStatus = shipment?.status;
-//           const desc = shipment?.desc || "";
-//           const eddMs = data.shipments?.edd;
-
-//           let delay = false;
-
-//           console.log("shipment", shipment);
-
-//           if (shipmentStatus === "In Transit") {
-//             const transitEntry = shipment?.details?.find(
-//               (entry) => entry.status === "In Transit"
-//             );
-
-//             const inTransitStartTime = transitEntry?.ctime;
-//             const now = Date.now();
-//             const msIn7Days = 7 * 24 * 60 * 60 * 1000;
-
-//             if (inTransitStartTime) {
-//               const delayDuration = now - inTransitStartTime;
-//               if (delayDuration >= msIn7Days) {
-//                 delay = true;
-//                 console.log(
-//                   "⚠️ Order Delayed: More than 7 days since entering In Transit."
-//                 );
-//               }
-//             }
-//           }
-
-//           const eddDate = eddMs
-//             ? new Date(eddMs).toLocaleDateString("en-IN", {
-//                 year: "numeric",
-//                 month: "long",
-//                 day: "numeric",
-//               })
-//             : "";
-
-//           const extracted = {
-//             products: data?.products,
-//             tracking_number: data.shipments?._id || "",
-//             payment_mode: data.payment_mode || "",
-//             status: shipment?.status || "",
-//             tracking_url: data?.tracking_url,
-//             edd: eddDate,
-//             delay: delay,
-//           };
-
-//           // If status is "Delivered", extract extra info
-//           if (
-//             shipment?.status === "Delivered" &&
-//             desc.includes("Shipment Delivered by SR")
-//           ) {
-//             const match = desc.match(
-//               /Shipment Delivered by SR:\s*(.+?),\s*DeliveryDate:\s*([\d\- :]+),\s*Receiver Name:\s*(.+)/
-//             );
-//             if (match) {
-//               extracted.delivered_by = match[1].trim();
-//               extracted.delivery_date = match[2].trim();
-//               extracted.receiver_name = match[3].trim();
-//             }
-//           }
-
-//           setOrderData(extracted);
-
-//           const updatedChat = [
-//             ...chatHistory,
-//             {
-//               content: orderId,
-//               role: "user",
-//               sentAt: Math.floor(Date.now() / 1000),
-//             },
-//             {
-//               content: `Order details:\n${JSON.stringify(extracted, null, 2)}`,
-//               role: "assistant",
-//               pending: false,
-//               sentAt: Math.floor(Date.now() / 1000),
-//             },
-//           ];
-//           setChatHistory(updatedChat);
-//         })
-//         .catch((err) => {
-//           const errorChat = [
-//             ...chatHistory,
-//             {
-//               content: orderId,
-//               role: "user",
-//               sentAt: Math.floor(Date.now() / 1000),
-//             },
-//             {
-//               content: `Could not fetch order details. Please try after soem time. Error: ${err.message}`,
-//               role: "assistant",
-//               pending: false,
-//               sentAt: Math.floor(Date.now() / 1000),
-//             },
-//           ];
-//           setChatHistory(errorChat);
-//         });
-//       setOrderId(orderId);
-//     } else {
-//       const prevChatHistory = [
-//         ...chatHistory,
-//         {
-//           content: mess,
-//           role: "user",
-//           sentAt: Math.floor(Date.now() / 1000),
-//         },
-//         {
-//           content:
-//             "Invalid Order ID.Only enter order id nothign else. Please enter a valid alphanumeric order ID.",
-//           role: "assistant",
-//           pending: false,
-//           animate: false,
-//           sentAt: Math.floor(Date.now() / 1000),
-//         },
-//       ];
-//       setChatHistory(prevChatHistory);
-//     }
-//     setAwaitingOrderId(false);
-//   }
