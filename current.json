@@ -38,17 +38,14 @@
     "if_message_contains_alphanumeric_order_tracking": {
       "response_template": "@@INTENT START@@{  'response': 'Please provide us the appropriate data. \n\n We’ll fetch your tracking info in a moment. \n\n',  'intent': 'order_tracking'}@@INTENT END@@"
     },
+    "if_user_intent_product_issue_like_missing_damanged_wrong": {
+      "response_template": "@@INTENT START@@{  'response': 'Please provide us the appropriate data. \n\n',  'intent': 'product_issue'}@@INTENT END@@"
+    },
+    "if_user_provided_product_issues_detials": {
+      "response_template": "@@INTENT START@@{  'response': 'Dynamically respond back as to connecting to live agent give a very short descriptions as to what detials you got  \n\n',  'intent': 'product_issue_detials'}@@INTENT END@@"
+    },
     "if_user_provided_updated_address": {
       "response_template": "@@INTENT START@@{  'response': 'Let me connect to live agent,for updating your new address: ',  'intent': 'update_address'}@@INTENT END@@"
-    },
-    "if_user_provide_url_of_media_for_product_damage": {
-      "response_template": "@@INTENT START@@{  'response': 'Let me connect to live agent,for product damage ',  'intent': 'product_damage'}@@INTENT END@@"
-    },
-    "if_user_provide_url_of_media_for_product_missinng": {
-      "response_template": "@@INTENT START@@{  'response': 'Let me connect to live agent,for product missing',  'intent': 'product_missing'}@@INTENT END@@"
-    },
-    "if_user_provide_url_of_media_for_wrong_product": {
-      "response_template": "@@INTENT START@@{  'response': 'Let me connect to live agent,for wrong product ',  'intent': 'wrong_product'}@@INTENT END@@"
     },
     "if_user_requests_connet_to_agent_but_no_detected_intent": {
       "condition": "User says things like 'talk to agent', 'connect to human', etc., but no valid intent is detected from the message.",

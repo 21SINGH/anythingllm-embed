@@ -18,6 +18,42 @@ export default function App() {
   const [nudgeAppear, setNudgeAppear] = useState(false);
 
   useEffect(() => {
+    console.log("event listenr useffect");
+
+    // Option 1: Listen for custom events
+    const handleNudgeUpdate = (event) => {
+      const { key, value } = event.detail || {};
+
+      if (key === "shoppieAINudgeMessage") {
+        console.log("New nudge message:", value);
+        // TODO: Update your UI or state with this new nudge message
+      }
+
+      if (key === "shoppieAINudgeType") {
+        console.log("New nudge type:", value);
+        // TODO: Adjust widget behavior or state accordingly
+      }
+    };
+
+    window.addEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
+
+    // Option 2: Access global variables directly (once on mount)
+    if (window.shoppieAINudgeMessage) {
+      console.log("Current nudge message:", window.shoppieAINudgeMessage);
+      // TODO: Optionally use this to initialize UI state
+    }
+
+    if (window.shoppieAINudgeType) {
+      console.log("Current nudge type:", window.shoppieAINudgeType);
+      // TODO: Optionally use this to initialize behavior
+    }
+
+    return () => {
+      window.removeEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
     setNudgeAppear(embedSettings?.nudgeAppear);
   }, [embedSettings]);
 

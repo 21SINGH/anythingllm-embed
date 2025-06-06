@@ -29,8 +29,6 @@ export default function ChatContainer({
   const [phoneNo, setPhoneNo] = useState("");
   const [email, setEmail] = useState("");
 
-  console.log("chat container",chatHistory);
-
   useEffect(() => {
     const stored = window.localStorage.getItem(ANONYMOUS_MODE);
     setAllowAnonymus(stored === "true"); // Ensure it's a boolean

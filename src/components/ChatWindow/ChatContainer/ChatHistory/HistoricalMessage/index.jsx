@@ -423,6 +423,10 @@ const HistoricalMessage = forwardRef(
     const [selectedOption, setSelectedOption] = useState("orderId");
     const [formValue, setFormValue] = useState("");
 
+    const [selectedProductIssue, setSelectedProductIssue] = useState("");
+    const [productIssueOrderId, setProductIssueOrderId] = useState("");
+    const [productIssueUrl, setProductIssueUrl] = useState("");
+
     const isOrderDetailsMessage =
       textBeforeSuggestions?.startsWith("Order details:\n");
     let orderDetails;
@@ -725,72 +729,54 @@ const HistoricalMessage = forwardRef(
             </div>
           </div>
         );
-      }
-
-      return (
-        <div
-          className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-start`}
-        >
+      } else if (intent?.intent === "product_issue") {
+        return (
           <div
-            style={{
-              wordBreak: "break-word",
-              backgroundColor: settings.assistantBgColor,
-              marginRight: "5px",
-            }}
-            className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
           >
-            <div className="allm-flex allm-flex-col">
-              {intent?.response && (
-                <ReactMarkdown
-                  children={intent?.response}
-                  components={{
-                    p: ({ node, ...props }) => (
-                      <p
-                        className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                        style={{
-                          color: settings.botTextColor,
-                        }}
-                        {...props}
-                      />
-                    ),
-                  }}
-                />
-              )}
-            </div>
-            {intent?.intent && intent?.intent !== "order_tracking" ? (
-              <button
-                style={{
-                  backgroundColor: "#2563eb",
-                  borderRadius: 12,
-                  padding: 10,
-                  borderWidth: 0,
-                  marginTop: 15,
-                }}
-                onClick={() => {
-                  setIntent(intent?.intent);
-                  setOpenBottomSheet(true);
-                }}
-              >
-                <span className="allm-text-white">Connect to live agent</span>
-              </button>
-            ) : (
+            <div
+              style={{
+                wordBreak: "break-word",
+                backgroundColor: settings.assistantBgColor,
+                marginRight: "5px",
+              }}
+              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
+            >
+              <div className="allm-flex allm-flex-col">
+                {intent?.response && (
+                  <ReactMarkdown
+                    children={intent?.response}
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.botTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                    }}
+                  />
+                )}
+              </div>
               <div
                 style={{
                   color: settings.botTextColor,
                   marginTop: 10,
                 }}
               >
-                <div
-                  className="allm-flex allm-flex-col allm-gap-4"
-                  // allm-min-w-[200px]
-                >
-                  {/* Radio options with larger buttons */}
+                <div className="allm-flex allm-flex-col allm-gap-2">
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px]">
+                    Select prodcut issue :
+                  </p>
+
                   <div className="allm-flex allm-justify-between allm-items-center">
                     {[
-                      { value: "orderId", label: "Order ID" },
-                      { value: "phone", label: "Phone No" },
-                      { value: "email", label: "Email" },
+                      { value: "missing", label: "Missing" },
+                      { value: "damaged", label: "Damaged" },
+                      { value: "wrong", label: "Wrong" },
                     ].map(({ value, label }) => (
                       <label
                         key={value}
@@ -799,11 +785,11 @@ const HistoricalMessage = forwardRef(
                       >
                         <input
                           type="radio"
-                          value={value}
-                          checked={selectedOption === value}
+                          disabled={!isLastMessage}
+                          value={selectedProductIssue}
+                          checked={selectedProductIssue === value}
                           onChange={() => {
-                            setSelectedOption(value);
-                            setFormValue(""); // Reset input when changing type
+                            setSelectedProductIssue(value);
                           }}
                           style={{
                             width: 18,
@@ -816,6 +802,31 @@ const HistoricalMessage = forwardRef(
                     ))}
                   </div>
 
+                  <input
+                    type="text"
+                    disabled={!isLastMessage}
+                    style={{
+                      borderRadius: 12,
+                    }}
+                    placeholder={"Enter Order ID #RM123456"}
+                    className="allm-p-2 allm-border allm-rounded allm-mt-[8px]"
+                    value={productIssueOrderId}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      setProductIssueOrderId(val);
+                    }}
+                  />
+
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mt-[8px]">
+                    Provide drive link :
+                  </p>
+                  <p className="allm-m-0 allm-text-[14px] allm-pl-3">
+                    1. unboxing video (from seal opening to full unboxing).
+                  </p>
+                  <p className="allm-m-0 allm-text-[14px]  allm-pl-3">
+                    2. photos of the issue.
+                  </p>
+
                   {/* Dynamic input field with enforced prefix */}
                   <input
                     type="text"
@@ -823,77 +834,227 @@ const HistoricalMessage = forwardRef(
                     style={{
                       borderRadius: 12,
                     }}
-                    placeholder={
-                      selectedOption === "orderId"
-                        ? "Enter Order ID #RM123456"
-                        : selectedOption === "phone"
-                          ? "Enter Phone Number "
-                          : "Enter Email"
-                    }
-                    className="allm-p-2 allm-border allm-rounded"
-                    value={formValue}
+                    placeholder={"Enter drive link"}
+                    className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                    value={productIssueUrl}
                     onChange={(e) => {
                       let val = e.target.value;
-                      setFormValue(val);
+                      setProductIssueUrl(val);
                     }}
                   />
 
                   {/* Submit button */}
-                  <div className="allm-flex allm-gap-[8px] ">
-                    {orderTrackingInProgress && (
-                      <button
-                        className="allm-flex-1"
-                        style={{
-                          backgroundColor: "#330000",
-                          borderColor: "#ff1a1a",
-                          borderRadius: 12,
-                          padding: 10,
-                          borderWidth: 1,
-                          borderStyle: "solid",
-                        }}
-                        onClick={() => {
-                          setOrderTrackingInProgress(false);
-                        }}
-                      >
-                        <span className="allm-text-white">Cancel Tracking</span>
-                      </button>
-                    )}
 
-                    <button
-                      className="allm-flex-1"
-                      disabled={!formValue.trim() || !isLastMessage}
-                      style={{
-                        backgroundColor: "#2563eb",
-                        borderRadius: 12,
-                        padding: 10,
-                        borderWidth: 0,
-                        opacity: formValue.trim() && isLastMessage ? 1 : 0.5,
-                        cursor:
-                          formValue.trim() && isLastMessage
-                            ? "pointer"
-                            : "not-allowed",
-                      }}
-                      onClick={() => {
-                        if (isLastMessage) {
-                          if (selectedOption === "orderId") {
-                            handledirectOrderTrackingViaId(formValue);
-                            setOrderTrackingInProgress(true);
-                          } else {
-                            handleOrderTracking(selectedOption, formValue);
-                            setOrderTrackingInProgress(true);
-                          }
-                        }
-                      }}
-                    >
-                      <span className="allm-text-white">Track Order</span>
-                    </button>
-                  </div>
+                  <button
+                    className="allm-flex-1"
+                    disabled={
+                      !selectedProductIssue ||
+                      !productIssueOrderId ||
+                      !productIssueUrl ||
+                      !isLastMessage
+                    }
+                    style={{
+                      backgroundColor: "#2563eb",
+                      borderRadius: 12,
+                      padding: 10,
+                      borderWidth: 0,
+                      opacity:
+                        selectedProductIssue &&
+                        productIssueOrderId &&
+                        productIssueUrl &&
+                        isLastMessage
+                          ? 1
+                          : 0.5,
+                      cursor:
+                        selectedProductIssue &&
+                        productIssueOrderId &&
+                        productIssueUrl &&
+                        isLastMessage
+                          ? "pointer"
+                          : "not-allowed",
+                    }}
+                    onClick={() => {
+                      const message = `Product issue details : \n\n Order Id : ${productIssueOrderId} \n\n Issue type is : ${selectedProductIssue} \n\n Drive URL : ${productIssueUrl}`;
+                      handlePrompt(message);
+                    }}
+                  >
+                    <span className="allm-text-white">Submit</span>
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      );
+        );
+      } else
+        return (
+          <div
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
+          >
+            <div
+              style={{
+                wordBreak: "break-word",
+                backgroundColor: settings.assistantBgColor,
+                marginRight: "5px",
+              }}
+              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
+            >
+              <div className="allm-flex allm-flex-col">
+                {intent?.response && (
+                  <ReactMarkdown
+                    children={intent?.response}
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                          style={{
+                            color: settings.botTextColor,
+                          }}
+                          {...props}
+                        />
+                      ),
+                    }}
+                  />
+                )}
+              </div>
+              {intent?.intent && intent?.intent !== "order_tracking" ? (
+                <button
+                  style={{
+                    backgroundColor: "#2563eb",
+                    borderRadius: 12,
+                    padding: 10,
+                    borderWidth: 0,
+                    marginTop: 15,
+                  }}
+                  onClick={() => {
+                    setIntent(intent?.intent);
+                    setOpenBottomSheet(true);
+                  }}
+                >
+                  <span className="allm-text-white">Connect to live agent</span>
+                </button>
+              ) : (
+                <div
+                  style={{
+                    color: settings.botTextColor,
+                    marginTop: 10,
+                  }}
+                >
+                  <div
+                    className="allm-flex allm-flex-col allm-gap-4"
+                    // allm-min-w-[200px]
+                  >
+                    {/* Radio options with larger buttons */}
+                    <div className="allm-flex allm-justify-between allm-items-center">
+                      {[
+                        { value: "orderId", label: "Order ID" },
+                        { value: "phone", label: "Phone No" },
+                        { value: "email", label: "Email" },
+                      ].map(({ value, label }) => (
+                        <label
+                          key={value}
+                          className="allm-flex allm-items-center allm-gap-[4px] allm-text-[14px]"
+                          style={{ cursor: "pointer" }}
+                        >
+                          <input
+                            type="radio"
+                            value={value}
+                            checked={selectedOption === value}
+                            onChange={() => {
+                              setSelectedOption(value);
+                              setFormValue(""); // Reset input when changing type
+                            }}
+                            style={{
+                              width: 18,
+                              height: 18,
+                              accentColor: "#2563eb",
+                            }}
+                          />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                    </div>
+
+                    {/* Dynamic input field with enforced prefix */}
+                    <input
+                      type="text"
+                      disabled={!isLastMessage}
+                      style={{
+                        borderRadius: 12,
+                      }}
+                      placeholder={
+                        selectedOption === "orderId"
+                          ? "Enter Order ID #RM123456"
+                          : selectedOption === "phone"
+                            ? "Enter Phone Number "
+                            : "Enter Email"
+                      }
+                      className="allm-p-2 allm-border allm-rounded"
+                      value={formValue}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        setFormValue(val);
+                      }}
+                    />
+
+                    {/* Submit button */}
+                    <div className="allm-flex allm-gap-[8px] ">
+                      {orderTrackingInProgress && (
+                        <button
+                          className="allm-flex-1"
+                          style={{
+                            backgroundColor: "#330000",
+                            borderColor: "#ff1a1a",
+                            borderRadius: 12,
+                            padding: 10,
+                            borderWidth: 1,
+                            borderStyle: "solid",
+                          }}
+                          onClick={() => {
+                            setOrderTrackingInProgress(false);
+                          }}
+                        >
+                          <span className="allm-text-white">
+                            Cancel Tracking
+                          </span>
+                        </button>
+                      )}
+
+                      <button
+                        className="allm-flex-1"
+                        disabled={!formValue.trim() || !isLastMessage}
+                        style={{
+                          backgroundColor: "#2563eb",
+                          borderRadius: 12,
+                          padding: 10,
+                          borderWidth: 0,
+                          opacity: formValue.trim() && isLastMessage ? 1 : 0.5,
+                          cursor:
+                            formValue.trim() && isLastMessage
+                              ? "pointer"
+                              : "not-allowed",
+                        }}
+                        onClick={() => {
+                          if (isLastMessage) {
+                            if (selectedOption === "orderId") {
+                              handledirectOrderTrackingViaId(formValue);
+                              setOrderTrackingInProgress(true);
+                            } else {
+                              handleOrderTracking(selectedOption, formValue);
+                              setOrderTrackingInProgress(true);
+                            }
+                          }
+                        }}
+                      >
+                        <span className="allm-text-white">Track Order</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
     }
 
     return (
