@@ -14,39 +14,29 @@ export default function App() {
   const { sessionId, serialNo } = useSessionId(embedSettings);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
   const [interaction, setInteraction] = useState(false);
-  const [showFirstMessage, setShowFirstMessage] = useState(false);
+  const [showFirstMessage, setShowFirstMessage] = useState(true);
   const [nudgeAppear, setNudgeAppear] = useState(false);
+  const [nudgeText, setNudgeText] = useState("");
 
   useEffect(() => {
     console.log("event listenr useffect");
 
-    // Option 1: Listen for custom events
     const handleNudgeUpdate = (event) => {
       const { key, value } = event.detail || {};
 
       if (key === "shoppieAINudgeMessage") {
-        console.log("New nudge message:", value);
-        // TODO: Update your UI or state with this new nudge message
-      }
+        setNudgeAppear(false);
+        setNudgeText(value);
 
-      if (key === "shoppieAINudgeType") {
-        console.log("New nudge type:", value);
-        // TODO: Adjust widget behavior or state accordingly
+        setTimeout(() => {
+          setNudgeAppear(true);
+        }, 2000);
+
+        console.log("New nudge message:", value);
       }
     };
 
     window.addEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
-
-    // Option 2: Access global variables directly (once on mount)
-    if (window.shoppieAINudgeMessage) {
-      console.log("Current nudge message:", window.shoppieAINudgeMessage);
-      // TODO: Optionally use this to initialize UI state
-    }
-
-    if (window.shoppieAINudgeType) {
-      console.log("Current nudge type:", window.shoppieAINudgeType);
-      // TODO: Optionally use this to initialize behavior
-    }
 
     return () => {
       window.removeEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
@@ -54,14 +44,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    setNudgeAppear(embedSettings?.nudgeAppear);
+    if (embedSettings?.openingMessage !== "") {
+      setNudgeAppear(true);
+      setNudgeText(embedSettings?.openingMessage);
+    }
   }, [embedSettings]);
 
   useEffect(() => {
-    const firstMessageShown = sessionStorage.getItem("firstMessageShown");
-    if (!firstMessageShown) {
-      setShowFirstMessage(true);
-    }
+    console.log("nudge text", nudgeText);
+    console.log("nudge appear", nudgeAppear);
+  }, [nudgeAppear, nudgeText]);
+
+  useEffect(() => {
+    // const firstMessageShown = sessionStorage.getItem("firstMessageShown");
+    // if (!firstMessageShown) {
+    //   setShowFirstMessage(true);
+    // }
 
     const handleResize = () => {
       setIsLargeScreen(window.innerWidth > 560);
@@ -74,7 +72,7 @@ export default function App() {
   }, []);
 
   const handleCloseFirstMessage = () => {
-    sessionStorage.setItem("firstMessageShown", "true");
+    // sessionStorage.setItem("firstMessageShown", "true");
     setShowFirstMessage(false);
     setNudgeAppear(false);
   };
@@ -245,7 +243,7 @@ export default function App() {
         {!isChatOpen && (
           <div>
             <AnimatePresence>
-              {(showFirstMessage || nudgeAppear) && (
+              {nudgeAppear && (
                 <motion.div
                   key="welcome-message"
                   variants={openingMessageVariants}
@@ -260,7 +258,7 @@ export default function App() {
                   }}
                   // onAnimationStart={playSound}
                 >
-                  {embedSettings.openingMessage !== "" && (
+                  {nudgeText && (
                     <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-py-[16px] allm-mr-[5px] allm-gap-2">
                       <div
                         onClick={handleCloseFirstMessage}
@@ -289,9 +287,10 @@ export default function App() {
                           }}
                           className="allm-text-[14px]  allm-line-clamp-3 allm-leading-[20px]"
                         >
-                          {showFirstMessage
+                          {nudgeText}
+                          {/* {showFirstMessage
                             ? embedSettings.openingMessage
-                            : embedSettings?.nudgeText}
+                            : embedSettings?.nudgeText} */}
                         </span>
                       </div>
                     </div>
