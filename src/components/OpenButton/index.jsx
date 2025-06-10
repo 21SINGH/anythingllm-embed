@@ -1,25 +1,9 @@
-import { useEffect, useState } from "react";
-import BrandService from "@/models/brandService";
+import {useState } from "react";
 import ShoopieIcon from "@/assets/shoppie logo.png"
 
 export default function OpenButton({ settings, isOpen, toggleOpen }) {
   if (isOpen) return null;
   const [brandDetails, setBrandDetails] = useState(null);
-
-  const getBrandDetails = async () => {
-    try {
-      const data = await BrandService.getBrandDetails(settings);
-      setBrandDetails(data);
-    } catch (error) {
-      console.error("Error streaming chat:", error);
-    }
-  };
-
-  // useEffect(() => {
-  //   if (!brandDetails) {
-  //     getBrandDetails();
-  //   }
-  // }, [settings, brandDetails]);
 
   return (
     <div

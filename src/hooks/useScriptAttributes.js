@@ -130,7 +130,8 @@ export default function useGetScriptAttributes() {
 
   const { data } = useQuery({
     queryKey: ["brandDetails", host],
-    queryFn: () => BrandService.getBrandDetails(host),
+    queryFn: () =>
+      BrandService.getBrandDetails(host, embedderSettings.settings.baseApiUrl),
     enabled: !!host, // avoid running if host is not ready
   });
 

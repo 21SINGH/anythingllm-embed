@@ -37,15 +37,6 @@ export default function ChatWindowHeader({
     };
   }, [menuRef]);
 
-  const getBrandDetails = async () => {
-    try {
-      const data = await BrandService.getBrandDetails(settings);
-      setBrandDetails(data);
-    } catch (error) {
-      console.error("Error streaming chat:", error);
-    }
-  };
-
   const whatsAppClick = async () => {
     setOpenBottomSheet((prev) => !prev);
   };
