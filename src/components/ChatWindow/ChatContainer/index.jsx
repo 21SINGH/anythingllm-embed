@@ -7,6 +7,7 @@ export const SEND_TEXT_EVENT = "anythingllm-embed-send-prompt";
 import BrandAnalytics from "@/models/brandAnalytics";
 import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
+import StoreMessageDB from "@/models/storeMessageInDB";
 
 export default function ChatContainer({
   sessionId,
@@ -19,15 +20,10 @@ export default function ChatContainer({
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
   const [orderTrackingInProgress, setOrderTrackingInProgress] = useState(false);
-  const [orderData, setOrderData] = useState(null);
-  const [orderId, setOrderId] = useState("");
   const [intent, setIntent] = useState("");
   const [allowAnonymous, setAllowAnonymus] = useState(false);
   const [loading, setLoading] = useState(false);
   const ANONYMOUS_MODE = `allm_${settings.embedId}_anonymous_mode`;
-  const [methodOfOrderTracking, setMethodOfOrderTracking] = useState("");
-  const [phoneNo, setPhoneNo] = useState("");
-  const [email, setEmail] = useState("");
 
   useEffect(() => {
     const stored = window.localStorage.getItem(ANONYMOUS_MODE);
@@ -80,6 +76,267 @@ export default function ChatContainer({
     }
   }, [chatHistory]);
 
+  const handleUserUpdate = (orderId) => {
+    const orderIdPattern = /^(#?[rR][mM])?\d+$/;
+    if (orderIdPattern.test(orderId)) {
+      const userEntry = {
+        content: orderId,
+        role: "user",
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+      const loadingEntry = {
+        content: "Fetching user details...",
+        role: "assistant",
+        pending: false,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+
+      setChatHistory((prev) => [...prev, userEntry, loadingEntry]);
+
+      fetch(
+        `https://shoppie-backend.aroundme.global/api/stores/order-fulfillment-detail?host=${settings?.host}&order_name=${orderId}`,
+        {
+          method: "GET",
+        }
+      )
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          if (data?.fulfillment_status === null) {
+            const intentPayload = {
+              allow: true,
+              update_detials: data || {},
+              intent: "order_tracking",
+              order_name: orderId,
+            };
+            const botReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
+
+            const message = {
+              content: botReply,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            };
+
+            const userMessage = orderId;
+
+            setChatHistory((prev) => {
+              const withoutLast = prev.slice(0, -1);
+              return [...withoutLast, message];
+            });
+
+            StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+              .then(() => {
+                console.log("✅ Message stored successfully");
+              })
+              .catch((err) => {
+                console.error("❌ Failed to store message:", err);
+              });
+          } else {
+            const intentPayload = {
+              allow: false,
+              update_detials: data || {},
+              intent: "order_tracking",
+            };
+
+            const botReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
+
+            const message = {
+              content: botReply,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            };
+
+            setChatHistory((prev) => {
+              const withoutLast = prev.slice(0, -1);
+              return [...withoutLast, message];
+            });
+
+            const userMessage = orderId;
+
+            StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+              .then(() => {
+                console.log("✅ Message stored successfully");
+              })
+              .catch((err) => {
+                console.error("❌ Failed to store message:", err);
+              });
+          }
+        })
+        .catch((err) => {
+          const errorChat = [
+            ...chatHistory,
+            {
+              content: orderId,
+              role: "user",
+              sentAt: Math.floor(Date.now() / 1000),
+            },
+            {
+              content: `Could not update user details. Please try again later.`,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            },
+          ];
+          setChatHistory(errorChat);
+        });
+    } else {
+      const prevChatHistory = [
+        ...chatHistory,
+        {
+          content: orderId,
+          role: "user",
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+        {
+          content: "Invalid Order ID. Only enter order id nothign else.",
+          role: "assistant",
+          pending: false,
+          animate: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+      setChatHistory(prevChatHistory);
+    }
+  };
+
+  const directlyUpdateUserDetails = (
+    order_name,
+    oldDetails,
+    updatedDetails
+  ) => {
+    const fieldLines = Object.entries(updatedDetails)
+      .filter(
+        ([key, value]) =>
+          oldDetails[key] !== updatedDetails[key] &&
+          value !== "" &&
+          value != null
+      )
+      .map(
+        ([key, value]) =>
+          `- ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`
+      )
+      .join("\n");
+
+    const userMessage = "Update these details :\n " + fieldLines;
+    const userEntry = {
+      content: "Update these details :\n " + fieldLines,
+      role: "user",
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+    const loadingEntry = {
+      content: "Updating user details...",
+      role: "assistant",
+      pending: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, userEntry, loadingEntry]);
+
+    fetch(
+      `https://shoppie-backend.aroundme.global/api/stores/order-update-info`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          host: settings?.host,
+          order_name: order_name,
+          address: updatedDetails?.address,
+          city: updatedDetails?.city,
+          zip: updatedDetails?.zip,
+          phone: updatedDetails?.mobile,
+        }),
+      }
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        const botReply = `Details updated successfully. \n\n ${fieldLines} @@PROMPTS START@@ ['Would you like a quick skincare routine recommendation?,  'Curious about which product is best for your skin type?',  'Want to see what others are buying this season?'] @@PROMPTS END@@`;
+        const message = {
+          content: botReply,
+          pending: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+
+        setChatHistory((prev) => {
+          const withoutLast = prev.slice(0, -1);
+          return [...withoutLast, message];
+        });
+
+        StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+          .then(() => {
+            console.log("✅ Message stored successfully");
+          })
+          .catch((err) => {
+            console.error("❌ Failed to store message:", err);
+          });
+      })
+      .catch((err) => {
+        const botReply =
+          "Unable to update user details. Please try again later.";
+        const errorChat = {
+          content: "Unable to update user details. Please try again later.",
+          role: "assistant",
+          pending: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+        setChatHistory((prev) => {
+          const withoutLast = prev.slice(0, -1);
+          return [...withoutLast, errorChat];
+        });
+
+        StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+          .then(() => {
+            console.log("✅ Message stored successfully");
+          })
+          .catch((err) => {
+            console.error("❌ Failed to store message:", err);
+          });
+      });
+  };
+
+  const cantUpdateUserSoConnectToLiveAgent = (oldDetails, updatedDetails) => {
+    const fieldLines = Object.entries(updatedDetails)
+      .filter(([key]) => oldDetails[key] !== updatedDetails[key])
+      .map(
+        ([key, value]) =>
+          `- ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`
+      )
+      .join("\n");
+
+    const userMessage = "Update these details :";
+    const botMessage = ` @@INTENT START@@{  'response': 'Since I am not able to update the details myself I will connect you to live agent to update these details:\n\n ${fieldLines}',  'intent': 'update_user_details'}@@INTENT END@@`;
+
+    const userEntry = {
+      content: userMessage,
+      role: "user",
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+    const botEntry = {
+      content: botMessage,
+      role: "assistant",
+      pending: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, userEntry, botEntry]);
+
+    StoreMessageDB.postMessageInDB(settings, userMessage, botMessage)
+      .then(() => {
+        console.log("✅ Message stored successfully");
+      })
+      .catch((err) => {
+        console.error("❌ Failed to store message:", err);
+      });
+  };
+
   const handleOrderTracking = async (type, value) => {
     const userEntry = {
       content: value,
@@ -97,11 +354,6 @@ export default function ChatContainer({
 
     const queryParam = type !== "phone" ? `email=${value}` : `phone=${value}`;
 
-    setMethodOfOrderTracking(type !== "phone" ? `email` : `phone`);
-    if (type !== "phone") {
-      setEmail(value);
-    } else setPhoneNo(value);
-
     fetch(
       `https://shoppie-backend.aroundme.global/api/stores/order-names?host=${settings.host}&${queryParam}`,
       {
@@ -113,20 +365,17 @@ export default function ChatContainer({
         return res.json();
       })
       .then((data) => {
-        const message1 = {
-          content: `**${data?.name}** please select from following order ids:`,
-          role: "assistant",
-          pending: false,
-          sentAt: Math.floor(Date.now() / 1000),
-        };
+        const userMessage = `${value}`;
 
         const intentPayload = {
           order_names: data?.order_names || [],
+          message: `**${data?.name}** please select from following order ids:`,
           intent: "order_tracking",
         };
+        const botReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
 
         const message2 = {
-          content: `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`,
+          content: botReply,
           role: "assistant",
           pending: false,
           sentAt: Math.floor(Date.now() / 1000),
@@ -134,8 +383,16 @@ export default function ChatContainer({
 
         setChatHistory((prev) => {
           const withoutLast = prev.slice(0, -1);
-          return [...withoutLast, message1, message2];
+          return [...withoutLast, message2];
         });
+
+        StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+          .then(() => {
+            console.log("✅ Message stored successfully");
+          })
+          .catch((err) => {
+            console.error("❌ Failed to store message:", err);
+          });
       })
       .catch((err) => {
         const errorChat = [
@@ -146,12 +403,21 @@ export default function ChatContainer({
             sentAt: Math.floor(Date.now() / 1000),
           },
           {
-            content: `Could not fetch order details. Please try again later. Error: ${err.message}`,
+            content: `Could not fetch order details. Please try again later.`,
             role: "assistant",
             pending: false,
             sentAt: Math.floor(Date.now() / 1000),
           },
         ];
+        const userMessage = value;
+        const botReply = `Could not fetch order details. Please try again later.`;
+        StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+          .then(() => {
+            console.log("✅ Message stored successfully");
+          })
+          .catch((err) => {
+            console.error("❌ Failed to store message:", err);
+          });
         setOrderTrackingInProgress(false);
         setChatHistory(errorChat);
       });
@@ -175,8 +441,6 @@ export default function ChatContainer({
         sentAt: Math.floor(Date.now() / 1000),
       };
       setChatHistory([...chatHistory, userEntry, loadingEntry]);
-
-      setOrderId(orderId);
 
       // Fetch order detail
       fetch(
@@ -260,23 +524,34 @@ export default function ChatContainer({
             }
           }
 
-          setOrderData(extracted);
+          const userMessage = orderId;
+          const botReply = `Order details:\n${JSON.stringify(extracted, null, 2)}`;
 
           const updatedChat = [
             ...chatHistory,
             {
-              content: orderId,
+              content: userMessage,
               role: "user",
               sentAt: Math.floor(Date.now() / 1000),
             },
             {
-              content: `Order details:\n${JSON.stringify(extracted, null, 2)}`,
+              content: botReply,
               role: "assistant",
               pending: false,
               sentAt: Math.floor(Date.now() / 1000),
             },
           ];
           setChatHistory(updatedChat);
+
+          /// here hit tje functions
+
+          StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+            .then(() => {
+              console.log("✅ Message stored successfully");
+            })
+            .catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
         })
         .catch((err) => {
           const errorChat = [
@@ -287,16 +562,24 @@ export default function ChatContainer({
               sentAt: Math.floor(Date.now() / 1000),
             },
             {
-              content: `Could not fetch order details. Please try after soem time. Error: ${err.message}`,
+              content: `Could not fetch order details. Please try after soem time.`,
               role: "assistant",
               pending: false,
               sentAt: Math.floor(Date.now() / 1000),
             },
           ];
+          const userMessage = orderId;
+          const botReply = `Could not fetch order details. Please try again later.`;
+          StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+            .then(() => {
+              console.log("✅ Message stored successfully");
+            })
+            .catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
           setOrderTrackingInProgress(false);
           setChatHistory(errorChat);
         });
-      setOrderId(orderId);
     } else {
       const prevChatHistory = [
         ...chatHistory,
@@ -318,67 +601,16 @@ export default function ChatContainer({
     }
   };
 
-  const handleSubmit = async (event, message ,setMessage) => {
+  const handleSubmit = async (event, message, setMessage) => {
     event.preventDefault();
 
     if (!message || message === "") return false;
 
     const mess = message;
-    
+
     setMessage("");
 
-    if (orderData) {
-      const order = JSON.stringify(orderData);
-      let orderText = "";
-      if (methodOfOrderTracking === "phone") {
-        orderText = `->QUESTION START-> ${mess} ->QUESTION END->
-       ->NOTE START-> Store the context of order details, and reply to what's asked above ->NOTE END->
-       ->ORDER DETAILS START->
-        method:phone
-        user1:${phoneNo}
-        bot1:selected order id : 
-        user2:${orderId},
-        bot2:${order},
-       ->ORDER DETAILS END->`;
-      } else if (methodOfOrderTracking === "email") {
-        orderText = `->QUESTION START-> ${mess} ->QUESTION END->
-       ->NOTE START-> Store the context of order details, and reply to what's asked above ->NOTE END->
-       ->ORDER DETAILS START->
-        method:email
-        user1:${email}
-        bot1:selected order id : 
-        user2:${orderId},
-        bot2:${order},
-       ->ORDER DETAILS END->`;
-      } else {
-        orderText = `->QUESTION START-> ${mess} ->QUESTION END->
-       ->NOTE START-> Store the context of order details, and reply to what's asked above ->NOTE END->
-       ->ORDER DETAILS START->
-        method:orderId
-        user1:${orderId},
-        bot1:${order},
-       ->ORDER DETAILS END->`;
-      }
-      const prevChatHistory = [
-        ...chatHistory,
-        {
-          content: orderText,
-          role: "user",
-          sentAt: Math.floor(Date.now() / 1000),
-        },
-        {
-          content: "",
-          role: "assistant",
-          pending: true,
-          userMessage: orderText,
-          animate: true,
-          sentAt: Math.floor(Date.now() / 1000),
-        },
-      ];
-      setChatHistory(prevChatHistory);
-      setOrderData(null);
-      await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
-    } else if (replyProduct) {
+    if (replyProduct) {
       const replied_product = JSON.stringify(replyProduct);
       const replyText = `->REPLY START-> ${replied_product} ->REPLY END-> ${mess}`;
       const prevChatHistory = [
@@ -398,7 +630,7 @@ export default function ChatContainer({
         },
       ];
       setChatHistory(prevChatHistory);
-      await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+      // await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
     } else {
       let newMessage = mess;
       const prevChatHistory = [
@@ -418,7 +650,7 @@ export default function ChatContainer({
         },
       ];
       setChatHistory(prevChatHistory);
-      await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+      // await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
     }
     setReplyProduct(null);
     setLoadingResponse(true);
@@ -442,7 +674,7 @@ export default function ChatContainer({
     setChatHistory(prevChatHistory);
     setReplyProduct(null);
     setLoadingResponse(true);
-    await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+    // await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
   };
 
   const sendCommand = (command, history = [], attachments = []) => {
@@ -799,7 +1031,22 @@ export default function ChatContainer({
                 console.error("Invalid order JSON format", e);
               }
             } else if (intent) {
-              formattedMessage = `${intent?.response}`;
+              if (intent?.update_detials) {
+                formattedMessage =
+                  "Please change the details you want to update : \n\n" +
+                  Object.keys(intent.update_detials)
+                    .filter(
+                      (key) =>
+                        key !== "fulfillment_status" &&
+                        intent.update_detials[key] !== "" &&
+                        intent.update_detials[key] != null
+                    )
+                    .map((key) => `${key}: ${intent.update_detials[key]}`)
+                    .join(",\n\n ");
+              } else if (intent?.intent === "update_details") {
+                formattedMessage =
+                  " Please provide the order id for which you want to update your details :";
+              } else formattedMessage = `${intent?.response}`;
             } else formattedMessage = `${textBeforeSuggestions || ""}`.trim();
 
             if (suggestions?.products.length > 0) {
@@ -870,6 +1117,11 @@ export default function ChatContainer({
           handleOrderTracking={handleOrderTracking}
           orderTrackingInProgress={orderTrackingInProgress}
           setOrderTrackingInProgress={setOrderTrackingInProgress}
+          handleUserUpdate={handleUserUpdate}
+          cantUpdateUserSoConnectToLiveAgent={
+            cantUpdateUserSoConnectToLiveAgent
+          }
+          directlyUpdateUserDetails={directlyUpdateUserDetails}
         />
       </div>
       <PromptInput
@@ -1035,7 +1287,7 @@ export default function ChatContainer({
                     <RxCross2 size={17} color="#fff" />
                   </button>
                   <p className="allm-text-center allm-text-[16px]">
-                    Connect with a live agent on WhatsApp?
+                    Connect with a live agent ?
                   </p>
                   <p className="allm-text-center allm-opacity-70 allm-text-[14px] allm-mt-[-2px]">
                     Would you like to transfer this chat along with your recent
@@ -1080,43 +1332,6 @@ const parseMessageWithProductByUser = (message) => {
   if (!message || typeof message !== "string")
     return { product: null, textAfterProduct: message };
 
-  const questionMatch = message.match(
-    /->QUESTION START->([\s\S]*?)->QUESTION END->/
-  );
-  const orderBlockMatch = message.match(
-    /->ORDER DETAILS START->([\s\S]*?)->ORDER DETAILS END->/
-  );
-
-  if (questionMatch || orderBlockMatch) {
-    const content = orderBlockMatch[1].trim();
-    const lineRegex = /(user|bot):([\s\S]*?)(?=,\s*(user|bot):|,\s*$)/g;
-    const result = {};
-    let userCount = 1;
-    let botCount = 1;
-
-    let matchLine;
-    while ((matchLine = lineRegex.exec(content)) !== null) {
-      const [, type, value] = matchLine;
-      if (type === "user") {
-        result[`user${userCount}`] = value.trim();
-        userCount++;
-      } else if (type === "bot") {
-        const botValue = value.trim();
-        try {
-          result[`bot${botCount}`] = JSON.parse(botValue);
-        } catch {
-          result[`bot${botCount}`] = botValue;
-        }
-        botCount++;
-      }
-    }
-
-    return {
-      orderMessage: result,
-      textAfterProduct: questionMatch[1]?.trim() || "",
-    };
-  }
-
   const productRegex = /->REPLY START->\s*([\s\S]*?)\s*->REPLY END->/;
   const productMatch = message.match(productRegex);
 
@@ -1137,6 +1352,24 @@ const parseMessageWithProductByUser = (message) => {
       .trim(),
   };
 };
+
+function fixMalformedJson(str) {
+  try {
+    // First, normalize quotes if it's single-quoted
+    if (str.includes("'") && !str.includes('"')) {
+      // Replace outer quotes and inner keys/values
+      str = str.replace(/'/g, '"');
+    }
+
+    // Escape unescaped control characters like newlines
+    str = str.replace(/[\u0000-\u001F]+/g, ""); // removes control characters
+
+    return JSON.parse(str);
+  } catch (e) {
+    console.error("Failed to parse fixed JSON:", e);
+    return null;
+  }
+}
 
 const parseMessageWithSuggestionsAndPrompts = (message) => {
   if (!message || typeof message !== "string") {
@@ -1223,7 +1456,8 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
       );
 
       try {
-        prompts = JSON.parse(promptsMatch[1]);
+        const cleanedPrompts = promptsMatch[1].replace(/'/g, '"');
+        prompts = JSON.parse(cleanedPrompts);
       } catch (e) {
         console.error("Failed to parse prompts JSON:", e);
         prompts = null;
@@ -1245,14 +1479,8 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
   const intentMatch = message.match(intentRegex);
 
   if (intentMatch) {
-    try {
-      intent = JSON.parse(intentMatch[1]);
-    } catch (e) {
-      console.error("Failed to parse intent JSON:", e);
-      intent = null;
-    }
-
-    // Remove intent from the message
+    let rawIntent = intentMatch[1];
+    const intent = fixMalformedJson(rawIntent);
     const textAfterIntent =
       message.substring(0, intentMatch.index) +
       message.substring(intentMatch.index + intentMatch[0].length);

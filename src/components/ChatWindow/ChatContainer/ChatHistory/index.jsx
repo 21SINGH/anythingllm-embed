@@ -16,12 +16,16 @@ export default function ChatHistory({
   handledirectOrderTrackingViaId,
   handleOrderTracking,
   setOrderTrackingInProgress,
-  orderTrackingInProgress
+  orderTrackingInProgress,
+  handleUserUpdate,
+  cantUpdateUserSoConnectToLiveAgent,
+  directlyUpdateUserDetails
 }) {
   const replyRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const chatHistoryRef = useRef(null);
 
+  
   useEffect(() => {
     scrollToBottom();
   }, [history]);
@@ -128,6 +132,9 @@ export default function ChatHistory({
             handleOrderTracking={handleOrderTracking}
             setOrderTrackingInProgress={setOrderTrackingInProgress}
             orderTrackingInProgress={orderTrackingInProgress}
+            handleUserUpdate={handleUserUpdate}
+            cantUpdateUserSoConnectToLiveAgent={cantUpdateUserSoConnectToLiveAgent}
+            directlyUpdateUserDetails={directlyUpdateUserDetails}
           />
         );
       })}

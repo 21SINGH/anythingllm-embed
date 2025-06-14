@@ -2,7 +2,6 @@
 
 <head>
   <meta name="shopify-api-key" content="440a180fb28e38a76efb7ca5d17be679" />
-  <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <html lang="en">
@@ -269,17 +268,19 @@
     }
 
     const script = document.createElement('script');
-    script.src = 'dist/anythingllm-chat-widget.js';
+    script.src = 'https://anythingllm.aroundme.global/embed/anythingllm-chat-widget.min.js';
     // dist/anythingllm-chat-widget.js
     // https://anythingllm-dev1.aroundme.global/embed/anythingllm-chat-widget.min.js
     script.setAttribute('data-base-api-url', 'https://anythingllm.aroundme.global/api/embed');
-    script.setAttribute('data-customer', JSON.stringify(customer));
-    script.setAttribute('data-shopify-context', JSON.stringify(shopifyContext));
+    // script.setAttribute('data-customer', JSON.stringify(customer));
+    // script.setAttribute('data-shopify-context', JSON.stringify(shopifyContext));
     // script.setAttribute('data-nudge-appear', true);
     // script.setAttribute('data-nudge-text', "I saw u were checking our shampoo, get this conditioner also makes your hair bouncy");
 
     document.body.appendChild(script);
   </script>
+
+
 </body>
 
 </html>
