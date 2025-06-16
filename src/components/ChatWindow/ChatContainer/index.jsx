@@ -134,6 +134,7 @@ export default function ChatContainer({
               .catch((err) => {
                 console.error("❌ Failed to store message:", err);
               });
+            BrandAnalytics.sendTokenAnalytics(settings, sessionId);
           } else {
             const intentPayload = {
               allow: false,
@@ -164,6 +165,7 @@ export default function ChatContainer({
               .catch((err) => {
                 console.error("❌ Failed to store message:", err);
               });
+            BrandAnalytics.sendTokenAnalytics(settings, sessionId);
           }
         })
         .catch((err) => {
@@ -277,6 +279,7 @@ export default function ChatContainer({
           .catch((err) => {
             console.error("❌ Failed to store message:", err);
           });
+        BrandAnalytics.sendTokenAnalytics(settings, sessionId);
       })
       .catch((err) => {
         const botReply =
@@ -393,6 +396,7 @@ export default function ChatContainer({
           .catch((err) => {
             console.error("❌ Failed to store message:", err);
           });
+        BrandAnalytics.sendTokenAnalytics(settings, sessionId);
       })
       .catch((err) => {
         const errorChat = [
@@ -418,6 +422,7 @@ export default function ChatContainer({
           .catch((err) => {
             console.error("❌ Failed to store message:", err);
           });
+        BrandAnalytics.sendTokenAnalytics(settings, sessionId);
         setOrderTrackingInProgress(false);
         setChatHistory(errorChat);
       });
@@ -630,7 +635,7 @@ export default function ChatContainer({
         },
       ];
       setChatHistory(prevChatHistory);
-      // await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+      BrandAnalytics.sendTokenAnalytics(settings, sessionId);
     } else {
       let newMessage = mess;
       const prevChatHistory = [
@@ -650,7 +655,7 @@ export default function ChatContainer({
         },
       ];
       setChatHistory(prevChatHistory);
-      // await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+      BrandAnalytics.sendTokenAnalytics(settings, sessionId);
     }
     setReplyProduct(null);
     setLoadingResponse(true);
@@ -674,7 +679,7 @@ export default function ChatContainer({
     setChatHistory(prevChatHistory);
     setReplyProduct(null);
     setLoadingResponse(true);
-    // await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+    BrandAnalytics.sendTokenAnalytics(settings, sessionId);
   };
 
   const sendCommand = (command, history = [], attachments = []) => {
@@ -1063,7 +1068,6 @@ export default function ChatContainer({
 
           const cleanedMessage = indentedMessage
             .replace(/\*\*(.*?)\*\*/g, "*$1*")
-            .replace(/https?:\/\/[^\s]+/g, "")
             .replace(/\[[^\]]+\.\w{2,}\]/g, "");
 
           return `${index + 1}. ${sender} - ${cleanedMessage}`;
@@ -1088,6 +1092,7 @@ export default function ChatContainer({
 
       chatText = `Session id: ${settings.serialNo}\n\n User details:\n ${userDetails} \n\nChats: \n\n${formattedMessages}`;
 
+      BrandAnalytics.connectToLiveAgent(settings, sessionId);
       const mailtoLink = `mailto:${settings.eamilTo}?subject=${encodeURIComponent(summary)}&body=${encodeURIComponent(chatText)}`;
       window.open(mailtoLink, "_blank");
       setOpenBottomSheet(false);

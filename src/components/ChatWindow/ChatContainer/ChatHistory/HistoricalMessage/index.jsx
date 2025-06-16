@@ -1,9 +1,11 @@
-import React, { memo, forwardRef, useState, useEffect } from "react";
+import React, { memo, forwardRef, useState, useEffect, Suspense } from "react";
 import { Warning } from "@phosphor-icons/react";
 import { embedderSettings } from "@/main";
 import { v4 } from "uuid";
 import { ChatTeardropDots } from "@phosphor-icons/react";
 import ReactMarkdown from "react-markdown";
+import BrandAnalytics from "@/models/brandAnalytics";
+import toast from "react-hot-toast";
 
 const parseMessageWithProductByUser = (message) => {
   if (!message || typeof message !== "string")
@@ -233,12 +235,12 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
     e.preventDefault(); // Prevent anchor's default behavior (navigation)
 
     // Send analytics
-    // await BrandAnalytics.sendAnalytics(
-    //   embedderSettings?.settings,
-    //   embedSettings.sessionId,
-    //   "tap_product",
-    //   product
-    // );
+    BrandAnalytics.sendAnalytics(
+      embedSettings,
+      embedSettings.sessionId,
+      "tap_product",
+      product
+    );
 
     // After the analytics is sent, you can now navigate if needed
     if (embedSettings.sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
@@ -363,569 +365,421 @@ const HistoricalMessage = forwardRef(
     },
     ref
   ) => {
-    if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);    
+    if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
 
-    // Parse message based on role
-    let parsedData;
-    if (role === "user") {
-      parsedData = parseMessageWithProductByUser(message);
-    } else {
-      parsedData = parseMessageWithSuggestionsAndPrompts(message);
-    }
+    // // Parse message based on role
+    // let parsedData;
+    // if (role === "user") {
+    //   parsedData = parseMessageWithProductByUser(message);
+    // } else {
+    //   parsedData = parseMessageWithSuggestionsAndPrompts(message);
+    // }
 
-    const { product, textAfterProduct } = parsedData;
-    const { textBeforeSuggestions, suggestions, prompts, intent } = parsedData;
-
-    const [selectedOption, setSelectedOption] = useState("orderId");
-    const [formValue, setFormValue] = useState("");
-
-    const [selectedProductIssue, setSelectedProductIssue] = useState("");
-    const [productIssueOrderId, setProductIssueOrderId] = useState("");
-    const [productIssueUrl, setProductIssueUrl] = useState("");
-
-    const [updateDetailsOrderId, setUpdateDetailsOrderId] = useState("");
-
-    const [phoneNumber, setPhoneNumber] = useState(
-      intent?.update_detials?.mobile || ""
-    );
-    const [address, setAddress] = useState(
-      intent?.update_detials?.address || ""
-    );
-    const [city, setCity] = useState(intent?.update_detials?.city || "");
-    const [zip, setZip] = useState(intent?.update_detials?.zip || "");
-    const [isFormChanged, setIsFormChanged] = useState(false);
-
-    const initialValues = {
-      phoneNumber: intent?.update_detials?.mobile || "",
-      address: intent?.update_detials?.address || "",
-      city: intent?.update_detials?.city || "",
-      zip: intent?.update_detials?.zip || "",
-    };
-
+    // State for parsed data
+    const [parsedData, setParsedData] = useState(null);
+    // Async parsing logic
     useEffect(() => {
-      const hasChanged =
-        phoneNumber !== initialValues.phoneNumber ||
-        address !== initialValues.address ||
-        city !== initialValues.city ||
-        zip !== initialValues.zip;
-      setIsFormChanged(hasChanged);
-    }, [phoneNumber, address, city, zip]);
+      const parseMessage = async () => {
+        try {
+          let result;
+          if (role === "user") {
+            result = await parseMessageWithProductByUser(message);
+          } else {
+            result = await parseMessageWithSuggestionsAndPrompts(message);
+          }
+          setParsedData(result);
+        } catch (err) {
+          console.error("Error parsing message:", err);
+          setParsedData({}); // Fallback to empty object
+        }
+      };
 
-    const fields = [
-      {
-        type: "text",
-        placeholder: "Enter phone number",
-        label: "Phone Number :",
-        value: phoneNumber || intent?.update_detials?.mobile,
-        onChange: (val) => setPhoneNumber(val),
-      },
-      {
-        type: "textarea",
-        placeholder: "Enter Address",
-        label: "Address :",
-        value: address || intent?.update_detials?.address,
-        onChange: (val) => setAddress(val),
-        rows: 3,
-      },
-      {
-        type: "text",
-        placeholder: "Enter city",
-        label: "City :",
-        value: city || intent?.update_detials?.city,
-        onChange: (val) => setCity(val),
-      },
-      {
-        type: "text",
-        placeholder: "Enter Zip Code",
-        label: "Pin Code :",
-        value: zip || intent?.update_detials?.zip,
-        onChange: (val) => setZip(val),
-      },
-    ];
+      parseMessage();
+    }, [role, message]);
 
-    const isOrderDetailsMessage =
-      textBeforeSuggestions?.startsWith("Order details:\n");
-    let orderDetails;
-    if (isOrderDetailsMessage) {
-      try {
-        const jsonPart = textBeforeSuggestions.slice("Order details:\n".length);
-        orderDetails = JSON.parse(jsonPart);
-      } catch (e) {
-        console.error("Invalid order JSON format", e);
+    // Wait for parsedData before proceeding
+    if (!parsedData) {
+      return null; // or a loading spinner: <div>Loading...</div>
+    }
+
+    // Component logic to render parsed data
+    const RenderContent = () => {
+      if (!parsedData) {
+        throw new Promise((resolve) => setTimeout(resolve, 0)); // Suspend until parsedData is ready
       }
-    }
 
-    if (orderDetails && role !== "user") {
-      setOrderTrackingInProgress(false);
-      return (
-        <OrderDetailsCard
-          orderDetails={orderDetails}
-          settings={settings}
-          embedderSettings={embedderSettings}
-          setIntent={setIntent}
-          setOpenBottomSheet={setOpenBottomSheet}
-        />
+      // Destructure only if parsedData is valid
+      const {
+        product,
+        textAfterProduct,
+        textBeforeSuggestions,
+        suggestions,
+        prompts,
+        intent,
+      } = parsedData || {};
+
+      // const { product, textAfterProduct } = parsedData;
+      // const { textBeforeSuggestions, suggestions, prompts, intent } = parsedData;
+
+      const [selectedOption, setSelectedOption] = useState("orderId");
+      const [formValue, setFormValue] = useState("");
+
+      const [selectedProductIssue, setSelectedProductIssue] = useState("");
+      const [productIssueOrderId, setProductIssueOrderId] = useState("");
+      const [productIssueUrl, setProductIssueUrl] = useState("");
+
+      const [updateDetailsOrderId, setUpdateDetailsOrderId] = useState("");
+
+      const [phoneNumber, setPhoneNumber] = useState(
+        intent?.update_detials?.mobile || ""
       );
-    }
+      const [address, setAddress] = useState(
+        intent?.update_detials?.address || ""
+      );
+      const [city, setCity] = useState(intent?.update_detials?.city || "");
+      const [zip, setZip] = useState(intent?.update_detials?.zip || "");
+      const [isFormChanged, setIsFormChanged] = useState(false);
 
-    if (intent) {
-      if (intent?.order_names) {
+      const initialValues = {
+        phoneNumber: intent?.update_detials?.mobile || "",
+        address: intent?.update_detials?.address || "",
+        city: intent?.update_detials?.city || "",
+        zip: intent?.update_detials?.zip || "",
+      };
+
+      useEffect(() => {
+        const hasChanged =
+          phoneNumber !== initialValues.phoneNumber ||
+          address !== initialValues.address ||
+          city !== initialValues.city ||
+          zip !== initialValues.zip;
+        setIsFormChanged(hasChanged);
+      }, [phoneNumber, address, city, zip]);
+
+      const fields = [
+        {
+          type: "text",
+          placeholder: "Enter phone number",
+          label: "Phone Number :",
+          value: phoneNumber,
+          onChange: (val) => setPhoneNumber(val),
+        },
+        {
+          type: "textarea",
+          placeholder: "Enter Address",
+          label: "Address :",
+          value: address,
+          onChange: (val) => setAddress(val),
+          rows: 3,
+        },
+        {
+          type: "text",
+          placeholder: "Enter city",
+          label: "City :",
+          value: city,
+          onChange: (val) => setCity(val),
+        },
+        {
+          type: "text",
+          placeholder: "Enter Zip Code",
+          label: "Pin Code :",
+          value: zip,
+          onChange: (val) => setZip(val),
+        },
+      ];
+
+      const isOrderDetailsMessage =
+        textBeforeSuggestions?.startsWith("Order details:\n");
+      let orderDetails;
+      if (isOrderDetailsMessage) {
+        try {
+          const jsonPart = textBeforeSuggestions.slice(
+            "Order details:\n".length
+          );
+          orderDetails = JSON.parse(jsonPart);
+        } catch (e) {
+          console.error("Invalid order JSON format", e);
+        }
+      }
+
+      if (orderDetails && role !== "user") {
+        setOrderTrackingInProgress(false);
         return (
-          <div
-            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-start`}
-          >
-            <div
-              style={{
-                wordBreak: "break-word",
-                backgroundColor: settings.assistantBgColor,
-                marginRight: "5px",
-              }}
-              className={`allm-py-[16px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-gap-2`}
-            >
-              <ReactMarkdown
-                children={intent?.message}
-                components={{
-                  p: ({ node, ...props }) => (
-                    <p
-                      className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                      style={{
-                        color: settings.botTextColor,
-                      }}
-                      {...props}
-                    />
-                  ),
-                }}
-              />
-              {intent?.order_names.map((order) => (
-                <div
-                  key={order.id}
-                  className="allm-flex  allm-min-w-[300px] allm-border allm-rounded-xl allm-shadow-md allm-pl-2 allm-pr-1 allm-py-[2px] allm-gap-3"
-                  style={{
-                    backgroundColor: "rgb(250, 250, 250)",
-                    color: "black",
-                    textAlign: "center",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span>{order}</span>
+          <OrderDetailsCard
+            orderDetails={orderDetails}
+            settings={settings}
+            embedderSettings={embedderSettings}
+            setIntent={setIntent}
+            setOpenBottomSheet={setOpenBottomSheet}
+          />
+        );
+      }
 
-                  <button
+      if (intent) {
+        if (intent?.order_names) {
+          return (
+            <div
+              className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
+            >
+              <div
+                style={{
+                  wordBreak: "break-word",
+                  backgroundColor: settings.assistantBgColor,
+                  marginRight: "5px",
+                }}
+                className={`allm-py-[16px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-gap-2`}
+              >
+                <ReactMarkdown
+                  children={intent?.message}
+                  components={{
+                    p: ({ node, ...props }) => (
+                      <p
+                        className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                        style={{
+                          color: settings.botTextColor,
+                        }}
+                        {...props}
+                      />
+                    ),
+                  }}
+                />
+                {intent?.order_names.map((order) => (
+                  <div
+                    key={order.id}
+                    className="allm-flex  allm-min-w-[300px] allm-border allm-rounded-xl allm-shadow-md allm-pl-2 allm-pr-1 allm-py-[2px] allm-gap-3"
                     style={{
-                      backgroundColor: "#2563eb",
-                      borderRadius: 12,
-                      padding: 10,
-                      borderWidth: 0,
-                    }}
-                    onClick={() => {
-                      if (isLastMessage) {
-                        handledirectOrderTrackingViaId(order);
-                      }
+                      backgroundColor: "rgb(250, 250, 250)",
+                      color: "black",
+                      textAlign: "center",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                     }}
                   >
-                    <span className="allm-text-white">Track Order</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      } else if (intent?.update_detials) {
-        return (
-          <div
-            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-start `}
-          >
-            <div
-              style={{
-                wordBreak: "break-word",
-                backgroundColor: settings.assistantBgColor,
-                color: settings.botTextColor,
-                marginRight: "5px",
-              }}
-              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[70%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message `}
-            >
-              {intent?.allow ? (
-                <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[12px]">
-                  Please update the required feilds i will update it right now :
-                </p>
-              ) : (
-                <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[12px]">
-                  Order left warehouse, can't update. change fields, i'll
-                  connect you to agent.
-                </p>
-              )}
+                    <span>{order}</span>
 
-              {fields.map((field, index) => (
-                <>
-                  <p className="allm-m-0 allm-text-[12px] allm-leading-[20px] allm-mb-[5px]">
-                    {field.label}
-                  </p>
-                  {field.type === "textarea" ? (
-                    <textarea
-                      key={index}
-                      disabled={!isLastMessage}
-                      style={{ borderRadius: 12 }}
-                      placeholder={field.placeholder}
-                      className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
-                      value={field.value}
-                      onChange={(e) => field.onChange(e.target.value)}
-                      rows={field.rows}
-                    />
-                  ) : (
-                    <input
-                      key={index}
-                      type={field.type}
-                      disabled={!isLastMessage}
-                      style={{ borderRadius: 12 }}
-                      placeholder={field.placeholder}
-                      className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
-                      value={field.value}
-                      onChange={(e) => field.onChange(e.target.value)}
-                    />
-                  )}
-                </>
-              ))}
-              <button
-                className="allm-flex-1 allm-mt-[2px]"
-                disabled={!isLastMessage || !isFormChanged}
+                    <button
+                      style={{
+                        backgroundColor: "#2563eb",
+                        borderRadius: 12,
+                        padding: 10,
+                        borderWidth: 0,
+                      }}
+                      onClick={() => {
+                        if (isLastMessage) {
+                          handledirectOrderTrackingViaId(order);
+                        }
+                      }}
+                    >
+                      <span className="allm-text-white">Track Order</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        } else if (intent?.update_detials) {
+          return (
+            <div
+              className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start `}
+            >
+              <div
                 style={{
-                  backgroundColor: "#2563eb",
-                  borderRadius: 12,
-                  padding: 10,
-                  borderWidth: 0,
-                  opacity: isLastMessage && isFormChanged ? 1 : 0.5,
-                  cursor:
-                    isLastMessage && isFormChanged ? "pointer" : "not-allowed",
+                  wordBreak: "break-word",
+                  backgroundColor: settings.assistantBgColor,
+                  color: settings.botTextColor,
+                  marginRight: "5px",
                 }}
-                onClick={() => {
-                  if (!intent?.allow) {
+                className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[70%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message `}
+              >
+                {intent?.allow ? (
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[12px]">
+                    Please update the required feilds i will update it right now
+                    :
+                  </p>
+                ) : (
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[12px]">
+                    Order left warehouse, can't update. change fields, i'll
+                    connect you to agent.
+                  </p>
+                )}
+
+                {fields.map((field, index) => (
+                  <>
+                    <p className="allm-m-0 allm-text-[12px] allm-leading-[20px] allm-mb-[5px]">
+                      {field.label}
+                    </p>
+                    {field.type === "textarea" ? (
+                      <textarea
+                        key={index}
+                        disabled={!isLastMessage}
+                        style={{ borderRadius: 12 }}
+                        placeholder={field.placeholder}
+                        className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        rows={field.rows}
+                      />
+                    ) : (
+                      <input
+                        key={index}
+                        type={field.type}
+                        disabled={!isLastMessage}
+                        style={{ borderRadius: 12 }}
+                        placeholder={field.placeholder}
+                        className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
+                    )}
+                  </>
+                ))}
+                <button
+                  className="allm-flex-1 allm-mt-[2px]"
+                  disabled={!isLastMessage || !isFormChanged}
+                  style={{
+                    backgroundColor: "#2563eb",
+                    borderRadius: 12,
+                    padding: 10,
+                    borderWidth: 0,
+                    opacity:
+                      phoneNumber &&
+                      address &&
+                      city &&
+                      zip &&
+                      isLastMessage &&
+                      isFormChanged
+                        ? 1
+                        : 0.5,
+                    cursor:
+                      isLastMessage && isFormChanged
+                        ? "pointer"
+                        : "not-allowed",
+                  }}
+                  // onClick={() => {
+                  //   if (!intent?.allow) {
+                  //     const oldDetails = {
+                  //       mobile: intent?.update_detials?.mobile,
+                  //       address: intent?.update_detials?.address,
+                  //       city: intent?.update_detials?.city,
+                  //       zip: intent?.update_detials?.zip,
+                  //     };
+                  //     const updatedDetails = {
+                  //       mobile: phoneNumber,
+                  //       address,
+                  //       city,
+                  //       zip,
+                  //     };
+                  //     cantUpdateUserSoConnectToLiveAgent(
+                  //       oldDetails,
+                  //       updatedDetails
+                  //     );
+                  //   } else {
+                  //     const oldDetails = {
+                  //       mobile: intent?.update_detials?.mobile,
+                  //       address: intent?.update_detials?.address,
+                  //       city: intent?.update_detials?.city,
+                  //       zip: intent?.update_detials?.city,
+                  //     };
+                  //     const updatedDetails = {
+                  //       mobile: phoneNumber,
+                  //       address,
+                  //       city,
+                  //       zip,
+                  //     };
+                  //     directlyUpdateUserDetails(
+                  //       intent?.order_name,
+                  //       oldDetails,
+                  //       updatedDetails
+                  //     );
+                  //   }
+                  // }}
+                  onClick={() => {
+                    const updatedDetails = {
+                      mobile: phoneNumber,
+                      address,
+                      city,
+                      zip,
+                    };
+                    if (!phoneNumber || !address || !city || !zip) {
+                      toast.error("All fields must be filled!");
+                      return;
+                    }
                     const oldDetails = {
                       mobile: intent?.update_detials?.mobile,
                       address: intent?.update_detials?.address,
                       city: intent?.update_detials?.city,
                       zip: intent?.update_detials?.zip,
                     };
-                    const updatedDetails = {
-                      mobile: phoneNumber,
-                      address,
-                      city,
-                      zip,
-                    };
-                    cantUpdateUserSoConnectToLiveAgent(
-                      oldDetails,
-                      updatedDetails
-                    );
-                  } else {
-                    const oldDetails = {
-                      mobile: intent?.update_detials?.mobile,
-                      address: intent?.update_detials?.address,
-                      city: intent?.update_detials?.city,
-                      zip: intent?.update_detials?.city,
-                    };
-                    const updatedDetails = {
-                      mobile: phoneNumber,
-                      address,
-                      city,
-                      zip,
-                    };
-                    directlyUpdateUserDetails(
-                      intent?.order_name,
-                      oldDetails,
-                      updatedDetails
-                    );
-                  }
-                }}
-              >
-                <span className="allm-text-white">Update</span>
-              </button>
-            </div>
-          </div>
-        );
-      } else if (intent?.intent === "product_issue") {
-        return (
-          <div
-            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-start`}
-          >
-            <div
-              style={{
-                wordBreak: "break-word",
-                backgroundColor: settings.assistantBgColor,
-                marginRight: "5px",
-              }}
-              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
-            >
-              <div className="allm-flex allm-flex-col">
-                {intent?.response && (
-                  <ReactMarkdown
-                    children={intent?.response}
-                    components={{
-                      p: ({ node, ...props }) => (
-                        <p
-                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                          style={{
-                            color: settings.botTextColor,
-                          }}
-                          {...props}
-                        />
-                      ),
-                    }}
-                  />
-                )}
+                    if (!intent?.allow) {
+                      cantUpdateUserSoConnectToLiveAgent(
+                        oldDetails,
+                        updatedDetails
+                      );
+                    } else {
+                      directlyUpdateUserDetails(
+                        intent?.order_name,
+                        oldDetails,
+                        updatedDetails
+                      );
+                    }
+                  }}
+                >
+                  <span className="allm-text-white">Update</span>
+                </button>
               </div>
+            </div>
+          );
+        } else if (intent?.intent === "product_issue") {
+          return (
+            <div
+              className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
+            >
               <div
                 style={{
-                  color: settings.botTextColor,
-                  marginTop: 10,
+                  wordBreak: "break-word",
+                  backgroundColor: settings.assistantBgColor,
+                  marginRight: "5px",
                 }}
+                className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
               >
-                <div className="allm-flex allm-flex-col allm-gap-2">
-                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px]">
-                    Select prodcut issue :
-                  </p>
-
-                  <div className="allm-flex allm-justify-between allm-items-center">
-                    {[
-                      { value: "missing", label: "Missing" },
-                      { value: "damaged", label: "Damaged" },
-                      { value: "wrong", label: "Wrong" },
-                    ].map(({ value, label }) => (
-                      <label
-                        key={value}
-                        className="allm-flex allm-items-center allm-gap-[4px] allm-text-[14px]"
-                        style={{ cursor: "pointer" }}
-                      >
-                        <input
-                          type="radio"
-                          disabled={!isLastMessage}
-                          value={selectedProductIssue}
-                          checked={selectedProductIssue === value}
-                          onChange={() => {
-                            setSelectedProductIssue(value);
-                          }}
-                          style={{
-                            width: 18,
-                            height: 18,
-                            accentColor: "#2563eb",
-                          }}
-                        />
-                        <span>{label}</span>
-                      </label>
-                    ))}
-                  </div>
-
-                  <input
-                    type="text"
-                    disabled={!isLastMessage}
-                    style={{
-                      borderRadius: 12,
-                    }}
-                    placeholder={"Enter Order ID #RM123456"}
-                    className="allm-p-2 allm-border allm-rounded allm-mt-[8px]"
-                    value={productIssueOrderId}
-                    onChange={(e) => {
-                      let val = e.target.value;
-                      setProductIssueOrderId(val);
-                    }}
-                  />
-
-                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mt-[8px]">
-                    Provide drive link :
-                  </p>
-                  <p className="allm-m-0 allm-text-[14px] allm-pl-3">
-                    1. unboxing video (from seal opening to full unboxing).
-                  </p>
-                  <p className="allm-m-0 allm-text-[14px]  allm-pl-3">
-                    2. photos of the issue.
-                  </p>
-
-                  {/* Dynamic input field with enforced prefix */}
-                  <input
-                    type="text"
-                    disabled={!isLastMessage}
-                    style={{
-                      borderRadius: 12,
-                    }}
-                    placeholder={"Enter drive link"}
-                    className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
-                    value={productIssueUrl}
-                    onChange={(e) => {
-                      let val = e.target.value;
-                      setProductIssueUrl(val);
-                    }}
-                  />
-
-                  {/* Submit button */}
-
-                  <button
-                    className="allm-flex-1"
-                    disabled={
-                      !selectedProductIssue ||
-                      !productIssueOrderId ||
-                      !productIssueUrl ||
-                      !isLastMessage
-                    }
-                    style={{
-                      backgroundColor: "#2563eb",
-                      borderRadius: 12,
-                      padding: 10,
-                      borderWidth: 0,
-                      opacity:
-                        selectedProductIssue &&
-                        productIssueOrderId &&
-                        productIssueUrl &&
-                        isLastMessage
-                          ? 1
-                          : 0.5,
-                      cursor:
-                        selectedProductIssue &&
-                        productIssueOrderId &&
-                        productIssueUrl &&
-                        isLastMessage
-                          ? "pointer"
-                          : "not-allowed",
-                    }}
-                    onClick={() => {
-                      const message = `Product issue details : \n\n Order Id : ${productIssueOrderId} \n\n Issue type is : ${selectedProductIssue} \n\n Drive URL : ${productIssueUrl}`;
-                      handlePrompt(message);
-                    }}
-                  >
-                    <span className="allm-text-white">Submit</span>
-                  </button>
+                <div className="allm-flex allm-flex-col">
+                  {intent?.response && (
+                    <ReactMarkdown
+                      children={intent?.response}
+                      components={{
+                        p: ({ node, ...props }) => (
+                          <p
+                            className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                      }}
+                    />
+                  )}
                 </div>
-              </div>
-            </div>
-          </div>
-        );
-      } else if (intent?.intent === "update_details") {
-        return (
-          <div
-            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-start `}
-          >
-            <div
-              style={{
-                wordBreak: "break-word",
-                backgroundColor: settings.assistantBgColor,
-                color: settings.botTextColor,
-                marginRight: "5px",
-              }}
-              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[65%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-min-w-[65%]`}
-            >
-              <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[8px]">
-                Please provide the order id for which you want to update your
-                details :
-              </p>
-              <div className="allm-flex allm-flex-col allm-gap-2">
-                <input
-                  type="text"
-                  disabled={!isLastMessage}
-                  style={{
-                    borderRadius: 12,
-                  }}
-                  placeholder={"Enter order id ( #RM123456 )"}
-                  className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
-                  value={updateDetailsOrderId}
-                  onChange={(e) => {
-                    let val = e.target.value;
-                    setUpdateDetailsOrderId(val);
-                  }}
-                />
-
-                {/* Submit button */}
-
-                <button
-                  className="allm-flex-1"
-                  disabled={!updateDetailsOrderId || !isLastMessage}
-                  style={{
-                    backgroundColor: "#2563eb",
-                    borderRadius: 12,
-                    padding: 10,
-                    borderWidth: 0,
-                    opacity: updateDetailsOrderId && isLastMessage ? 1 : 0.5,
-                    cursor:
-                      updateDetailsOrderId && isLastMessage
-                        ? "pointer"
-                        : "not-allowed",
-                  }}
-                  onClick={() => {
-                    handleUserUpdate(updateDetailsOrderId);
-                  }}
-                >
-                  <span className="allm-text-white">Next</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      } else
-        return (
-          <div
-            className={`allm-flex allm-items-start allm-w-full allm-h-fit 
-             allm-justify-start`}
-          >
-            <div
-              style={{
-                wordBreak: "break-word",
-                backgroundColor: settings.assistantBgColor,
-                marginRight: "5px",
-              }}
-              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
-            >
-              <div className="allm-flex allm-flex-col">
-                {intent?.response && (
-                  <ReactMarkdown
-                    children={intent?.response}
-                    components={{
-                      p: ({ node, ...props }) => (
-                        <p
-                          className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                          style={{
-                            color: settings.botTextColor,
-                          }}
-                          {...props}
-                        />
-                      ),
-                    }}
-                  />
-                )}
-              </div>
-              {intent?.intent && intent?.intent !== "order_tracking" ? (
-                <button
-                  style={{
-                    backgroundColor: "#2563eb",
-                    borderRadius: 12,
-                    padding: 10,
-                    borderWidth: 0,
-                    marginTop: 15,
-                  }}
-                  onClick={() => {
-                    setIntent(intent?.intent);
-                    setOpenBottomSheet(true);
-                  }}
-                >
-                  <span className="allm-text-white">Connect to live agent</span>
-                </button>
-              ) : (
                 <div
                   style={{
                     color: settings.botTextColor,
                     marginTop: 10,
                   }}
                 >
-                  <div
-                    className="allm-flex allm-flex-col allm-gap-4"
-                    // allm-min-w-[200px]
-                  >
-                    {/* Radio options with larger buttons */}
+                  <div className="allm-flex allm-flex-col allm-gap-2">
+                    <p className="allm-m-0 allm-text-[14px] allm-leading-[20px]">
+                      Select prodcut issue :
+                    </p>
+
                     <div className="allm-flex allm-justify-between allm-items-center">
                       {[
-                        { value: "orderId", label: "Order ID" },
-                        { value: "phone", label: "Phone No" },
-                        { value: "email", label: "Email" },
+                        { value: "missing", label: "Missing" },
+                        { value: "damaged", label: "Damaged" },
+                        { value: "wrong", label: "Wrong" },
                       ].map(({ value, label }) => (
                         <label
                           key={value}
@@ -934,11 +788,11 @@ const HistoricalMessage = forwardRef(
                         >
                           <input
                             type="radio"
-                            value={value}
-                            checked={selectedOption === value}
+                            disabled={!isLastMessage}
+                            value={selectedProductIssue}
+                            checked={selectedProductIssue === value}
                             onChange={() => {
-                              setSelectedOption(value);
-                              setFormValue(""); // Reset input when changing type
+                              setSelectedProductIssue(value);
                             }}
                             style={{
                               width: 18,
@@ -951,6 +805,31 @@ const HistoricalMessage = forwardRef(
                       ))}
                     </div>
 
+                    <input
+                      type="text"
+                      disabled={!isLastMessage}
+                      style={{
+                        borderRadius: 12,
+                      }}
+                      placeholder={"Enter Order ID #RM123456"}
+                      className="allm-p-2 allm-border allm-rounded allm-mt-[8px]"
+                      value={productIssueOrderId}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        setProductIssueOrderId(val);
+                      }}
+                    />
+
+                    <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mt-[8px]">
+                      Provide drive link :
+                    </p>
+                    <p className="allm-m-0 allm-text-[14px] allm-pl-3">
+                      1. unboxing video (from seal opening to full unboxing).
+                    </p>
+                    <p className="allm-m-0 allm-text-[14px]  allm-pl-3">
+                      2. photos of the issue.
+                    </p>
+
                     {/* Dynamic input field with enforced prefix */}
                     <input
                       type="text"
@@ -958,345 +837,564 @@ const HistoricalMessage = forwardRef(
                       style={{
                         borderRadius: 12,
                       }}
-                      placeholder={
-                        selectedOption === "orderId"
-                          ? "Enter Order ID #RM123456"
-                          : selectedOption === "phone"
-                            ? "Enter Phone Number "
-                            : "Enter Email"
-                      }
-                      className="allm-p-2 allm-border allm-rounded"
-                      value={formValue}
+                      placeholder={"Enter drive link"}
+                      className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                      value={productIssueUrl}
                       onChange={(e) => {
                         let val = e.target.value;
-                        setFormValue(val);
+                        setProductIssueUrl(val);
                       }}
                     />
 
                     {/* Submit button */}
-                    <div className="allm-flex allm-gap-[8px] ">
-                      {orderTrackingInProgress && (
-                        <button
-                          className="allm-flex-1"
-                          style={{
-                            backgroundColor: "#330000",
-                            borderColor: "#ff1a1a",
-                            borderRadius: 12,
-                            padding: 10,
-                            borderWidth: 1,
-                            borderStyle: "solid",
-                          }}
-                          onClick={() => {
-                            setOrderTrackingInProgress(false);
-                          }}
-                        >
-                          <span className="allm-text-white">
-                            Cancel Tracking
-                          </span>
-                        </button>
-                      )}
 
-                      <button
-                        className="allm-flex-1"
-                        disabled={!formValue.trim() || !isLastMessage}
-                        style={{
-                          backgroundColor: "#2563eb",
-                          borderRadius: 12,
-                          padding: 10,
-                          borderWidth: 0,
-                          opacity: formValue.trim() && isLastMessage ? 1 : 0.5,
-                          cursor:
-                            formValue.trim() && isLastMessage
-                              ? "pointer"
-                              : "not-allowed",
-                        }}
-                        onClick={() => {
-                          if (isLastMessage) {
-                            if (selectedOption === "orderId") {
-                              handledirectOrderTrackingViaId(formValue);
-                              setOrderTrackingInProgress(true);
-                            } else {
-                              handleOrderTracking(selectedOption, formValue);
-                              setOrderTrackingInProgress(true);
-                            }
-                          }
-                        }}
-                      >
-                        <span className="allm-text-white">Track Order</span>
-                      </button>
-                    </div>
+                    <button
+                      className="allm-flex-1"
+                      disabled={
+                        !selectedProductIssue ||
+                        !productIssueOrderId ||
+                        !productIssueUrl ||
+                        !isLastMessage
+                      }
+                      style={{
+                        backgroundColor: "#2563eb",
+                        borderRadius: 12,
+                        padding: 10,
+                        borderWidth: 0,
+                        opacity:
+                          selectedProductIssue &&
+                          productIssueOrderId &&
+                          productIssueUrl &&
+                          isLastMessage
+                            ? 1
+                            : 0.5,
+                        cursor:
+                          selectedProductIssue &&
+                          productIssueOrderId &&
+                          productIssueUrl &&
+                          isLastMessage
+                            ? "pointer"
+                            : "not-allowed",
+                      }}
+                      onClick={() => {
+                        const message = `Product issue details : \n\n Order Id : ${productIssueOrderId} \n\n Issue type is : ${selectedProductIssue} \n\n Drive URL : ${productIssueUrl}`;
+                        handlePrompt(message);
+                      }}
+                    >
+                      <span className="allm-text-white">Submit</span>
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        );
-    }
+          );
+        } else if (intent?.intent === "update_details") {
+          return (
+            <div
+              className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start `}
+            >
+              <div
+                style={{
+                  wordBreak: "break-word",
+                  backgroundColor: settings.assistantBgColor,
+                  color: settings.botTextColor,
+                  marginRight: "5px",
+                }}
+                className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[65%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-min-w-[65%]`}
+              >
+                <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[8px]">
+                  Please provide the order id for which you want to update your
+                  details :
+                </p>
+                <div className="allm-flex allm-flex-col allm-gap-2">
+                  <input
+                    type="text"
+                    disabled={!isLastMessage}
+                    style={{
+                      borderRadius: 12,
+                    }}
+                    placeholder={"Enter order id ( #RM123456 )"}
+                    className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                    value={updateDetailsOrderId}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      setUpdateDetailsOrderId(val);
+                    }}
+                  />
 
-    return (
-      <div className="py-[5px] allm-tracking-[0px]">
-        {/* Render Product Card if exists */}
-        {role === "user" && product && (
-          <div className="allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end allm-my-2">
-            <ProductCard
-              product={product}
-              setReplyProduct={setReplyProduct}
-              embedSettings={settings}
-            />
-          </div>
-        )}
-        <div
-          key={uuid}
-          ref={ref}
-          className={`allm-flex allm-items-start allm-w-full allm-h-fit ${
-            role === "user" ? "allm-justify-end" : "allm-justify-start"
-          }`}
-        >
+                  {/* Submit button */}
+
+                  <button
+                    className="allm-flex-1"
+                    disabled={!updateDetailsOrderId || !isLastMessage}
+                    style={{
+                      backgroundColor: "#2563eb",
+                      borderRadius: 12,
+                      padding: 10,
+                      borderWidth: 0,
+                      opacity: updateDetailsOrderId && isLastMessage ? 1 : 0.5,
+                      cursor:
+                        updateDetailsOrderId && isLastMessage
+                          ? "pointer"
+                          : "not-allowed",
+                    }}
+                    onClick={() => {
+                      handleUserUpdate(updateDetailsOrderId);
+                    }}
+                  >
+                    <span className="allm-text-white">Next</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        } else
+          return (
+            <div
+              className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
+            >
+              <div
+                style={{
+                  wordBreak: "break-word",
+                  backgroundColor: settings.assistantBgColor,
+                  marginRight: "5px",
+                }}
+                className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
+              >
+                <div className="allm-flex allm-flex-col">
+                  {intent?.response && (
+                    <ReactMarkdown
+                      children={intent?.response}
+                      components={{
+                        p: ({ node, ...props }) => (
+                          <p
+                            className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                            style={{
+                              color: settings.botTextColor,
+                            }}
+                            {...props}
+                          />
+                        ),
+                      }}
+                    />
+                  )}
+                </div>
+                {intent?.intent && intent?.intent !== "order_tracking" ? (
+                  <button
+                    style={{
+                      backgroundColor: "#2563eb",
+                      borderRadius: 12,
+                      padding: 10,
+                      borderWidth: 0,
+                      marginTop: 15,
+                    }}
+                    onClick={() => {
+                      setIntent(intent?.intent);
+                      setOpenBottomSheet(true);
+                    }}
+                  >
+                    <span className="allm-text-white">
+                      Connect to live agent
+                    </span>
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      color: settings.botTextColor,
+                      marginTop: 10,
+                    }}
+                  >
+                    <div
+                      className="allm-flex allm-flex-col allm-gap-4"
+                      // allm-min-w-[200px]
+                    >
+                      {/* Radio options with larger buttons */}
+                      <div className="allm-flex allm-justify-between allm-items-center">
+                        {[
+                          { value: "orderId", label: "Order ID" },
+                          { value: "phone", label: "Phone No" },
+                          { value: "email", label: "Email" },
+                        ].map(({ value, label }) => (
+                          <label
+                            key={value}
+                            className="allm-flex allm-items-center allm-gap-[4px] allm-text-[14px]"
+                            style={{ cursor: "pointer" }}
+                          >
+                            <input
+                              type="radio"
+                              value={value}
+                              checked={selectedOption === value}
+                              onChange={() => {
+                                setSelectedOption(value);
+                                setFormValue(""); // Reset input when changing type
+                              }}
+                              style={{
+                                width: 18,
+                                height: 18,
+                                accentColor: "#2563eb",
+                              }}
+                            />
+                            <span>{label}</span>
+                          </label>
+                        ))}
+                      </div>
+
+                      {/* Dynamic input field with enforced prefix */}
+                      <input
+                        type="text"
+                        disabled={!isLastMessage}
+                        style={{
+                          borderRadius: 12,
+                        }}
+                        placeholder={
+                          selectedOption === "orderId"
+                            ? "Enter Order ID #RM123456"
+                            : selectedOption === "phone"
+                              ? "Enter Phone Number "
+                              : "Enter Email"
+                        }
+                        className="allm-p-2 allm-border allm-rounded"
+                        value={formValue}
+                        onChange={(e) => {
+                          let val = e.target.value;
+                          setFormValue(val);
+                        }}
+                      />
+
+                      {/* Submit button */}
+                      <div className="allm-flex allm-gap-[8px] ">
+                        {orderTrackingInProgress && (
+                          <button
+                            className="allm-flex-1"
+                            style={{
+                              backgroundColor: "#330000",
+                              borderColor: "#ff1a1a",
+                              borderRadius: 12,
+                              padding: 10,
+                              borderWidth: 1,
+                              borderStyle: "solid",
+                            }}
+                            onClick={() => {
+                              setOrderTrackingInProgress(false);
+                            }}
+                          >
+                            <span className="allm-text-white">
+                              Cancel Tracking
+                            </span>
+                          </button>
+                        )}
+
+                        <button
+                          className="allm-flex-1"
+                          disabled={!formValue.trim() || !isLastMessage}
+                          style={{
+                            backgroundColor: "#2563eb",
+                            borderRadius: 12,
+                            padding: 10,
+                            borderWidth: 0,
+                            opacity:
+                              formValue.trim() && isLastMessage ? 1 : 0.5,
+                            cursor:
+                              formValue.trim() && isLastMessage
+                                ? "pointer"
+                                : "not-allowed",
+                          }}
+                          onClick={() => {
+                            if (isLastMessage) {
+                              if (selectedOption === "orderId") {
+                                handledirectOrderTrackingViaId(formValue);
+                                setOrderTrackingInProgress(true);
+                              } else {
+                                handleOrderTracking(selectedOption, formValue);
+                                setOrderTrackingInProgress(true);
+                              }
+                            }
+                          }}
+                        >
+                          <span className="allm-text-white">Track Order</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+      }
+
+      return (
+        <div className="py-[5px] allm-tracking-[0px]">
+          {/* Render Product Card if exists */}
+          {role === "user" && product && (
+            <div className="allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end allm-my-2">
+              <ProductCard
+                product={product}
+                setReplyProduct={setReplyProduct}
+                embedSettings={settings}
+              />
+            </div>
+          )}
           <div
-            style={{
-              wordBreak: "break-word",
-              backgroundColor:
-                role === "user"
-                  ? settings.userBgColor
-                  : settings.assistantBgColor,
-              marginRight: role === "user" && "5px",
-            }}
-            className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${
-              error
-                ? "allm-bg-red-200 allm-rounded-lg allm-mr-[37px] allm-ml-[9px]"
-                : role === "user"
-                  ? `${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`
-                  : `${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message`
+            key={uuid}
+            ref={ref}
+            className={`allm-flex allm-items-start allm-w-full allm-h-fit ${
+              role === "user" ? "allm-justify-end" : "allm-justify-start"
             }`}
           >
-            <div className="allm-flex allm-flex-col">
-              {error ? (
-                <div className="allm-p-2 allm-rounded-lg allm-bg-red-50 allm-text-red-500">
-                  <span className={`allm-inline-block `}>
-                    <Warning className="allm-h-4 allm-w-4 allm-mb-1 allm-inline-block" />{" "}
-                    Could not respond to message.
-                  </span>
-                  <p className="allm-text-xs allm-font-mono allm-mt-2 allm-border-l-2 allm-border-red-500 allm-pl-2 allm-bg-red-300 allm-p-2 allm-rounded-sm">
-                    {errorMsg || "Server error"}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Render the text after product for user */}
-                  {role === "user" && textAfterProduct && (
-                    <ReactMarkdown
-                      children={textAfterProduct}
-                      components={{
-                        h1: ({ node, ...props }) => (
-                          <h1
-                            className=" allm-font-bold  allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.userTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        h2: ({ node, ...props }) => (
-                          <h2
-                            className="  allm-font-semibold allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.userTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        h3: ({ node, ...props }) => (
-                          <h3
-                            className=" allm-font-medium  allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.userTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        p: ({ node, ...props }) => (
-                          <p
-                            className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.userTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        ul: ({ node, ...props }) => (
-                          <ul
-                            className="allm-list-disc allm-pl-4  allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.userTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        ol: ({ node, ...props }) => (
-                          <ol
-                            className="allm-list-decimal allm-pl-4 allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.userTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        li: ({ node, ...props }) => (
-                          <li
-                            className="allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.userTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                      }}
-                    />
-                    // <span
-                    //   className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
-                    //   style={{
-                    //     color: settings.userTextColor,
-                    //   }}
-                    //   dangerouslySetInnerHTML={{
-                    //     __html: DOMPurify.sanitize(
-                    //       renderMarkdown(textAfterProduct)
-                    //     ),
-                    //   }}
-                    // />
-                  )}
+            <div
+              style={{
+                wordBreak: "break-word",
+                backgroundColor:
+                  role === "user"
+                    ? settings.userBgColor
+                    : settings.assistantBgColor,
+                marginRight: role === "user" && "5px",
+              }}
+              className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${
+                error
+                  ? "allm-bg-red-200 allm-rounded-lg allm-mr-[37px] allm-ml-[9px]"
+                  : role === "user"
+                    ? `${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`
+                    : `${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message`
+              }`}
+            >
+              <div className="allm-flex allm-flex-col">
+                {error ? (
+                  <div className="allm-p-2 allm-rounded-lg allm-bg-red-50 allm-text-red-500">
+                    <span className={`allm-inline-block `}>
+                      <Warning className="allm-h-4 allm-w-4 allm-mb-1 allm-inline-block" />{" "}
+                      Could not respond to message.
+                    </span>
+                    <p className="allm-text-xs allm-font-mono allm-mt-2 allm-border-l-2 allm-border-red-500 allm-pl-2 allm-bg-red-300 allm-p-2 allm-rounded-sm">
+                      {errorMsg || "Server error"}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Render the text after product for user */}
+                    {role === "user" && textAfterProduct && (
+                      <ReactMarkdown
+                        children={textAfterProduct}
+                        components={{
+                          h1: ({ node, ...props }) => (
+                            <h1
+                              className=" allm-font-bold  allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.userTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          h2: ({ node, ...props }) => (
+                            <h2
+                              className="  allm-font-semibold allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.userTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3
+                              className=" allm-font-medium  allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.userTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          p: ({ node, ...props }) => (
+                            <p
+                              className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.userTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          ul: ({ node, ...props }) => (
+                            <ul
+                              className="allm-list-disc allm-pl-4  allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.userTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          ol: ({ node, ...props }) => (
+                            <ol
+                              className="allm-list-decimal allm-pl-4 allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.userTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          li: ({ node, ...props }) => (
+                            <li
+                              className="allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.userTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                        }}
+                      />
+                      // <span
+                      //   className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
+                      //   style={{
+                      //     color: settings.userTextColor,
+                      //   }}
+                      //   dangerouslySetInnerHTML={{
+                      //     __html: DOMPurify.sanitize(
+                      //       renderMarkdown(textAfterProduct)
+                      //     ),
+                      //   }}
+                      // />
+                    )}
 
-                  {/* Assistant rendering logic */}
-                  {role !== "user" && (
-                    <ReactMarkdown
-                      children={textBeforeSuggestions}
-                      components={{
-                        h1: ({ node, ...props }) => (
-                          <h1
-                            className=" allm-font-bold  allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.botTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        h2: ({ node, ...props }) => (
-                          <h2
-                            className="  allm-font-semibold allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.botTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        h3: ({ node, ...props }) => (
-                          <h3
-                            className=" allm-font-medium  allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.botTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        p: ({ node, ...props }) => (
-                          <p
-                            className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.botTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        ul: ({ node, ...props }) => (
-                          <ul
-                            className="allm-list-disc allm-pl-4  allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.botTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        ol: ({ node, ...props }) => (
-                          <ol
-                            className="allm-list-decimal allm-pl-4 allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.botTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        li: ({ node, ...props }) => (
-                          <li
-                            className="allm-text-[14px] allm-leading-[20px]"
-                            style={{
-                              color: settings.botTextColor,
-                            }}
-                            {...props}
-                          />
-                        ),
-                        img: () => null,
-                        a: () => null,
-                      }}
-                    />
+                    {/* Assistant rendering logic */}
+                    {role !== "user" && (
+                      <ReactMarkdown
+                        children={textBeforeSuggestions}
+                        components={{
+                          h1: ({ node, ...props }) => (
+                            <h1
+                              className=" allm-font-bold  allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.botTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          h2: ({ node, ...props }) => (
+                            <h2
+                              className="  allm-font-semibold allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.botTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3
+                              className=" allm-font-medium  allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.botTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          p: ({ node, ...props }) => (
+                            <p
+                              className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.botTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          ul: ({ node, ...props }) => (
+                            <ul
+                              className="allm-list-disc allm-pl-4  allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.botTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          ol: ({ node, ...props }) => (
+                            <ol
+                              className="allm-list-decimal allm-pl-4 allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.botTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          li: ({ node, ...props }) => (
+                            <li
+                              className="allm-text-[14px] allm-leading-[20px]"
+                              style={{
+                                color: settings.botTextColor,
+                              }}
+                              {...props}
+                            />
+                          ),
+                          img: () => null,
+                          a: () => null,
+                        }}
+                      />
 
-                    // <span
-                    //   className={`markdown-content allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
-                    //   style={{
-                    //     color: settings.botTextColor,
-                    //   }}
-                    //   dangerouslySetInnerHTML={{
-                    //     __html: DOMPurify.sanitize(
-                    //       renderMarkdown(textBeforeSuggestions)
-                    //     ),
-                    //   }}
-                    // />
-                  )}
-                </>
-              )}
+                      // <span
+                      //   className={`markdown-content allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 allm-text-[14px] allm-allm-leading-[20px]`}
+                      //   style={{
+                      //     color: settings.botTextColor,
+                      //   }}
+                      //   dangerouslySetInnerHTML={{
+                      //     __html: DOMPurify.sanitize(
+                      //       renderMarkdown(textBeforeSuggestions)
+                      //     ),
+                      //   }}
+                      // />
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
+
+          {suggestions?.products.length > 0 && (
+            <div className="allm-pl-4">
+              <ProductSuggestions
+                suggestions={suggestions}
+                setReplyProduct={setReplyProduct}
+                embedSettings={settings}
+              />
+            </div>
+          )}
+
+          {/* Display prompts if available */}
+          {isLastBotReply && prompts?.length > 0 && (
+            <div className="allm-my-4 allm-flex allm-flex-col allm-gap-y-2 allm-self-end allm-items-end  ">
+              {prompts.slice(0, 5).map((prompt, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: `1px solid ${settings.userBgColor}`,
+                    backgroundColor: lightenAndDullColor(
+                      settings.userBgColor,
+                      70,
+                      0.9
+                    ),
+                    maxWidth: "80%",
+                    color: settings.userTextColor,
+                  }}
+                  onClick={() => {
+                    if (
+                      settings.sessionId !==
+                      "d5c5134a-ab48-458d-bc90-16cb66456426"
+                    )
+                      handlePrompt(prompt);
+                  }}
+                  className=" allm-rounded-[24px] allm-px-[16px] allm-py-2 allm-text-[14px] allm-leading-normal  allm-cursor-pointer"
+                >
+                  {prompt}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      );
+    };
 
-        {suggestions?.products.length > 0 && (
-          <div className="allm-pl-4">
-            <ProductSuggestions
-              suggestions={suggestions}
-              setReplyProduct={setReplyProduct}
-              embedSettings={settings}
-            />
-          </div>
-        )}
-
-        {/* Display prompts if available */}
-        {isLastBotReply && prompts?.length > 0 && (
-          <div className="allm-my-4 allm-flex allm-flex-col allm-gap-y-2 allm-self-end allm-items-end  ">
-            {prompts.slice(0, 5).map((prompt, index) => (
-              <div
-                key={index}
-                style={{
-                  border: `1px solid ${settings.userBgColor}`,
-                  backgroundColor: lightenAndDullColor(
-                    settings.userBgColor,
-                    70,
-                    0.9
-                  ),
-                  maxWidth: "80%",
-                  color: settings.userTextColor,
-                }}
-                onClick={() => {
-                  if (
-                    settings.sessionId !==
-                    "d5c5134a-ab48-458d-bc90-16cb66456426"
-                  )
-                    handlePrompt(prompt);
-                }}
-                className=" allm-rounded-[24px] allm-px-[16px] allm-py-2 allm-text-[14px] allm-leading-normal  allm-cursor-pointer"
-              >
-                {prompt}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+    return (
+      <Suspense fallback={<></>}>
+        <RenderContent />
+      </Suspense>
     );
   }
 );

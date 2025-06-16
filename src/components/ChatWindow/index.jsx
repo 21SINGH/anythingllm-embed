@@ -29,10 +29,7 @@ export default function ChatWindow({
           setOpenBottomSheet={setOpenBottomSheet}
           isLargeScreen={isLargeScreen}
         />
-        <div
-          className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
-          style={{ backgroundColor: settings.bgColor }}
-        >
+        <div className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain">
           <ChatHistoryLoading />
         </div>
       </div>
@@ -105,4 +102,3 @@ function setEventDelegatorForCodeSnippets() {
     copyCodeSnippet(uuidCode);
   });
 }
-

@@ -1,8 +1,7 @@
 import HistoricalMessage from "./HistoricalMessage";
 import PromptReply from "./PromptReply";
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, CircleNotch } from "@phosphor-icons/react";
-import { embedderSettings } from "@/main";
+import { CircleNotch } from "@phosphor-icons/react";
 import debounce from "lodash.debounce";
 import { SEND_TEXT_EVENT } from "..";
 
@@ -19,13 +18,12 @@ export default function ChatHistory({
   orderTrackingInProgress,
   handleUserUpdate,
   cantUpdateUserSoConnectToLiveAgent,
-  directlyUpdateUserDetails
+  directlyUpdateUserDetails,
 }) {
   const replyRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const chatHistoryRef = useRef(null);
 
-  
   useEffect(() => {
     scrollToBottom();
   }, [history]);
@@ -133,7 +131,9 @@ export default function ChatHistory({
             setOrderTrackingInProgress={setOrderTrackingInProgress}
             orderTrackingInProgress={orderTrackingInProgress}
             handleUserUpdate={handleUserUpdate}
-            cantUpdateUserSoConnectToLiveAgent={cantUpdateUserSoConnectToLiveAgent}
+            cantUpdateUserSoConnectToLiveAgent={
+              cantUpdateUserSoConnectToLiveAgent
+            }
             directlyUpdateUserDetails={directlyUpdateUserDetails}
           />
         );
@@ -145,7 +145,7 @@ export default function ChatHistory({
 export function ChatHistoryLoading() {
   return (
     <div className="allm-h-full allm-w-full allm-relative">
-      <div className="allm-h-full allm-max-h-[82vh] allm-pb-[100px] allm-pt-[5px] allm-bg-gray-100 allm-rounded-lg allm-px-2 allm-h-full allm-mt-2 allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll">
+      <div className="allm-h-full allm-max-h-[82vh] allm-bg-[#1A1A1A] allm-pb-[100px] allm-pt-[5px] allm-rounded-lg allm-px-2 allm-mt-2 allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll">
         <div className="allm-flex allm-h-full allm-flex-col allm-items-center allm-justify-center">
           <CircleNotch
             size={14}

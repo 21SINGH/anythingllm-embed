@@ -7,6 +7,7 @@ import ChatWindow from "./components/ChatWindow";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
+import BrandAnalytics from "@/models/brandAnalytics";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
@@ -19,8 +20,11 @@ export default function App() {
   const [nudgeText, setNudgeText] = useState("");
 
   useEffect(() => {
-    console.log("event listenr useffect");
+    if (isChatOpen)
+      BrandAnalytics.sendAnalytics(embedSettings, sessionId, "tap_widget");
+  }, [isChatOpen]);
 
+  useEffect(() => {
     const handleNudgeUpdate = (event) => {
       const { key, value } = event.detail || {};
 
@@ -149,7 +153,6 @@ export default function App() {
 
   const openBot = async () => {
     toggleOpenChat(true);
-    // await BrandAnalytics.sendAnalytics(embedSettings, sessionId, "tap_widget");
   };
 
   const variants = {
