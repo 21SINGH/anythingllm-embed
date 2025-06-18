@@ -421,7 +421,7 @@ const HistoricalMessage = forwardRef(
       // const { product, textAfterProduct } = parsedData;
       // const { textBeforeSuggestions, suggestions, prompts, intent } = parsedData;
 
-      const [selectedOption, setSelectedOption] = useState("orderId");
+      const [selectedOption, setSelectedOption] = useState("phone");
       const [formValue, setFormValue] = useState("");
 
       const [selectedProductIssue, setSelectedProductIssue] = useState("");
@@ -1016,8 +1016,8 @@ const HistoricalMessage = forwardRef(
                       {/* Radio options with larger buttons */}
                       <div className="allm-flex allm-justify-between allm-items-center">
                         {[
-                          { value: "orderId", label: "Order ID" },
                           { value: "phone", label: "Phone No" },
+                          { value: "orderId", label: "Order ID" },
                           { value: "email", label: "Email" },
                         ].map(({ value, label }) => (
                           <label

@@ -9,16 +9,19 @@
       "description": "If user ask about delivery delay or late delivery "
     },
     {
-      "tag": "frustration",
-      "description": "when user is frustrated"
-    },
-    {
       "tag": "order_tracking",
       "description": "User is asking about their order status, tracking, or delivery progress"
+    },
+    {
+      "tag": "connect to agent",
+      "description": "User wants to connect to a live agent for assistance and he has valid reason "
     }
   ],
-  "Prioritize recommending high-recommendation products if relevant": "Helios - 3 In 1 Sunscreen (Resorcinol , Glabridin & Kojic Acid)",
+  "Prioritize recommending high-recommendation products if relevant": "Birthday - Bundle, Adonis - Kit, Titan - CSM 3 Combo",
   "response_handling": {
+    "if_user_says_cancel_order": {
+      "response_template": "We understand things can change. However, cancellations aren't available for sale-period purchases as per our policy. If there’s a specific concern, feel free to share and we’ll do our best to help."
+    },
     "if_user_says_havent_received_order_yet": {
       "condition": "Message contains phrases like 'haven’t received my order', 'didn’t get my order', 'still waiting', 'where is my order'",
       "response_template": "@@INTENT START@@{  'response': 'Please provide us the appropriate data. \n\n We’ll fetch your tracking info in a moment. \n\n',  'intent': 'order_tracking'}@@INTENT END@@"
@@ -44,12 +47,9 @@
     "if_user_provided_product_issues_detials": {
       "response_template": "@@INTENT START@@{  'response': 'Dynamically respond back as to connecting to live agent give a very short descriptions as to what detials you got  \n\n',  'intent': 'product_issue_detials'}@@INTENT END@@"
     },
-    "if_user_provided_updated_address": {
-      "response_template": "@@INTENT START@@{  'response': 'Let me connect to live agent,for updating your new address: ',  'intent': 'update_address'}@@INTENT END@@"
-    },
-    "if_user_requests_connet_to_agent_but_no_detected_intent": {
-      "condition": "User says things like 'talk to agent', 'connect to human', etc., but no valid intent is detected from the message.",
-      "response_template": "I’d love to help! But first, please tell us what the issue is 😊"
+    "if_user_want_to_update_user_detials_or_change_user_details_or_modify_user_detials": {
+      "condition": "User says I want to update my details, change my address, update my phone number, etc.",
+      "response_template": "@@INTENT START@@{  'response': 'Let me connect to live agent,for updating your new address: ',  'intent': 'update_details'}@@INTENT END@@"
     },
     "if_user_requests_connet_to_agent_and_there_detected_intent_then": {
       "response_template": "@@INTENT START@@{  'response': '[Dynamically respond back based upon then MatchedDetectedIntent.tag that i can't help with this intent i will connect you to our agent ]', 'intent': '[MatchedDetectedIntent.tag]'}@@INTENT END@@"

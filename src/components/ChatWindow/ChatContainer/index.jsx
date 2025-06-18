@@ -341,6 +341,7 @@ export default function ChatContainer({
   };
 
   const handleOrderTracking = async (type, value) => {
+    const cleanedValue = type === "phone" ? value.replace(/\s+/g, "") : value.trim();
     const userEntry = {
       content: value,
       role: "user",
@@ -355,7 +356,7 @@ export default function ChatContainer({
 
     setChatHistory((prev) => [...prev, userEntry, loadingEntry]);
 
-    const queryParam = type !== "phone" ? `email=${value}` : `phone=${value}`;
+    const queryParam = type !== "phone" ? `email=${value}` : `phone=${cleanedValue}`;
 
     fetch(
       `https://shoppie-backend.aroundme.global/api/stores/order-names?host=${settings.host}&${queryParam}`,
