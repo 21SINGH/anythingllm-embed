@@ -788,6 +788,8 @@ const HistoricalMessage = forwardRef(
                         >
                           <input
                             type="radio"
+                            name="productIssue" // Group radio buttons
+                            id={`productIssue-${value}`} // Unique ID
                             disabled={!isLastMessage}
                             value={selectedProductIssue}
                             checked={selectedProductIssue === value}
@@ -798,6 +800,7 @@ const HistoricalMessage = forwardRef(
                               width: 18,
                               height: 18,
                               accentColor: "#2563eb",
+                              display: "block",
                             }}
                           />
                           <span>{label}</span>
@@ -949,7 +952,7 @@ const HistoricalMessage = forwardRef(
               </div>
             </div>
           );
-        } else
+        } else {
           return (
             <div
               className={`allm-flex allm-items-start allm-w-full allm-h-fit 
@@ -1034,6 +1037,7 @@ const HistoricalMessage = forwardRef(
                                 width: 18,
                                 height: 18,
                                 accentColor: "#2563eb",
+                                display: "block",
                               }}
                             />
                             <span>{label}</span>
@@ -1122,6 +1126,7 @@ const HistoricalMessage = forwardRef(
               </div>
             </div>
           );
+        }
       }
 
       return (

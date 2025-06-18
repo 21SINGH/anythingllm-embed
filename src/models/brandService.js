@@ -17,14 +17,14 @@ const BrandService = {
 
       let data = await response.json();
 
-      if (baseApiUrl === "https://anythingllm-dev1.aroundme.global/api/embed") {
-        console.log("setting up dev emebed id");
+      // if (baseApiUrl === "https://anythingllm-dev1.aroundme.global/api/embed") {
+      //   console.log("setting up dev emebed id");
 
-        data = {
-          ...data,
-          embed_id: "ad86110c-462b-41bd-b8b5-b7a889eb1b50",
-        };
-      }
+      //   data = {
+      //     ...data,
+      //     embed_id: "ad86110c-462b-41bd-b8b5-b7a889eb1b50",
+      //   };
+      // }
 
       return data;
     } catch (error) {

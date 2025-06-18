@@ -24,28 +24,28 @@ export default function App() {
       BrandAnalytics.sendAnalytics(embedSettings, sessionId, "tap_widget");
   }, [isChatOpen]);
 
-  useEffect(() => {
-    const handleNudgeUpdate = (event) => {
-      const { key, value } = event.detail || {};
+  // useEffect(() => {
+  //   const handleNudgeUpdate = (event) => {
+  //     const { key, value } = event.detail || {};
 
-      if (key === "shoppieAINudgeMessage") {
-        setNudgeAppear(false);
-        setNudgeText(value);
+  //     if (key === "shoppieAINudgeMessage") {
+  //       setNudgeAppear(false);
+  //       setNudgeText(value);
 
-        setTimeout(() => {
-          setNudgeAppear(true);
-        }, 2000);
+  //       setTimeout(() => {
+  //         setNudgeAppear(true);
+  //       }, 400);
 
-        console.log("New nudge message:", value);
-      }
-    };
+  //       console.log("New nudge message:", value);
+  //     }
+  //   };
 
-    window.addEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
+  //   window.addEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
 
-    return () => {
-      window.removeEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
+  //   };
+  // }, []);
 
   useEffect(() => {
     if (embedSettings?.openingMessage !== "") {
@@ -291,9 +291,6 @@ export default function App() {
                           className="allm-text-[14px]  allm-line-clamp-3 allm-leading-[20px]"
                         >
                           {nudgeText}
-                          {/* {showFirstMessage
-                            ? embedSettings.openingMessage
-                            : embedSettings?.nudgeText} */}
                         </span>
                       </div>
                     </div>
