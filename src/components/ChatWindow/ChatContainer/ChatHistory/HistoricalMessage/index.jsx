@@ -999,7 +999,7 @@ const HistoricalMessage = forwardRef(
                     }}
                   >
                     <span className="allm-text-white">
-                      Connect to live agent
+                      Connect to support team
                     </span>
                   </button>
                 ) : (
@@ -1565,7 +1565,7 @@ const OrderDetailsCard = ({
             setOpenBottomSheet(true);
           }}
         >
-          <span className="allm-text-white">Connect to Agent</span>
+          <span className="allm-text-white">Connect to support team</span>
         </button>
       )}
     </div>
