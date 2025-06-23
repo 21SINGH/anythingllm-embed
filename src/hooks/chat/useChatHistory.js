@@ -39,7 +39,9 @@ export default function useChatHistory(settings = null, sessionId = null) {
             settings,
             sessionId
           );
-          setMessages([welcomeMessage, ...formattedMessages]);
+          if (formattedMessages.length > 0) {
+            setMessages([...formattedMessages]);
+          } else setMessages([welcomeMessage, ...formattedMessages]);
           setLoading(false);
         } catch (error) {
           console.error("Error fetching historical chats:", error);

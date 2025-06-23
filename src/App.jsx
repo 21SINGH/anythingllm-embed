@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
 import BrandAnalytics from "@/models/brandAnalytics";
+import BrandService from "@/models/brandService";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
@@ -18,34 +19,46 @@ export default function App() {
   const [showFirstMessage, setShowFirstMessage] = useState(true);
   const [nudgeAppear, setNudgeAppear] = useState(false);
   const [nudgeText, setNudgeText] = useState("");
+  const [nudgeClick, setNudgeClick] = useState(false);
+  const [followUpQuestion, setFollowUpQuestions] = useState([]);
+  const [loadingFollowUpQuestion, setLoadingFollowUpQuestions] =
+    useState(false);
 
   useEffect(() => {
     if (isChatOpen)
       BrandAnalytics.sendAnalytics(embedSettings, sessionId, "tap_widget");
   }, [isChatOpen]);
 
-  // useEffect(() => {
-  //   const handleNudgeUpdate = (event) => {
-  //     const { key, value } = event.detail || {};
+  useEffect(() => {
+    setNudgeText(
+      "Consider adding Kratos - Barrier Repair Moisturizer for hydration and skin protection"
+    );
+    setNudgeAppear(true);
+    setNudgeClick(true);
+  }, [nudgeText]);
 
-  //     if (key === "shoppieAINudgeMessage") {
-  //       setNudgeAppear(false);
-  //       setNudgeText(value);
+  useEffect(() => {
+    const handleNudgeUpdate = (event) => {
+      const { key, value } = event.detail || {};
 
-  //       setTimeout(() => {
-  //         setNudgeAppear(true);
-  //       }, 400);
+      if (key === "shoppieAINudgeMessage") {
+        setNudgeAppear(false);
+        setNudgeText(value);
 
-  //       console.log("New nudge message:", value);
-  //     }
-  //   };
+        setTimeout(() => {
+          setNudgeAppear(true);
+        }, 400);
 
-  //   window.addEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
+        console.log("New nudge message:", value);
+      }
+    };
 
-  //   return () => {
-  //     window.removeEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
-  //   };
-  // }, []);
+    window.addEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
+
+    return () => {
+      window.removeEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     if (embedSettings?.openingMessage !== "") {
@@ -210,6 +223,24 @@ export default function App() {
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "bottom";
 
+  const fetchFollowUpQuestion = async () => {
+    try {
+      setLoadingFollowUpQuestions(true);
+      openBot();
+      const followUpQuestion = await BrandService.generateFollowUpQuestion(
+        embedSettings.host,
+        nudgeText,
+        sessionId
+      );
+      setFollowUpQuestions(followUpQuestion);
+      setLoadingFollowUpQuestions(false);
+    } catch (error) {
+      setLoadingFollowUpQuestions(false);
+      console.error("Failed to fetch follow-up question:", error);
+      return null;
+    }
+  };
+
   if (!embedSettings.loaded || !sessionId) return null;
 
   return (
@@ -237,6 +268,9 @@ export default function App() {
                   settings={embedSettings}
                   sessionId={sessionId}
                   isLargeScreen={isLargeScreen}
+                  nudgeText={nudgeText}
+                  followUpQuestion={followUpQuestion}
+                  loadingFollowUpQuestion={loadingFollowUpQuestion}
                 />
               </motion.div>
             )}
@@ -281,7 +315,12 @@ export default function App() {
                           backgroundColor: embedSettings.nudgeBgColor,
                           color: embedSettings.nudgeTextColor,
                         }}
-                        className="allm-rounded-2xl allm-p-[12px]"
+                        className="allm-rounded-2xl allm-p-[14px] hover:allm-shadow-[0_0_15px_rgba(255,255,255,0.5)] hover:allm-cursor-pointer hover:allm-border-white hover:allm-border-solid allm-border-[1px] "
+                        onClick={() => {
+                          if (nudgeClick) {
+                            fetchFollowUpQuestion();
+                          }
+                        }}
                       >
                         <span
                           id="allm-starting-message"

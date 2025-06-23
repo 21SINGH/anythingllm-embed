@@ -8,6 +8,8 @@ import BrandAnalytics from "@/models/brandAnalytics";
 import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
 import StoreMessageDB from "@/models/storeMessageInDB";
+import ReactMarkdown from "react-markdown";
+import { embedderSettings } from "@/main";
 
 export default function ChatContainer({
   sessionId,
@@ -15,6 +17,9 @@ export default function ChatContainer({
   knownHistory = [],
   openBottomSheet,
   setOpenBottomSheet,
+  nudgeText,
+  followUpQuestion,
+  loadingFollowUpQuestion,
 }) {
   const [replyProduct, setReplyProduct] = useState();
   const [loadingResponse, setLoadingResponse] = useState(false);
@@ -24,6 +29,9 @@ export default function ChatContainer({
   const [allowAnonymous, setAllowAnonymus] = useState(false);
   const [loading, setLoading] = useState(false);
   const ANONYMOUS_MODE = `allm_${settings.embedId}_anonymous_mode`;
+
+  console.log('chat history', chatHistory);
+  
 
   useEffect(() => {
     const stored = window.localStorage.getItem(ANONYMOUS_MODE);
@@ -36,6 +44,34 @@ export default function ChatContainer({
     if (knownHistory.length !== chatHistory.length)
       setChatHistory([...knownHistory]);
   }, [knownHistory]);
+
+  useEffect(() => {
+    if (followUpQuestion.length > 0 && nudgeText) {
+      console.log("nudgeText", nudgeText);
+      console.log("followUpQuestion", followUpQuestion);
+
+      const textResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "${followUpQuestion[0]}",\n  " ${followUpQuestion[1]}"\n,\n  " ${followUpQuestion[2]}"\n\n]\n@@PROMPTS END@@`;
+
+      const botReply = {
+        content: textResponse,
+        role: "assistant",
+        pending: false,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+
+      setChatHistory((prev) =>
+        prev.length === 1 ? [botReply] : [...prev, botReply]
+      );
+      StoreMessageDB.postMessageInDB(settings, "", textResponse)
+        .then(() => {
+          console.log("✅ Message stored successfully");
+        })
+        .catch((err) => {
+          console.error("❌ Failed to store message:", err);
+        });
+      BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+    }
+  }, [followUpQuestion, nudgeText]);
 
   useEffect(() => {
     if (chatHistory.length === 3) {
@@ -85,7 +121,7 @@ export default function ChatContainer({
         sentAt: Math.floor(Date.now() / 1000),
       };
       const loadingEntry = {
-        content: "Fetching user details...",
+        content: "Fetching user details, please give us a moment!",
         role: "assistant",
         pending: false,
         sentAt: Math.floor(Date.now() / 1000),
@@ -169,6 +205,11 @@ export default function ChatContainer({
           }
         })
         .catch((err) => {
+          // Update delivery details again!
+          // I am looking for something else!
+          const userMessage = orderId;
+          const botReply = `Could not update user details. Please try again later. \n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@["Update delivery details again!",\n "I am looking for something else!"]\n@@PROMPTS END@@`;
+
           const errorChat = [
             ...chatHistory,
             {
@@ -177,13 +218,21 @@ export default function ChatContainer({
               sentAt: Math.floor(Date.now() / 1000),
             },
             {
-              content: `Could not update user details. Please try again later.`,
+              content: botReply,
               role: "assistant",
               pending: false,
               sentAt: Math.floor(Date.now() / 1000),
             },
           ];
+          // StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+          //   .then(() => {
+          //     console.log("✅ Message stored successfully");
+          //   })
+          //   .catch((err) => {
+          //     console.error("❌ Failed to store message:", err);
+          //   });
           setChatHistory(errorChat);
+          // BrandAnalytics.sendTokenAnalytics(settings, sessionId);
         });
     } else {
       const prevChatHistory = [
@@ -194,7 +243,7 @@ export default function ChatContainer({
           sentAt: Math.floor(Date.now() / 1000),
         },
         {
-          content: "Invalid Order ID. Only enter order id nothign else.",
+          content: "Invalid Order ID. Only enter order id nothing else.",
           role: "assistant",
           pending: false,
           animate: false,
@@ -230,7 +279,7 @@ export default function ChatContainer({
       sentAt: Math.floor(Date.now() / 1000),
     };
     const loadingEntry = {
-      content: "Updating user details...",
+      content: "Fetching user details, please give us a moment!",
       role: "assistant",
       pending: false,
       sentAt: Math.floor(Date.now() / 1000),
@@ -341,14 +390,15 @@ export default function ChatContainer({
   };
 
   const handleOrderTracking = async (type, value) => {
-    const cleanedValue = type === "phone" ? value.replace(/\s+/g, "") : value.trim();
+    const cleanedValue =
+      type === "phone" ? value.replace(/\s+/g, "") : value.trim();
     const userEntry = {
       content: value,
       role: "user",
       sentAt: Math.floor(Date.now() / 1000),
     };
     const loadingEntry = {
-      content: "Fetching order details...",
+      content: "Fetching user details, please give us a moment!",
       role: "assistant",
       pending: false,
       sentAt: Math.floor(Date.now() / 1000),
@@ -356,7 +406,8 @@ export default function ChatContainer({
 
     setChatHistory((prev) => [...prev, userEntry, loadingEntry]);
 
-    const queryParam = type !== "phone" ? `email=${value}` : `phone=${cleanedValue}`;
+    const queryParam =
+      type !== "phone" ? `email=${value}` : `phone=${cleanedValue}`;
 
     fetch(
       `https://shoppie-backend.aroundme.global/api/stores/order-names?host=${settings.host}&${queryParam}`,
@@ -371,35 +422,61 @@ export default function ChatContainer({
       .then((data) => {
         const userMessage = `${value}`;
 
-        const intentPayload = {
-          order_names: data?.order_names || [],
-          message: `**${data?.name}** please select from following order ids:`,
-          intent: "order_tracking",
-        };
-        const botReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
+        if (data?.order_names.length > 0) {
+          const intentPayload = {
+            order_names: data?.order_names,
+            message: `**${data?.name}** please select from following order ids:`,
+            intent: "order_tracking",
+          };
+          const botReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
 
-        const message2 = {
-          content: botReply,
-          role: "assistant",
-          pending: false,
-          sentAt: Math.floor(Date.now() / 1000),
-        };
+          const message2 = {
+            content: botReply,
+            role: "assistant",
+            pending: false,
+            sentAt: Math.floor(Date.now() / 1000),
+          };
 
-        setChatHistory((prev) => {
-          const withoutLast = prev.slice(0, -1);
-          return [...withoutLast, message2];
-        });
-
-        StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
-          .then(() => {
-            console.log("✅ Message stored successfully");
-          })
-          .catch((err) => {
-            console.error("❌ Failed to store message:", err);
+          setChatHistory((prev) => {
+            const withoutLast = prev.slice(0, -1);
+            return [...withoutLast, message2];
           });
-        BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+
+          StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+            .then(() => {
+              console.log("✅ Message stored successfully");
+            })
+            .catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
+          BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+        } else {
+          const botReply = `**${data?.name}** due to some technical issue i am not able to fetch your order using ${value}, please try order tracking again using Order ID ✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@["Track your order again ?",\n "I have product related issue ?"\n,\n  "What are trendy products ?"]\n@@PROMPTS END@@`;
+
+          const message2 = {
+            content: botReply,
+            role: "assistant",
+            pending: false,
+            sentAt: Math.floor(Date.now() / 1000),
+          };
+
+          setChatHistory((prev) => {
+            const withoutLast = prev.slice(0, -1);
+            return [...withoutLast, message2];
+          });
+          setOrderTrackingInProgress(false);
+          StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
+            .then(() => {
+              console.log("✅ Message stored successfully");
+            })
+            .catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
+          BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+        }
       })
       .catch((err) => {
+        const botReply = `Could not fetch order details. Please try again later.\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@["Track your order again ?",\n "I have product related issue ?"\n,\n  "What are trendy products ?"]\n@@PROMPTS END@@`;
         const errorChat = [
           ...chatHistory,
           {
@@ -415,7 +492,6 @@ export default function ChatContainer({
           },
         ];
         const userMessage = value;
-        const botReply = `Could not fetch order details. Please try again later.`;
         StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
           .then(() => {
             console.log("✅ Message stored successfully");
@@ -441,7 +517,7 @@ export default function ChatContainer({
         sentAt: Math.floor(Date.now() / 1000),
       };
       const loadingEntry = {
-        content: "Fetching order details...",
+        content: "Fetching user details, please give us a moment!",
         role: "assistant",
         pending: false,
         sentAt: Math.floor(Date.now() / 1000),
@@ -560,6 +636,7 @@ export default function ChatContainer({
             });
         })
         .catch((err) => {
+          const botReply = `Could not fetch order details. Please try again later.`;
           const errorChat = [
             ...chatHistory,
             {
@@ -568,14 +645,14 @@ export default function ChatContainer({
               sentAt: Math.floor(Date.now() / 1000),
             },
             {
-              content: `Could not fetch order details. Please try after soem time.`,
+              content: botReply,
               role: "assistant",
               pending: false,
               sentAt: Math.floor(Date.now() / 1000),
             },
           ];
           const userMessage = orderId;
-          const botReply = `Could not fetch order details. Please try again later.`;
+
           StoreMessageDB.postMessageInDB(settings, userMessage, botReply)
             .then(() => {
               console.log("✅ Message stored successfully");
@@ -1112,23 +1189,27 @@ export default function ChatContainer({
         className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain "
         // allm-overflow-y-auto allm-overscroll-contain
       >
-        <ChatHistory
-          settings={settings}
-          history={chatHistory}
-          handlePrompt={handlePrompt}
-          setReplyProduct={setReplyProduct}
-          setOpenBottomSheet={setOpenBottomSheet}
-          setIntent={setIntent}
-          handledirectOrderTrackingViaId={handledirectOrderTrackingViaId}
-          handleOrderTracking={handleOrderTracking}
-          orderTrackingInProgress={orderTrackingInProgress}
-          setOrderTrackingInProgress={setOrderTrackingInProgress}
-          handleUserUpdate={handleUserUpdate}
-          cantUpdateUserSoConnectToLiveAgent={
-            cantUpdateUserSoConnectToLiveAgent
-          }
-          directlyUpdateUserDetails={directlyUpdateUserDetails}
-        />
+        {loadingFollowUpQuestion ? (
+          nudgeLoading(settings, nudgeText)
+        ) : (
+          <ChatHistory
+            settings={settings}
+            history={chatHistory}
+            handlePrompt={handlePrompt}
+            setReplyProduct={setReplyProduct}
+            setOpenBottomSheet={setOpenBottomSheet}
+            setIntent={setIntent}
+            handledirectOrderTrackingViaId={handledirectOrderTrackingViaId}
+            handleOrderTracking={handleOrderTracking}
+            orderTrackingInProgress={orderTrackingInProgress}
+            setOrderTrackingInProgress={setOrderTrackingInProgress}
+            handleUserUpdate={handleUserUpdate}
+            cantUpdateUserSoConnectToLiveAgent={
+              cantUpdateUserSoConnectToLiveAgent
+            }
+            directlyUpdateUserDetails={directlyUpdateUserDetails}
+          />
+        )}
       </div>
       <PromptInput
         submit={handleSubmit}
@@ -1510,4 +1591,55 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
     textAfterPrompts: message,
     intent: null,
   };
+};
+
+const nudgeLoading = (settings, nudgeText) => {
+  return (
+    <div
+      className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
+      style={{ backgroundColor: settings.bgColor }}
+    >
+      <div
+        className={`allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-start `}
+      >
+        <div
+          style={{
+            wordBreak: "break-word",
+            backgroundColor: settings.assistantBgColor,
+          }}
+          className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${`${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-mt-[12px] allm-ml-[8px]`}`}
+        >
+          <div className="allm-flex allm-flex-col">
+            <ReactMarkdown
+              children={nudgeText}
+              components={{
+                p: ({ node, ...props }) => (
+                  <p
+                    className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
+                    style={{
+                      color: settings.botTextColor,
+                    }}
+                    {...props}
+                  />
+                ),
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="allm-flex allm-items-end allm-justify-end allm-w-[420px]">
+        <PromptShimmer />
+      </div>
+    </div>
+  );
+};
+
+const PromptShimmer = () => {
+  return (
+    <div className="allm-flex allm-flex-col allm-items-end allm-justify-end">
+      <div className="allm-w-[300px] allm-mx-[16px] allm-h-[35px] allm-mt-[8px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-flex allm-flex-col allm-gap-[12px]  allm-animate-pulse "></div>
+      <div className="allm-w-[250px] allm-mx-[16px] allm-h-[35px] allm-mt-[8px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-flex allm-flex-col allm-gap-[12px]  allm-animate-pulse "></div>
+      <div className="allm-w-[200px] allm-mx-[16px] allm-h-[35px] allm-mt-[8px] allm-bg-[#5a5a5a] allm-rounded-2xl allm-flex allm-flex-col allm-gap-[12px]  allm-animate-pulse "></div>
+    </div>
+  );
 };
