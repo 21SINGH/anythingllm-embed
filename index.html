@@ -9,10 +9,14 @@
 <body style="background-color: grey; color: black">
 
   </div>
-  <script>
+  <!-- <script>
     const customer = {
-
-    }
+      id: "1234",
+      firstName: "sourav",
+      lastName: "developer",
+      email: "developer@testing.com",
+      phone: ""
+    };
     const shopifyContext = {
       "shop": {
         "name": "devshoppiestore",
@@ -268,17 +272,30 @@
     }
 
     const script = document.createElement('script');
-    script.src = 'https://anythingllm.aroundme.global/embed/anythingllm-chat-widget.min.js';
-    // dist/anythingllm-chat-widget.js
+    script.src = 'dist/anythingllm-chat-widget.js';
+    script.setAttribute('data-base-api-url', 'https://anythingllm.aroundme.global/api/embd');
+    // / dist/anythingllm-chat-widget.js
     // https://anythingllm-dev1.aroundme.global/embed/anythingllm-chat-widget.min.js
-    script.setAttribute('data-base-api-url', 'https://anythingllm.aroundme.global/api/embed');
-    // script.setAttribute('data-customer', JSON.stringify(customer));
-    // script.setAttribute('data-shopify-context', JSON.stringify(shopifyContext));
+    script.setAttribute('data-customer', JSON.stringify(customer));
+    script.setAttribute('data-shopify-context', JSON.stringify(shopifyContext));
     // script.setAttribute('data-nudge-appear', true);
     // script.setAttribute('data-nudge-text', "I saw u were checking our shampoo, get this conditioner also makes your hair bouncy");
 
     document.body.appendChild(script);
+  </script> -->
+
+  <!--
+Paste this script at the bottom of your HTML before the </body> tag.
+See more style and config options on our docs
+https://github.com/Mintplex-Labs/anything-llm/tree/master/embed/README.md
+-->
+
+  <script data-base-api-url="https://anythingllm-dev1.aroundme.global/api/embed" src="dist/anythingllm-chat-widget.js">
   </script>
+  <!-- AnythingLLM (https://anythingllm.com) -->
+
+  <!-- dist/anythingllm-chat-widget.js -->
+
 
 
 </body>
