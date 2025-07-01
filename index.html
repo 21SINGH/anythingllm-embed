@@ -1,15 +1,14 @@
 <!doctype html>
 
 <head>
-  <meta name="shopify-api-key" content="440a180fb28e38a76efb7ca5d17be679" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 </head>
 <html lang="en">
 
-<body style="background-color: grey; color: black">
+<body style="background-color: blueviolet; color: black; height: 600vh;">
 
   </div>
-  <!-- <script>
+  <script>
     const customer = {
       id: "1234",
       firstName: "sourav",
@@ -17,6 +16,7 @@
       email: "developer@testing.com",
       phone: ""
     };
+
     const shopifyContext = {
       "shop": {
         "name": "devshoppiestore",
@@ -54,6 +54,7 @@
         "time_spent_seconds": 0,
         "checkout_time_seconds": 0
       },
+      // "product": null,
       "customer": {
         "id": "7732601749607",
         "first_name": "Prayag",
@@ -156,7 +157,32 @@
           }
         ]
       },
-      "product": null,
+      "product": {
+        "id": "7910441746612",
+        "title": "Helios - 3 In 1 Sunscreen (Resorcinol , Glabridin &amp; Kojic Acid)",
+        "handle": "sunscreen",
+        "description": "&lt;p&gt;Men&#39;s shield for outdoor adventures&lt;/p&gt;",
+        "price": "Rs. 850.00",
+        "price_min": "Rs. 850.00",
+        "price_max": "Rs. 850.00",
+        "available": true,
+        "type": "",
+        "vendor": "Reginald Men",
+        "tags": [
+          "Sunscreen"
+        ],
+        "published_at": "2025-01-15",
+        "featured_image": "//reginaldmen.com/cdn/shop/files/Frame_2147225251_4b69f51f-4400-4373-b387-b3ba339fb233_medium.png?v=1749213544",
+        "image_count": 8,
+        "has_only_default_variant": false,
+        "options": [
+          "weight"
+        ],
+        "variants_count": 1,
+        "selected_variant": null
+      },
+
+
       "collection": {
         "id": "",
         "title": "Products",
@@ -273,31 +299,68 @@
 
     const script = document.createElement('script');
     script.src = 'dist/anythingllm-chat-widget.js';
-    script.setAttribute('data-base-api-url', 'https://anythingllm.aroundme.global/api/embd');
-    // / dist/anythingllm-chat-widget.js
-    // https://anythingllm-dev1.aroundme.global/embed/anythingllm-chat-widget.min.js
+    script.setAttribute('data-base-api-url', 'https://anythingllm-dev1.goshoppie.com/api/embed');
+    // script.setAttribute('data-host', 'YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ');
     script.setAttribute('data-customer', JSON.stringify(customer));
     script.setAttribute('data-shopify-context', JSON.stringify(shopifyContext));
-    // script.setAttribute('data-nudge-appear', true);
-    // script.setAttribute('data-nudge-text', "I saw u were checking our shampoo, get this conditioner also makes your hair bouncy");
 
     document.body.appendChild(script);
-  </script> -->
+    // Scroll event listener to fire shoppieAINudgeUpdated
+    let fired2 = false;
+    let fired4 = false;
+
+    window.addEventListener('scroll', () => {
+      const scrollHeight = window.scrollY / window.innerHeight; // Scroll position in vh
+
+      if (scrollHeight >= 2 && !fired2) {
+        console.log('Firing shoppieAINudgeUpdated at 2vh:', new Date().toISOString());
+        const event = new CustomEvent('shoppieAINudgeUpdated', {
+          detail: { key: 'shoppieAINudgeMessage', value: 'Consider adding Kratos - Barrier Repair Moisturizer for hydration and skin protection' }
+        });
+        window.dispatchEvent(event);
+        fired2 = true;
+      }
+
+      if (scrollHeight >= 4 && !fired4) {
+        console.log('Firing shoppieAINudgeUpdated at 4vh:', new Date().toISOString());
+        const event = new CustomEvent('shoppieAINudgeUpdated', {
+          detail: { key: 'shoppieAINudgeMessage', value: 'Try using Apollo - Hydrating Face & Beard Wash, help you with clean skin !' }
+        });
+        window.dispatchEvent(event);
+        fired4 = true;
+      }
+    });
+
+    // Debug listener to confirm event reception
+    window.addEventListener('shoppieAINudgeUpdated', (event) => {
+      console.log('shoppieAINudgeUpdated received:', event.detail);
+    });
+  </script>
 
   <!--
 Paste this script at the bottom of your HTML before the </body> tag.
 See more style and config options on our docs
 https://github.com/Mintplex-Labs/anything-llm/tree/master/embed/README.md
 -->
-
-  <script data-base-api-url="https://anythingllm-dev1.aroundme.global/api/embed" src="dist/anythingllm-chat-widget.js">
-  </script>
-  <!-- AnythingLLM (https://anythingllm.com) -->
-
-  <!-- dist/anythingllm-chat-widget.js -->
+<!-- <script
+  data-embed-id="337815d0-17a5-4de8-b331-ff28c766d12f"
+  data-base-api-url="https://anythingllm.goshoppie.com/api/embed"
+  src="dist/anythingllm-chat-widget.js">
+</script> -->
+<!-- AnythingLLM (https://anythingllm.com) -->
 
 
 
 </body>
 
 </html>
+
+
+
+<!-- <script data-base-api-url="https://anythingllm-dev1.goshoppie.com/api/embed" src="dist/anythingllm-chat-widget.js">
+  </script> -->
+<!-- // script.setAttribute('data-nudge-appear', true);
+    // script.setAttribute('data-nudge-text', "I saw u were checking our shampoo, get this conditioner also makes your hair bouncy"); -->
+
+<!-- // / dist/anythingllm-chat-widget.js
+    // https://anythingllm-dev1.goshoppie.com/embed/anythingllm-chat-widget.min.js -->

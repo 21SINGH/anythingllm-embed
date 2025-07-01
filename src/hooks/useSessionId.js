@@ -9,12 +9,13 @@ export default function useSessionId(embedSettings) {
 
     const STORAGE_IDENTIFIER = `allm_${embedSettings.embedId}_session_id`;
     const ANONYMOUS_MODE = `allm_${embedSettings.embedId}_anonymous_mode`;
+    const PRODUCT_CONTEXT_INDENTIFIER = `allm_${embedSettings.embedId}_product_id`;
     const currentId = window.localStorage.getItem(STORAGE_IDENTIFIER);
 
     const sendSessionToAPI = async (id) => {
       try {
         const url = new URL(
-          "https://shoppie-backend.aroundme.global/api/store_prompts/session"
+          "https://shoppie-backend.goshoppie.com/api/store_prompts/session"
         );
         url.searchParams.append("host", embedSettings.host);
         if (id) url.searchParams.append("session_id", id);
@@ -36,6 +37,9 @@ export default function useSessionId(embedSettings) {
         setSessionId(data.session_id);
         setSerialNo(data.serial_no);
         window.localStorage.setItem(STORAGE_IDENTIFIER, data.session_id);
+        if (!window.sessionStorage.getItem(PRODUCT_CONTEXT_INDENTIFIER)) {
+          window.sessionStorage.setItem(PRODUCT_CONTEXT_INDENTIFIER, null);
+        }
       } catch (error) {
         console.error("Error sending session to API:", error);
       }

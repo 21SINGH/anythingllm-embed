@@ -2,10 +2,10 @@ import HistoricalMessage from "./HistoricalMessage";
 import PromptReply from "./PromptReply";
 import { useEffect, useRef, useState } from "react";
 import { CircleNotch } from "@phosphor-icons/react";
-import debounce from "lodash.debounce";
 import { SEND_TEXT_EVENT } from "..";
 
 export default function ChatHistory({
+  isChatOpen,
   settings = {},
   history = [],
   handlePrompt,
@@ -19,45 +19,30 @@ export default function ChatHistory({
   handleUserUpdate,
   cantUpdateUserSoConnectToLiveAgent,
   directlyUpdateUserDetails,
+  applyForReplacement,
+  submitReplacement,
 }) {
   const replyRef = useRef(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
   const chatHistoryRef = useRef(null);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [history]);
-
-  const handleScroll = () => {
-    if (!chatHistoryRef.current) return;
-    const diff =
-      chatHistoryRef.current.scrollHeight -
-      chatHistoryRef.current.scrollTop -
-      chatHistoryRef.current.clientHeight;
-    // Fuzzy margin for what qualifies as "bottom". Stronger than straight comparison since that may change over time.
-    const isBottom = diff <= 40;
-    setIsAtBottom(isBottom);
-  };
-
-  const debouncedScroll = debounce(handleScroll, 100);
-  useEffect(() => {
-    function watchScrollEvent() {
-      if (!chatHistoryRef.current) return null;
-      const chatHistoryElement = chatHistoryRef.current;
-      if (!chatHistoryElement) return null;
-      chatHistoryElement.addEventListener("scroll", debouncedScroll);
-    }
-    watchScrollEvent();
-  }, []);
 
   const scrollToBottom = () => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTo({
         top: chatHistoryRef.current.scrollHeight,
-        behavior: "auto",
+        behavior: "smooth", // Use "auto" for instant scroll to ensure reliability
       });
     }
   };
+  useEffect(() => {
+    scrollToBottom();
+  }, [isChatOpen]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100); 
+    return () => clearTimeout(timer);
+  }, [history]);
 
   if (history.length === 0) {
     return (
@@ -74,70 +59,75 @@ export default function ChatHistory({
 
   return (
     <div
-      className="allm-pb-[30px] allm-pt-[5px] allm-rounded-[24px] allm-px-2 allm-h-full allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll allm-md:max-h-[500px] allm-overflow-hidden"
+      // className="allm-pb-[30px] allm-pt-[5px] allm-rounded-[24px] allm-px-2 allm-h-full allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll allm-md:max-h-[500px] allm-overflow-hidden"
+      className="allm-h-full allm-overflow-y-auto allm-px-2 allm-pt-4 allm-pb-8 allm-flex allm-flex-col allm-justify-start allm-no-scroll"
       id="chat-history"
       ref={chatHistoryRef}
     >
-      {history.map((props, index) => {
-        const isLastMessage = index === history.length - 1;
-        const isLastBotReply =
-          index === history.length - 1 && props.role === "assistant";
+      <div className="allm-flex allm-flex-col allm-gap-y-4">
+        {history.map((props, index) => {
+          const isLastMessage = index === history.length - 1;
+          const isLastBotReply =
+            index === history.length - 1 && props.role === "assistant";
 
-        const previousMessage =
-          index > 0
-            ? history[index - 1].content || history[index - 1].textResponse
-            : null;
+          const previousMessage =
+            index > 0
+              ? history[index - 1].content || history[index - 1].textResponse
+              : null;
 
-        if (isLastBotReply && props.animate) {
+          if (isLastBotReply && props.animate) {
+            return (
+              <PromptReply
+                key={props.uuid}
+                ref={isLastMessage ? replyRef : null}
+                uuid={props.uuid}
+                reply={props.content}
+                pending={props.pending}
+                sources={props.sources}
+                error={props.error}
+                closed={props.closed}
+                settings={settings}
+              />
+            );
+          }
           return (
-            <PromptReply
-              key={props.uuid}
+            <HistoricalMessage
+              key={index}
               ref={isLastMessage ? replyRef : null}
-              uuid={props.uuid}
-              reply={props.content}
-              pending={props.pending}
-              sources={props.sources}
-              error={props.error}
-              closed={props.closed}
               settings={settings}
+              message={props.textResponse || props.content}
+              lastMessage={previousMessage}
+              sentAt={props.sentAt || Date.now() / 1000}
+              role={props.role}
+              sources={props.sources}
+              chatId={props.chatId}
+              feedbackScore={props.feedbackScore}
+              error={props.error}
+              errorMsg={props.errorMsg}
+              isLastBotReply={
+                index === history.length - 1 && props.role === "assistant"
+              }
+              handlePrompt={handlePrompt}
+              setReplyProduct={setReplyProduct}
+              setIntent={setIntent}
+              setOpenBottomSheet={setOpenBottomSheet}
+              isLastMessage={isLastMessage}
+              handledirectOrderTrackingViaId={handledirectOrderTrackingViaId}
+              handleOrderTracking={handleOrderTracking}
+              setOrderTrackingInProgress={setOrderTrackingInProgress}
+              orderTrackingInProgress={orderTrackingInProgress}
+              handleUserUpdate={handleUserUpdate}
+              cantUpdateUserSoConnectToLiveAgent={
+                cantUpdateUserSoConnectToLiveAgent
+              }
+              directlyUpdateUserDetails={directlyUpdateUserDetails}
+              isFirstMessage={index === 0}
+              applyForReplacement={applyForReplacement}
+              submitReplacement={submitReplacement}
             />
           );
-        }
-
-        return (
-          <HistoricalMessage
-            key={index}
-            ref={isLastMessage ? replyRef : null}
-            settings={settings}
-            message={props.textResponse || props.content}
-            lastMessage={previousMessage}
-            sentAt={props.sentAt || Date.now() / 1000}
-            role={props.role}
-            sources={props.sources}
-            chatId={props.chatId}
-            feedbackScore={props.feedbackScore}
-            error={props.error}
-            errorMsg={props.errorMsg}
-            isLastBotReply={
-              index === history.length - 1 && props.role === "assistant"
-            }
-            handlePrompt={handlePrompt}
-            setReplyProduct={setReplyProduct}
-            setIntent={setIntent}
-            setOpenBottomSheet={setOpenBottomSheet}
-            isLastMessage={isLastMessage}
-            handledirectOrderTrackingViaId={handledirectOrderTrackingViaId}
-            handleOrderTracking={handleOrderTracking}
-            setOrderTrackingInProgress={setOrderTrackingInProgress}
-            orderTrackingInProgress={orderTrackingInProgress}
-            handleUserUpdate={handleUserUpdate}
-            cantUpdateUserSoConnectToLiveAgent={
-              cantUpdateUserSoConnectToLiveAgent
-            }
-            directlyUpdateUserDetails={directlyUpdateUserDetails}
-          />
-        );
-      })}
+        })}
+      </div>
     </div>
   );
 }

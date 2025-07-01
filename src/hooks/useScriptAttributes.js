@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
   prompt: null,
   model: null,
   temperature: null,
-  host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ",
+  host: null,
   customer: {},
   shopifyContext: {},
   toggleWhatsapp: false,
@@ -78,7 +78,6 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function useGetScriptAttributes() {
-  const host = "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ";
   const [settings, setSettings] = useState({
     loaded: false,
     ...DEFAULT_SETTINGS,
@@ -116,29 +115,40 @@ export default function useGetScriptAttributes() {
           rawSettings.shopifyContext = {}; // fallback
         }
       }
-
-      setSettings((prevSettings) => ({
-        ...prevSettings,
-        ...DEFAULT_SETTINGS,
-        ...parseAndValidateEmbedSettings(rawSettings),
-        loaded: false,
-      }));
+      if (!rawSettings.host) {
+        setSettings((prevSettings) => ({
+          ...prevSettings,
+          ...DEFAULT_SETTINGS,
+          ...parseAndValidateEmbedSettings(rawSettings),
+          host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvc2hvcHBpZXRlc3RpbmdzdG9yZQ",
+          loaded: false,
+        }));
+      } else
+        setSettings((prevSettings) => ({
+          ...prevSettings,
+          ...DEFAULT_SETTINGS,
+          ...parseAndValidateEmbedSettings(rawSettings),
+          loaded: false,
+        }));
     }
 
     fetchAttribs();
   }, []);
 
   const { data } = useQuery({
-    queryKey: ["brandDetails", host],
+    queryKey: ["brandDetails", settings?.host],
     queryFn: () =>
-      BrandService.getBrandDetails(host, embedderSettings.settings.baseApiUrl),
-    enabled: !!host, // avoid running if host is not ready
+      BrandService.getBrandDetails(
+        settings?.host,
+        embedderSettings.settings.baseApiUrl
+      ),
+    enabled: !!settings?.host, // avoid running if host is not ready
   });
 
   const { data: brandConfig } = useQuery({
-    queryKey: ["brandTheme", host],
-    queryFn: () => BrandBotConfigure.getBotDetails(host),
-    enabled: !!host, // avoid running if host is not ready
+    queryKey: ["brandTheme", settings?.host],
+    queryFn: () => BrandBotConfigure.getBotDetails(settings?.host),
+    enabled: !!settings?.host, // avoid running if host is not ready
   });
 
   useEffect(() => {

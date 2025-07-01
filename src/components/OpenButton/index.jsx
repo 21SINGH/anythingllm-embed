@@ -1,7 +1,7 @@
 import {useState } from "react";
 import ShoopieIcon from "@/assets/shoppie logo.png"
 
-export default function OpenButton({ settings, isOpen, toggleOpen }) {
+export default function OpenButton({ settings, isOpen, toggleOpen}) {
   if (isOpen) return null;
   const [brandDetails, setBrandDetails] = useState(null);
 
@@ -16,7 +16,7 @@ export default function OpenButton({ settings, isOpen, toggleOpen }) {
       <img
         src={
           settings?.brandImageUrl ?? brandDetails?.logo ?? ShoopieIcon ??
-          "https://storage.aroundme.global/avatar_default.png"
+          "https://storage.goshoppie.com/avatar_default.png"
         }
         style={{
           backgroundColor:settings.logoBackgroundColor

@@ -1,6 +1,6 @@
 const StoreMessageDB = {
   postMessageInDB: async function (settings, userMessage, botReply) {
-    const url = `https://shoppie-backend-dev.aroundme.global/api/anythingllm/`;
+    const url = `https://shoppie-backend-dev.goshoppie.com/api/anythingllm/`;
 
     try {
       const response = await fetch(url, {

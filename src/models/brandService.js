@@ -1,7 +1,7 @@
 const BrandService = {
   getBrandDetails: async function (host, baseApiUrl) {
     if (!host) return;
-    const url = `https://shoppie-backend.aroundme.global/api/stores/${host}`;
+    const url = `https://shoppie-backend.goshoppie.com/api/stores/${host}`;
 
     try {
       const response = await fetch(url, {
@@ -17,7 +17,7 @@ const BrandService = {
 
       let data = await response.json();
 
-      if (baseApiUrl === "https://anythingllm-dev1.aroundme.global/api/embed") {
+      if (baseApiUrl === "https://anythingllm-dev1.goshoppie.com/api/embed") {
         console.log("setting up dev emebed id");
 
         data = {
@@ -34,7 +34,7 @@ const BrandService = {
   },
   generateFollowUpQuestion: async function (host, title, session_id) {
     if (!host) return;
-    const url = ` https://shoppie-backend.aroundme.global/api/store_prompts/generate-suggested-questions`;
+    const url = ` https://shoppie-backend.goshoppie.com/api/store_prompts/generate-suggested-questions`;
 
     const body = JSON.stringify({
       host,

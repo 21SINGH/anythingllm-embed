@@ -68,6 +68,8 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
   let prompts = null;
   let intent = null;
 
+  const titleMatch = message.match(/@@TITLE@@(.*?)@@TITLT END@@/);
+
   // Check for suggestions
   const suggestionsRegex =
     /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/;
@@ -118,6 +120,8 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
       }
 
       return {
+        title: !!titleMatch,
+        titleText: titleMatch ? titleMatch[1] : "",
         textBeforeSuggestions,
         suggestions,
         textAfterSuggestionsBeforePrompts,
@@ -143,6 +147,8 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
       }
 
       return {
+        title: !!titleMatch,
+        titleText: titleMatch ? titleMatch[1] : "",
         textBeforeSuggestions: textBeforePrompts,
         suggestions: null,
         textAfterSuggestionsBeforePrompts: "",
@@ -165,6 +171,8 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
       message.substring(intentMatch.index + intentMatch[0].length);
 
     return {
+      title: !!titleMatch,
+      titleText: titleMatch ? titleMatch[1] : "",
       textBeforeSuggestions,
       suggestions,
       textAfterSuggestionsBeforePrompts: textAfterSuggestions,
@@ -176,6 +184,8 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
 
   // Final return for message without intent, suggestions, or prompts
   return {
+    title: !!titleMatch,
+    titleText: titleMatch ? titleMatch[1] : "",
     textBeforeSuggestions,
     suggestions: null,
     textAfterSuggestionsBeforePrompts: "",
@@ -362,19 +372,14 @@ const HistoricalMessage = forwardRef(
       handleUserUpdate,
       cantUpdateUserSoConnectToLiveAgent,
       directlyUpdateUserDetails,
+      isFirstMessage,
+      applyForReplacement,
+      submitReplacement,
     },
     ref
   ) => {
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
     if (message === "") return null;
-
-    // // Parse message based on role
-    // let parsedData;
-    // if (role === "user") {
-    //   parsedData = parseMessageWithProductByUser(message);
-    // } else {
-    //   parsedData = parseMessageWithSuggestionsAndPrompts(message);
-    // }
 
     // State for parsed data
     const [parsedData, setParsedData] = useState(null);
@@ -417,6 +422,8 @@ const HistoricalMessage = forwardRef(
         suggestions,
         prompts,
         intent,
+        title,
+        titleText,
       } = parsedData || {};
 
       // const { product, textAfterProduct } = parsedData;
@@ -430,10 +437,9 @@ const HistoricalMessage = forwardRef(
       const [productIssueUrl, setProductIssueUrl] = useState("");
 
       const [updateDetailsOrderId, setUpdateDetailsOrderId] = useState("");
+      const [updateDetailsPhoneNo, setUpdateDetailsPhoneNo] = useState("");
 
-      const [phoneNumber, setPhoneNumber] = useState(
-        intent?.update_detials?.mobile || ""
-      );
+      const [newPhoneNumber, setNewPhoneNumber] = useState("");
       const [address, setAddress] = useState(
         intent?.update_detials?.address || ""
       );
@@ -442,7 +448,8 @@ const HistoricalMessage = forwardRef(
       const [isFormChanged, setIsFormChanged] = useState(false);
 
       const initialValues = {
-        phoneNumber: intent?.update_detials?.mobile || "",
+        currentPhoneNo: intent?.update_detials?.mobile || "",
+        newPhoneNumber: "",
         address: intent?.update_detials?.address || "",
         city: intent?.update_detials?.city || "",
         zip: intent?.update_detials?.zip || "",
@@ -450,29 +457,14 @@ const HistoricalMessage = forwardRef(
 
       useEffect(() => {
         const hasChanged =
-          phoneNumber !== initialValues.phoneNumber ||
+          newPhoneNumber !== initialValues.newPhoneNumber ||
           address !== initialValues.address ||
           city !== initialValues.city ||
           zip !== initialValues.zip;
         setIsFormChanged(hasChanged);
-      }, [phoneNumber, address, city, zip]);
+      }, [newPhoneNumber, address, city, zip]);
 
       const fields = [
-        {
-          type: "text",
-          placeholder: "Enter phone number",
-          label: "Phone Number :",
-          value: phoneNumber,
-          onChange: (val) => setPhoneNumber(val),
-        },
-        {
-          type: "textarea",
-          placeholder: "Enter Address",
-          label: "Address :",
-          value: address,
-          onChange: (val) => setAddress(val),
-          rows: 3,
-        },
         {
           type: "text",
           placeholder: "Enter city",
@@ -487,7 +479,56 @@ const HistoricalMessage = forwardRef(
           value: zip,
           onChange: (val) => setZip(val),
         },
+        {
+          type: "textarea",
+          placeholder: "Enter Address",
+          label: "Address :",
+          value: address,
+          onChange: (val) => setAddress(val),
+          rows: 5,
+        },
+        {
+          type: "text",
+          placeholder: "Add another phone number",
+          label: "Phone Number :",
+          value: newPhoneNumber,
+          onChange: (val) => setNewPhoneNumber(val),
+        },
       ];
+
+      if (title) {
+        return (
+          <div ref={ref}>
+            <div
+              className="allm-flex allm-justify-between allm-items-center allm-max-h-[50px] allm-text-[14px] allm-px-[11px]"
+              style={{ color: settings.textHeaderColor }}
+            >
+              <hr
+                className="allm-flex-1 allm-h-fit allm-border-t allm-border-gray-300 allm-mr-[18px]"
+                style={{ borderTop: `1px solid ${settings.textHeaderColor}` }}
+              />
+              <p>
+                {titleText.length > 35
+                  ? `${titleText.slice(0, 35)}...`
+                  : titleText}
+              </p>
+              <hr
+                className="allm-flex-1 allm-h-fit allm-border-t allm-border-gray-300 allm-ml-[18px]"
+                style={{ borderTop: `1px solid ${settings.textHeaderColor}` }}
+              />
+            </div>
+            <div>
+              {prompts?.length > 0 &&
+                followUpQuestions(
+                  settings,
+                  handlePrompt,
+                  prompts,
+                  isLastBotReply
+                )}
+            </div>
+          </div>
+        );
+      }
 
       const isOrderDetailsMessage =
         textBeforeSuggestions?.startsWith("Order details:\n");
@@ -512,6 +553,7 @@ const HistoricalMessage = forwardRef(
             embedderSettings={embedderSettings}
             setIntent={setIntent}
             setOpenBottomSheet={setOpenBottomSheet}
+            ref={ref}
           />
         );
       }
@@ -522,6 +564,7 @@ const HistoricalMessage = forwardRef(
             <div
               className={`allm-flex allm-items-start allm-w-full allm-h-fit 
              allm-justify-start`}
+              ref={ref}
             >
               <div
                 style={{
@@ -587,7 +630,7 @@ const HistoricalMessage = forwardRef(
             "I wanna track my order ?",
           ];
           return (
-            <>
+            <div ref={ref}>
               <div
                 className={`allm-flex allm-items-start allm-w-full allm-h-fit 
              allm-justify-start `}
@@ -613,11 +656,18 @@ const HistoricalMessage = forwardRef(
                     </p>
                   )}
 
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[5px]">
+                    Current phone no :{" "}
+                    <span className="allm-font-bold">
+                      {initialValues?.currentPhoneNo}
+                    </span>
+                  </p>
                   {fields.map((field, index) => (
                     <>
                       <p className="allm-m-0 allm-text-[12px] allm-leading-[20px] allm-mb-[5px]">
                         {field.label}
                       </p>
+
                       {field.type === "textarea" ? (
                         <textarea
                           key={index}
@@ -652,12 +702,7 @@ const HistoricalMessage = forwardRef(
                       padding: 10,
                       borderWidth: 0,
                       opacity:
-                        phoneNumber &&
-                        address &&
-                        city &&
-                        zip &&
-                        isLastMessage &&
-                        isFormChanged
+                        address && city && zip && isLastMessage && isFormChanged
                           ? 1
                           : 0.5,
                       cursor:
@@ -665,52 +710,14 @@ const HistoricalMessage = forwardRef(
                           ? "pointer"
                           : "not-allowed",
                     }}
-                    // onClick={() => {
-                    //   if (!intent?.allow) {
-                    //     const oldDetails = {
-                    //       mobile: intent?.update_detials?.mobile,
-                    //       address: intent?.update_detials?.address,
-                    //       city: intent?.update_detials?.city,
-                    //       zip: intent?.update_detials?.zip,
-                    //     };
-                    //     const updatedDetails = {
-                    //       mobile: phoneNumber,
-                    //       address,
-                    //       city,
-                    //       zip,
-                    //     };
-                    //     cantUpdateUserSoConnectToLiveAgent(
-                    //       oldDetails,
-                    //       updatedDetails
-                    //     );
-                    //   } else {
-                    //     const oldDetails = {
-                    //       mobile: intent?.update_detials?.mobile,
-                    //       address: intent?.update_detials?.address,
-                    //       city: intent?.update_detials?.city,
-                    //       zip: intent?.update_detials?.city,
-                    //     };
-                    //     const updatedDetails = {
-                    //       mobile: phoneNumber,
-                    //       address,
-                    //       city,
-                    //       zip,
-                    //     };
-                    //     directlyUpdateUserDetails(
-                    //       intent?.order_name,
-                    //       oldDetails,
-                    //       updatedDetails
-                    //     );
-                    //   }
-                    // }}
                     onClick={() => {
                       const updatedDetails = {
-                        mobile: phoneNumber,
+                        mobile: newPhoneNumber,
                         address,
                         city,
                         zip,
                       };
-                      if (!phoneNumber || !address || !city || !zip) {
+                      if (!address || !city || !zip) {
                         toast.error("All fields must be filled!");
                         return;
                       }
@@ -740,8 +747,8 @@ const HistoricalMessage = forwardRef(
               </div>
               {isLastBotReply &&
                 faqs?.length > 0 &&
-                followUpQuestions(settings, handlePrompt, faqs)}
-            </>
+                followUpQuestions(settings, handlePrompt, faqs, isLastBotReply)}
+            </div>
           );
         } else if (intent?.intent === "product_issue") {
           const faqs = [
@@ -750,7 +757,7 @@ const HistoricalMessage = forwardRef(
             "What are exchange policies ?",
           ];
           return (
-            <>
+            <div ref={ref}>
               <div
                 className={`allm-flex allm-items-start allm-w-full allm-h-fit 
              allm-justify-start`}
@@ -909,14 +916,15 @@ const HistoricalMessage = forwardRef(
               </div>
               {isLastBotReply &&
                 faqs?.length > 0 &&
-                followUpQuestions(settings, handlePrompt, faqs)}
-            </>
+                followUpQuestions(settings, handlePrompt, faqs, isLastBotReply)}
+            </div>
           );
         } else if (intent?.intent === "update_details") {
           return (
             <div
               className={`allm-flex allm-items-start allm-w-full allm-h-fit 
              allm-justify-start `}
+              ref={ref}
             >
               <div
                 style={{
@@ -928,7 +936,7 @@ const HistoricalMessage = forwardRef(
                 className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[65%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-min-w-[65%]`}
               >
                 <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[8px]">
-                  Please provide the order id for which you want to update your
+                  Please provide the necessary details, for updating your order
                   details :
                 </p>
                 <div className="allm-flex allm-flex-col allm-gap-2">
@@ -943,10 +951,10 @@ const HistoricalMessage = forwardRef(
                     }}
                     placeholder={"Enter order phone no "}
                     className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
-                    value={updateDetailsOrderId}
+                    value={updateDetailsPhoneNo}
                     onChange={(e) => {
                       let val = e.target.value;
-                      setUpdateDetailsOrderId(val);
+                      setUpdateDetailsPhoneNo(val);
                     }}
                   />
                   <p className="allm-m-0 allm-text-[12px] allm-leading-[20px]">
@@ -971,26 +979,256 @@ const HistoricalMessage = forwardRef(
 
                   <button
                     className="allm-flex-1"
-                    disabled={!updateDetailsOrderId || !isLastMessage}
+                    disabled={
+                      !updateDetailsOrderId ||
+                      !updateDetailsPhoneNo ||
+                      !isLastMessage
+                    }
                     style={{
                       backgroundColor: "#2563eb",
                       borderRadius: 12,
                       padding: 10,
                       borderWidth: 0,
-                      opacity: updateDetailsOrderId && isLastMessage ? 1 : 0.5,
+                      opacity:
+                        updateDetailsOrderId &&
+                        updateDetailsPhoneNo &&
+                        isLastMessage
+                          ? 1
+                          : 0.5,
                       cursor:
-                        updateDetailsOrderId && isLastMessage
+                        updateDetailsOrderId &&
+                        updateDetailsPhoneNo &&
+                        isLastMessage
                           ? "pointer"
                           : "not-allowed",
                     }}
                     onClick={() => {
-                      handleUserUpdate(updateDetailsOrderId);
+                      handleUserUpdate(
+                        updateDetailsOrderId,
+                        updateDetailsPhoneNo
+                      );
                     }}
                   >
                     <span className="allm-text-white">Next</span>
                   </button>
                 </div>
               </div>
+            </div>
+          );
+        } else if (intent.intent === "clone_order") {
+          const faqs = ["How do I get Refund !", "Connect me to human agent !"];
+          return (
+            <div ref={ref}>
+              <div
+                className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start `}
+              >
+                <div
+                  style={{
+                    wordBreak: "break-word",
+                    backgroundColor: settings.assistantBgColor,
+                    color: settings.botTextColor,
+                    marginRight: "5px",
+                  }}
+                  className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-min-w-[80%]`}
+                >
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[8px]">
+                    {intent?.message}
+                  </p>
+                  <button
+                    className="allm-flex-1 allm-mt-[10px]"
+                    disabled={!isLastMessage}
+                    style={{
+                      backgroundColor: "#2563eb",
+                      borderRadius: 12,
+                      padding: 10,
+                      borderWidth: 0,
+                      opacity: isLastMessage ? 1 : 0.5,
+                      cursor: isLastMessage ? "pointer" : "not-allowed",
+                    }}
+                    onClick={() => {
+                      applyForReplacement(intent?.order_name, intent?.data);
+                    }}
+                  >
+                    <span className="allm-text-white">Apply for reorder</span>
+                  </button>
+                </div>
+              </div>
+              {isLastBotReply &&
+                faqs?.length > 0 &&
+                followUpQuestions(settings, handlePrompt, faqs, isLastBotReply)}
+            </div>
+          );
+        } else if (intent?.intent === "check_cloning_details") {
+          const faqs = ["I need help with something else !"];
+          const [phone, setPhone] = useState(intent.data.user.phone || "");
+          const [email, setEmail] = useState(intent.data.user.email || "");
+          const [address1, setAddress1] = useState(
+            intent.data.shipping_address.address1 || ""
+          );
+          const [address2, setAddress2] = useState(
+            intent.data.shipping_address.address2 || " "
+          );
+          const [city, setCity] = useState(
+            intent.data.shipping_address.city || ""
+          );
+          const [province, setProvince] = useState(
+            intent.data.shipping_address.province || ""
+          );
+          const [zip, setZip] = useState(
+            intent.data.shipping_address.zip || ""
+          );
+
+          const detailFeilds = [
+            {
+              type: "text",
+              placeholder: "Enter Phone no",
+              label: "Phone no : ",
+              value: phone,
+              onChange: (val) => setPhone(val),
+            },
+            {
+              type: "text",
+              placeholder: "Enter email",
+              label: "Email :",
+              value: email,
+              onChange: (val) => setEmail(val),
+            },
+            {
+              type: "textarea",
+              placeholder: "Enter Address",
+              label: "Address :",
+              value: address1,
+              onChange: (val) => setAddress1(val),
+              rows: 5,
+            },
+            {
+              type: "textarea",
+              placeholder: "Enter Address",
+              label: "Address 2:",
+              value: address2,
+              onChange: (val) => setAddress2(val),
+              rows: 2,
+            },
+            {
+              type: "text",
+              placeholder: "Enter city",
+              label: "City :",
+              value: city,
+              onChange: (val) => setCity(val),
+            },
+            {
+              type: "text",
+              placeholder: "Enter province",
+              label: "Province :",
+              value: province,
+              onChange: (val) => setProvince(val),
+            },
+            {
+              type: "text",
+              placeholder: "Enter zip",
+              label: "Zip :",
+              value: zip,
+              onChange: (val) => setZip(val),
+            },
+          ];
+
+          const isValid =
+            phone &&
+            email &&
+            address1 &&
+            city &&
+            province &&
+            zip &&
+            isLastBotReply;
+
+          return (
+            <div ref={ref}>
+              <div
+                className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start `}
+              >
+                <div
+                  style={{
+                    wordBreak: "break-word",
+                    backgroundColor: settings.assistantBgColor,
+                    color: settings.botTextColor,
+                    marginRight: "5px",
+                  }}
+                  className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-min-w-[80%]`}
+                >
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[8px]">
+                    {intent?.message}
+                  </p>
+                  {detailFeilds.map((field, index) => (
+                    <>
+                      <p className="allm-m-0 allm-text-[12px] allm-leading-[20px] allm-mb-[5px]">
+                        {field.label}
+                      </p>
+
+                      {field.type === "textarea" ? (
+                        <textarea
+                          key={index}
+                          disabled={!isLastMessage}
+                          style={{ borderRadius: 12 }}
+                          placeholder={field.placeholder}
+                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          rows={field.rows}
+                        />
+                      ) : (
+                        <input
+                          key={index}
+                          type={field.type}
+                          disabled={!isLastMessage}
+                          style={{ borderRadius: 12 }}
+                          placeholder={field.placeholder}
+                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        />
+                      )}
+                    </>
+                  ))}
+                  {productCardArray(intent.data)}
+                  <button
+                    className="allm-flex-1 allm-mt-[10px]"
+                    disabled={!isValid}
+                    style={{
+                      backgroundColor: "#2563eb",
+                      borderRadius: 12,
+                      padding: 10,
+                      borderWidth: 0,
+                      opacity: isValid ? 1 : 0.5,
+                      cursor: isValid ? "pointer" : "not-allowed",
+                    }}
+                    onClick={() => {
+                      if (isValid) {
+                        const data = {
+                          order_name: intent.order_name,
+                          first_name: intent.data.user.first_name,
+                          last_name: intent.data.user.last_name,
+                          phone: phone,
+                          email: email,
+                          address1: address1,
+                          address2: address2,
+                          city: city,
+                          province: province,
+                          zip: zip,
+                          country: intent.data.shipping_address.country,
+                        };
+                        submitReplacement(data);
+                      }
+                    }}
+                  >
+                    <span className="allm-text-white">Submit details</span>
+                  </button>
+                </div>
+              </div>
+              {isLastBotReply &&
+                faqs?.length > 0 &&
+                followUpQuestions(settings, handlePrompt, faqs, isLastBotReply)}
             </div>
           );
         } else {
@@ -1016,7 +1254,7 @@ const HistoricalMessage = forwardRef(
             }
           }
           return (
-            <>
+            <div ref={ref}>
               <div
                 className={`allm-flex allm-items-start allm-w-full allm-h-fit 
              allm-justify-start`}
@@ -1193,14 +1431,14 @@ const HistoricalMessage = forwardRef(
               </div>
               {isLastBotReply &&
                 faqs?.length > 0 &&
-                followUpQuestions(settings, handlePrompt, faqs)}
-            </>
+                followUpQuestions(settings, handlePrompt, faqs, isLastBotReply)}
+            </div>
           );
         }
       }
 
       return (
-        <div className="py-[5px] allm-tracking-[0px]">
+        <div ref={ref} className="py-[5px] allm-tracking-[0px]">
           {/* Render Product Card if exists */}
           {role === "user" && product && (
             <div className="allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-end allm-my-2">
@@ -1213,7 +1451,6 @@ const HistoricalMessage = forwardRef(
           )}
           <div
             key={uuid}
-            ref={ref}
             className={`allm-flex allm-items-start allm-w-full allm-h-fit ${
               role === "user" ? "allm-justify-end" : "allm-justify-start"
             }`}
@@ -1422,46 +1659,50 @@ const HistoricalMessage = forwardRef(
             </div>
           </div>
 
-          {suggestions?.products.length > 0 && (
-            <div className="allm-pl-4">
-              <ProductSuggestions
-                suggestions={suggestions}
-                setReplyProduct={setReplyProduct}
-                embedSettings={settings}
-              />
-            </div>
-          )}
+          <div>
+            {suggestions?.products.length > 0 && (
+              <div className="allm-pl-4">
+                <ProductSuggestions
+                  suggestions={suggestions}
+                  setReplyProduct={setReplyProduct}
+                  embedSettings={settings}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Display prompts if available */}
-          {isLastBotReply && prompts?.length > 0 && (
-            <div className="allm-my-4 allm-flex allm-flex-col allm-gap-y-2 allm-self-end allm-items-end  ">
-              {prompts.slice(0, 5).map((prompt, index) => (
-                <div
-                  key={index}
-                  style={{
-                    border: `1px solid ${settings.userBgColor}`,
-                    backgroundColor: lightenAndDullColor(
-                      settings.userBgColor,
-                      70,
-                      0.9
-                    ),
-                    maxWidth: "80%",
-                    color: settings.userTextColor,
-                  }}
-                  onClick={() => {
-                    if (
-                      settings.sessionId !==
-                      "d5c5134a-ab48-458d-bc90-16cb66456426"
-                    )
-                      handlePrompt(prompt);
-                  }}
-                  className=" allm-rounded-[24px] allm-px-[16px] allm-py-2 allm-text-[14px] allm-leading-normal  allm-cursor-pointer"
-                >
-                  {prompt}
-                </div>
-              ))}
-            </div>
-          )}
+          <div>
+            {(isLastBotReply || isFirstMessage) && prompts?.length > 0 && (
+              <div className="allm-my-4 allm-flex allm-flex-col allm-gap-y-2 allm-self-end allm-items-end  ">
+                {prompts.slice(0, 5).map((prompt, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      border: `1px solid ${settings.userBgColor}`,
+                      backgroundColor: lightenAndDullColor(
+                        settings.userBgColor,
+                        70,
+                        0.9
+                      ),
+                      maxWidth: "80%",
+                      color: settings.userTextColor,
+                    }}
+                    onClick={() => {
+                      if (
+                        settings.sessionId !==
+                        "d5c5134a-ab48-458d-bc90-16cb66456426"
+                      )
+                        handlePrompt(prompt);
+                    }}
+                    className=" allm-rounded-[24px] allm-px-[16px] allm-py-2 allm-text-[14px] allm-leading-normal  allm-cursor-pointer"
+                  >
+                    {prompt}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       );
     };
@@ -1476,21 +1717,22 @@ const HistoricalMessage = forwardRef(
 
 export default memo(HistoricalMessage);
 
-const followUpQuestions = (settings, handlePrompt, faqs = []) => {
+const followUpQuestions = (settings, handlePrompt, faqs = [], disabled) => {
   return (
     <div className="allm-my-4 allm-flex allm-flex-col allm-gap-y-2 allm-self-end allm-items-end allm-w-full ">
       {faqs.slice(0, 5).map((prompt, index) => (
         <div
           key={index}
           style={{
-            border: `1px solid ${settings.userBgColor}`,
-            backgroundColor: lightenAndDullColor(settings.userBgColor, 70, 0.9),
+            border: `1px solid ${!disabled ? settings.assistantBgColor : settings.userBgColor}`,
+            backgroundColor: !disabled
+              ? lightenAndDullColor(settings.assistantBgColor, 70, 0.8)
+              : lightenAndDullColor(settings.userBgColor, 70, 0.9),
             maxWidth: "80%",
             color: settings.userTextColor,
           }}
           onClick={() => {
-            if (settings.sessionId !== "d5c5134a-ab48-458d-bc90-16cb66456426")
-              handlePrompt(prompt);
+            if (disabled) handlePrompt(prompt);
           }}
           className=" allm-rounded-[24px] allm-px-[16px] allm-py-2 allm-text-[14px] allm-leading-normal  allm-cursor-pointer"
         >
@@ -1530,6 +1772,7 @@ const OrderDetailsCard = ({
   embedderSettings = {},
   setIntent,
   setOpenBottomSheet,
+  ref = null,
 }) => {
   return (
     <div
@@ -1539,6 +1782,7 @@ const OrderDetailsCard = ({
         color: settings.botTextColor,
       }}
       className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col allm-gap-2 allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-text-[14px] allm-mb-[8px]`}
+      ref={ref}
     >
       {orderDetails?.tracking_number && (
         <span
@@ -1573,46 +1817,7 @@ const OrderDetailsCard = ({
         </span>
       )}
       {/* Products section */}
-      {orderDetails?.products?.length > 0 && (
-        <>
-          <div className="allm-flex allm-overflow-x-auto allm-gap-4 allm-py-2">
-            {orderDetails.products.map((product, index) => (
-              <div
-                key={index}
-                className="allm-flex allm-min-w-[260px] allm-border allm-rounded-xl allm-shadow-md allm-p-3 allm-gap-3"
-                style={{
-                  backgroundColor: "rgb(250, 250, 250)",
-                  color: "black",
-                }}
-              >
-                {/* Image on the left */}
-                {product.image && (
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="allm-w-[64px] allm-h-[64px] allm-object-cover allm-rounded-md"
-                  />
-                )}
-
-                {/* Details on the right */}
-                <div className="allm-flex allm-flex-col allm-gap-1">
-                  <span className=" allm-text-sm allm-line-clamp-1">
-                    {product.name}
-                  </span>
-                  {product.variant_title && (
-                    <span className="allm-text-xs allm-text-gray-600">
-                      Variant: {product.variant_title}
-                    </span>
-                  )}
-                  {product.price && (
-                    <span className="allm-text-sm">₹{product.price}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      {productCardArray(orderDetails)}
 
       {orderDetails?.tracking_url && (
         <button
@@ -1669,4 +1874,51 @@ const OrderDetailsCard = ({
 
 const normalizeIntent = (intent) => {
   return intent.replace(/\s/g, "_").toLowerCase();
+};
+
+const productCardArray = (orderDetails) => {
+  return (
+    <>
+      {orderDetails?.products?.length > 0 && (
+        <>
+          <div className="allm-flex allm-overflow-x-auto allm-gap-4 allm-py-2">
+            {orderDetails.products.map((product, index) => (
+              <div
+                key={index}
+                className="allm-flex allm-min-w-[260px] allm-border allm-rounded-xl allm-shadow-md allm-p-3 allm-gap-3"
+                style={{
+                  backgroundColor: "rgb(250, 250, 250)",
+                  color: "black",
+                }}
+              >
+                {/* Image on the left */}
+                {product.image && (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="allm-w-[64px] allm-h-[64px] allm-object-cover allm-rounded-md"
+                  />
+                )}
+
+                {/* Details on the right */}
+                <div className="allm-flex allm-flex-col allm-gap-1">
+                  <span className=" allm-text-sm allm-line-clamp-1">
+                    {product.name}
+                  </span>
+                  {product.variant_title && (
+                    <span className="allm-text-xs allm-text-gray-600">
+                      Variant: {product.variant_title}
+                    </span>
+                  )}
+                  {product.price && (
+                    <span className="allm-text-sm">₹{product.price}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
 };

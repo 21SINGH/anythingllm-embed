@@ -1,6 +1,6 @@
 const BrandBotConfigure = {
   getBotDetails: async function (host) {
-    const url = `https://shoppie-backend.aroundme.global/api/widget_theme/?host=${host}`;
+    const url = `https://shoppie-backend.goshoppie.com/api/widget_theme/?host=${host}`;
 
     try {
       const response = await fetch(url, {
