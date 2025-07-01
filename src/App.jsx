@@ -38,7 +38,7 @@ export default function App() {
   const [openingMessage, setOpeningMessage] = useState("");
   const DEFAULT_NUDGE_MESSAGE = "Welcome! How can I assist you?";
 
-const { x, y } = useShakeAndBounceAnimation(nudgeText,openingMessage);
+  const { x, y } = useShakeAndBounceAnimation(nudgeText, openingMessage);
 
   // 1. Create a shared motion value for Y
   const sharedY = useMotionValue(0);
@@ -60,10 +60,12 @@ const { x, y } = useShakeAndBounceAnimation(nudgeText,openingMessage);
       nudgeText !== openingMessage &&
       nudgeText !== previousNudgeText.current
     ) {
-      const audio = new Audio(sound3);
-      audio.play();
-      hasPlayed.current = true;
-      previousNudgeText.current = nudgeText;
+      try {
+        const audio = new Audio(sound3);
+        audio.play().catch(() => {});
+        hasPlayed.current = true;
+        previousNudgeText.current = nudgeText;
+      } catch (error) {}
     }
   };
 
@@ -207,24 +209,6 @@ const { x, y } = useShakeAndBounceAnimation(nudgeText,openingMessage);
     },
   };
 
-  // const buttonVariants = {
-  //   open: {
-  //     scale: embedSettings.inputbarDisabled ? 1 : 1,
-  //     opacity: embedSettings.inputbarDisabled ? 1 : 1,
-  //     transition: embedSettings.inputbarDisabled
-  //       ? {} // No transition if disabled
-  //       : { duration: 0.4, ease: [0.76, 0, 0.24, 1] },
-  //   },
-  //   closed: {
-  //     scale: embedSettings.inputbarDisabled ? 1 : 0,
-  //     opacity: embedSettings.inputbarDisabled ? 1 : 0,
-  //     transition: embedSettings.inputbarDisabled
-  //       ? {} // No transition if disabled
-  //       : { duration: 0.1, ease: [0.6, 0, 0.24, 1] },
-  //   },
-  // };
-
-  // Simplified variants to avoid transform conflicts
   const openingMessageVariants = {
     closed: { opacity: 0, scale: 0.8 },
     open: { opacity: 1, scale: 1 },
@@ -234,40 +218,6 @@ const { x, y } = useShakeAndBounceAnimation(nudgeText,openingMessage);
     closed: { opacity: 0, scale: 0.8 },
     open: { opacity: 1, scale: 1 },
   };
-
-  // const openingMessageVariants = {
-  //   open: {
-  //     scale: embedSettings.inputbarDisabled ? 1 : 1,
-  //     opacity: embedSettings.inputbarDisabled ? 1 : 1,
-  //     transition: embedSettings.inputbarDisabled
-  //       ? {} // No transition if disabled
-  //       : { duration: 0.3, ease: [0.76, 0, 0.24, 1] },
-  //   },
-  //   closed: {
-  //     scale: embedSettings.inputbarDisabled ? 1 : 0,
-  //     opacity: embedSettings.inputbarDisabled ? 1 : 0,
-  //     transition: embedSettings.inputbarDisabled
-  //       ? {} // No transition if disabled
-  //       : { duration: 0.2, ease: [0.6, 0, 0.24, 1] },
-  //   },
-  // };
-
-  // const buttonVariants = {
-  //   closed: {
-  //     scale: 0,
-  //     opacity: 0,
-  //   },
-  //   open: {
-  //     scale: 1,
-  //     opacity: 1,
-  //     transition: {
-  //       type: "spring",
-  //       stiffness: 260,
-  //       damping: 20,
-  //       mass: 0.5,
-  //     },
-  //   },
-  // };
 
   const transformOrigin = isLargeScreen
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`

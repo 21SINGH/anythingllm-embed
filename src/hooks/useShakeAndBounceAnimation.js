@@ -78,7 +78,7 @@ export default function useShakeAndBounceAnimation(nudgeText, openingMessage) {
     if (elapsed < bounceDuration) {
       const progress = elapsed / bounceDuration;
       const amplitude = 10 * (1 - progress); // Linearly reduce amplitude
-      const period = 2;
+      const period = 6;
       const y = Math.sin((elapsed / period) * 2 * Math.PI) * amplitude;
       sharedY.set(y);
     } else {
