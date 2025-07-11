@@ -5,19 +5,10 @@ import useOpenChat from "@/hooks/useOpen";
 import Head from "@/components/Head";
 import OpenButton from "@/components/OpenButton";
 import ChatWindow from "./components/ChatWindow";
-import {
-  useMotionValue,
-  useTransform,
-  motion,
-  AnimatePresence,
-  useAnimationFrame,
-} from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
-import BrandAnalytics from "@/models/brandAnalytics";
-import BrandService from "@/models/brandService";
-import popMusic from "@/assets/pop.mp3";
-import notificationMusic from "@/assets/notification.mp3";
 import sound3 from "@/assets/3.mp3";
+import silence from "@/assets/silence.mp3";
 import useShakeAndBounceAnimation from "./hooks/useShakeAndBounceAnimation";
 
 export default function App() {
@@ -25,33 +16,18 @@ export default function App() {
   const embedSettings = useGetScriptAttributes();
   const { sessionId, serialNo } = useSessionId(embedSettings);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
-  const [interaction, setInteraction] = useState(false);
   const [nudgeAppear, setNudgeAppear] = useState(false);
   const [nudgeText, setNudgeText] = useState("");
+  const [upsellingProdct, setUpsellingProduct] = useState(null);
+  const [cartHandle, setCartHandle] = useState(null);
   const [nudgeClick, setNudgeClick] = useState(false);
   const [nudgeKey, setNudgeKey] = useState(0);
-  const [followUpQuestion, setFollowUpQuestions] = useState([]);
-  const [loadingFollowUpQuestion, setLoadingFollowUpQuestions] =
-    useState(false);
   const hasPlayed = useRef(false);
   const previousNudgeText = useRef("");
   const [openingMessage, setOpeningMessage] = useState("");
   const DEFAULT_NUDGE_MESSAGE = "Welcome! How can I assist you?";
-
-  const { x, y } = useShakeAndBounceAnimation(nudgeText, openingMessage);
-
-  // 1. Create a shared motion value for Y
-  const sharedY = useMotionValue(0);
-  const startTime = useRef(performance.now());
-
-  // 2. Animate the sharedY value in a loop (sinusoidal motion)
-  useAnimationFrame((t) => {
-    const elapsed = (t - startTime.current) / 1000; // seconds
-    const amplitude = 10; // px up/down
-    const period = 2; // seconds for a full cycle
-    const y = Math.sin((elapsed / period) * 2 * Math.PI) * amplitude;
-    sharedY.set(y);
-  });
+  const DEFAULT_NUDGE_ALLOW = `allm_${embedSettings.embedId}_default_nudge_allow`;
+  // const { y } = useShakeAndBounceAnimation(nudgeText, openingMessage);
 
   const playSound = (variant) => {
     if (
@@ -74,11 +50,6 @@ export default function App() {
   }, [nudgeAppear]);
 
   useEffect(() => {
-    if (isChatOpen && embedSettings.host && sessionId)
-      BrandAnalytics.sendAnalytics(embedSettings, sessionId, "tap_widget");
-  }, [isChatOpen, embedSettings.host, sessionId]);
-
-  useEffect(() => {
     const newOpeningMessage =
       embedSettings.openingMessage || DEFAULT_NUDGE_MESSAGE;
     setOpeningMessage(newOpeningMessage);
@@ -88,46 +59,74 @@ export default function App() {
     const handleNudgeUpdate = (event) => {
       const { key, value } = event.detail || {};
 
-      if (key === "shoppieAINudgeMessage") {
-        setNudgeAppear(false);
-        setNudgeText(value);
-
-        const showTimer = setTimeout(() => {
-          setNudgeAppear(true);
-          setNudgeClick(true);
-        }, 350);
-
-        const defaultTimer = setTimeout(() => {
-          const defaultMessage = openingMessage || DEFAULT_NUDGE_MESSAGE;
-          setNudgeAppear(false);
-          setTimeout(() => {
-            setNudgeText(defaultMessage);
-            setNudgeAppear(true);
-            setNudgeKey((prev) => prev + 1);
-            setNudgeClick(false);
-          }, 450);
-        }, 20000);
-
-        return () => {
-          clearTimeout(showTimer);
-          clearTimeout(defaultTimer);
-        };
+      if (key !== "shoppieAINudgeMessage") {
+        return;
       }
+      let parsedValue;
+      try {
+        parsedValue = JSON.parse(value);
+        if (parsedValue?.usecase)
+          setNudgeText(`${parsedValue?.nudge} ${parsedValue?.usecase}`);
+        else setNudgeText(`${parsedValue?.nudge} `);
+        setUpsellingProduct(parsedValue?.product);
+        setCartHandle(parsedValue?.handle);
+      } catch (e) {
+        setNudgeText(value);
+        setUpsellingProduct(null);
+        setCartHandle(null);
+      }
+
+      setNudgeAppear(false);
+
+      const showTimer = setTimeout(() => {
+        setNudgeAppear(true);
+        setNudgeClick(true);
+      }, 350);
+
+      const defaultTimer = setTimeout(() => {
+        // const defaultMessage = openingMessage || DEFAULT_NUDGE_MESSAGE;
+        setNudgeAppear(false);
+        setUpsellingProduct(null);
+        setCartHandle(null);
+        setNudgeKey((prev) => prev + 1);
+        setNudgeClick(false);
+        // setTimeout(() => {
+        //   if (window.sessionStorage.getItem(DEFAULT_NUDGE_ALLOW) === "true") {
+        //     setNudgeText(defaultMessage);
+        //     setUpsellingProduct(null);
+        //     setNudgeAppear(true);
+        //     setNudgeKey((prev) => prev + 1);
+        //     setNudgeClick(false);
+        //   }
+        // }, 450);
+      }, 20000);
+
+      // Cleanup timers
+      return () => {
+        clearTimeout(showTimer);
+        clearTimeout(defaultTimer);
+      };
     };
 
     window.addEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
 
+    // Cleanup event listener on unmount
     return () => {
       window.removeEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
     };
-  }, [openingMessage]);
+  }, [openingMessage, embedSettings]);
 
   useEffect(() => {
-    if (embedSettings?.openingMessage !== "") {
+    if (
+      embedSettings?.openingMessage !== "" &&
+      window.sessionStorage.getItem(DEFAULT_NUDGE_ALLOW) === "true"
+    ) {
       setNudgeAppear(true);
       setNudgeText(embedSettings?.openingMessage);
+      setUpsellingProduct(null);
+      setCartHandle(null);
     }
-  }, [embedSettings]);
+  }, [embedSettings, sessionId]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -140,25 +139,10 @@ export default function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleCloseFirstMessage = () => {
+  const handleCloseFirstMessage = async () => {
     setNudgeAppear(false);
+    window.sessionStorage.setItem(DEFAULT_NUDGE_ALLOW, "false");
   };
-
-  useEffect(() => {
-    const handleUserInteraction = () => {
-      if (!interaction) {
-        setInteraction(true);
-      }
-    };
-
-    window.addEventListener("click", handleUserInteraction);
-    window.addEventListener("keydown", handleUserInteraction);
-
-    return () => {
-      window.removeEventListener("click", handleUserInteraction);
-      window.removeEventListener("keydown", handleUserInteraction);
-    };
-  }, [interaction]);
 
   useEffect(() => {
     if (sessionId === "d5c5134a-ab48-458d-bc90-16cb66456426") {
@@ -167,8 +151,6 @@ export default function App() {
     embedSettings.sessionId = sessionId;
     embedSettings.serialNo = serialNo;
   }, [embedSettings?.loaded, sessionId]);
-
-  console.log("embed settings", embedSettings);
 
   const positionClasses = {
     "bottom-left": "allm-bottom-0 allm-left-0 allm-ml-4",
@@ -189,7 +171,6 @@ export default function App() {
 
   const openBot = async () => {
     toggleOpenChat(true);
-    if (nudgeClick) fetchFollowUpQuestion();
   };
 
   const variants = {
@@ -223,23 +204,6 @@ export default function App() {
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "bottom";
 
-  const fetchFollowUpQuestion = async () => {
-    try {
-      setLoadingFollowUpQuestions(true);
-      const followUpQuestion = await BrandService.generateFollowUpQuestion(
-        embedSettings.host,
-        nudgeText,
-        sessionId
-      );
-      setFollowUpQuestions(followUpQuestion);
-      setLoadingFollowUpQuestions(false);
-    } catch (error) {
-      setLoadingFollowUpQuestions(false);
-      console.error("Failed to fetch follow-up question:", error);
-      return null;
-    }
-  };
-
   if (!embedSettings.loaded || !sessionId) return null;
 
   return (
@@ -272,102 +236,12 @@ export default function App() {
                   nudgeClick={nudgeClick}
                   setNudgeClick={setNudgeClick}
                   nudgeText={nudgeText}
-                  followUpQuestion={followUpQuestion}
-                  setFollowUpQuestions={setFollowUpQuestions}
-                  loadingFollowUpQuestion={loadingFollowUpQuestion}
+                  upsellingProdct={upsellingProdct}
                 />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* {!isChatOpen && (
-          <div>
-            <AnimatePresence>
-              {nudgeAppear && (
-                <motion.div
-                  key={`welcome-message-${nudgeKey}`}
-                  variants={openingMessageVariants}
-                  initial="closed"
-                  animate="open"
-                  exit="closed"
-                  className={`allm-fixed allm-bottom-[100px] allm-max-w-[250px] md:allm-max-w-[300px] allm-bg-transparent`}
-                  style={{
-                    ...positionStyle,
-                    transformOrigin,
-                    bottom: Number(embedSettings.bottom) + 70,
-                  }}
-                  onAnimationStart={playSound}
-                >
-                  {nudgeText && (
-                    <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-py-[16px] allm-mr-[5px] allm-gap-2">
-                      <div
-                        onClick={handleCloseFirstMessage}
-                        style={{
-                          backgroundColor: embedSettings.nudgeBgColor,
-                        }}
-                        className="allm-right-[5px]  hover:allm-cursor-pointer allm-rounded-full allm-p-1  allm-flex allm-items-center allm-justify-center"
-                      >
-                        <RxCross2
-                          size={18}
-                          color={embedSettings.nudgeTextColor}
-                        />
-                      </div>
-                      <div
-                        id="allm-starting-message-div"
-                        style={{
-                          backgroundColor: embedSettings.nudgeBgColor,
-                          color: embedSettings.nudgeTextColor,
-                        }}
-                        className="allm-rounded-2xl allm-p-[14px] hover:allm-shadow-[0_0_15px_rgba(255,255,255,0.5)] hover:allm-cursor-pointer hover:allm-border-white hover:allm-border-solid allm-border-[1px] "
-                        onClick={() => {
-                          openBot();
-                        }}
-                      >
-                        <span
-                          id="allm-starting-message"
-                          style={{
-                            wordBreak: "break-word",
-                          }}
-                          className="allm-text-[14px]  allm-line-clamp-3 allm-leading-[20px]"
-                        >
-                          {nudgeText}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <AnimatePresence>
-              <motion.div
-                key="chat-button"
-                variants={buttonVariants}
-                initial="closed"
-                animate="open"
-                exit="closed"
-                id="anything-llm-embed-chat-button-container"
-                className="allm-fixed allm-z-50 allm-p-4 allm-rounded-full allm-mt-[5px]"
-                style={{ ...positionStyle, transformOrigin }}
-                whileInView={{
-                  y: [-10, 10, -10], // Continuous up-and-down movement
-                  transition: {
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    duration: 2,
-                    ease: "easeInOut",
-                  },
-                }}
-              >
-                <OpenButton
-                  settings={embedSettings}
-                  isOpen={isChatOpen}
-                  toggleOpen={openBot}
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        )} */}
         {!isChatOpen && (
           <div>
             <AnimatePresence>
@@ -383,8 +257,7 @@ export default function App() {
                     ...positionStyle,
                     transformOrigin,
                     bottom: Number(embedSettings.bottom) + 90,
-                    x,
-                    y,
+                    // y,
                   }}
                   onAnimationStart={playSound}
                 >
@@ -408,17 +281,35 @@ export default function App() {
                           backgroundColor: embedSettings.nudgeBgColor,
                           color: embedSettings.nudgeTextColor,
                         }}
-                        className="allm-rounded-2xl allm-p-[14px] hover:allm-shadow-[0_0_15px_rgba(255,255,255,0.5)] hover:allm-cursor-pointer hover:allm-border-white hover:allm-border-solid allm-border-[1px]"
+                        className="allm-flex allm-flex-row allm-rounded-2xl allm-p-[14px] hover:allm-shadow-[0_0_15px_rgba(255,255,255,0.5)] hover:allm-cursor-pointer"
+                        //  hover:allm-border-white hover:allm-border-solid allm-border-[1px]
                         onClick={() => {
-                          openBot();
+                          if (cartHandle) {
+                            window.location.href = cartHandle;
+                          } else {
+                            openBot();
+                          }
                         }}
                       >
+                        {upsellingProdct && (
+                          <img
+                            src={upsellingProdct?.image}
+                            alt="Product Image"
+                            style={{ width: "80px", height: "80px" }}
+                            className="allm-rounded-lg allm-mr-[10px]"
+                          />
+                        )}
                         <span
                           id="allm-starting-message"
                           style={{
                             wordBreak: "break-word",
+                            WebkitLineClamp: upsellingProdct?.image ? 4 : 3,
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            maxHeight: upsellingProdct?.image ? "80px" : "60px", // Adjust based on line-height (e.g., 20px * 3)
                           }}
-                          className="allm-text-[14px] allm-line-clamp-3 allm-leading-[20px]"
+                          className="allm-text-[14px] allm-leading-[20px]"
                         >
                           {nudgeText}
                         </span>
@@ -440,8 +331,7 @@ export default function App() {
                 style={{
                   ...positionStyle,
                   transformOrigin,
-                  x,
-                  y,
+                  // y,
                 }}
               >
                 <OpenButton
@@ -457,5 +347,3 @@ export default function App() {
     </>
   );
 }
-
-// y: sharedY,

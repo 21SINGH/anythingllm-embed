@@ -166,6 +166,7 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
   if (intentMatch) {
     let rawIntent = intentMatch[1];
     const intent = fixMalformedJson(rawIntent);
+    textBeforeSuggestions =  message.substring(0, intentMatch.index);
     const textAfterIntent =
       message.substring(0, intentMatch.index) +
       message.substring(intentMatch.index + intentMatch[0].length);
@@ -258,7 +259,7 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
         window.location.href =
           product?.buy_link ||
           product?.purchase_link ||
-          `https://reginaldmen.com/products/${product?.handle}`;
+          `https://${embedSettings.brandDomain}/products/${product?.handle}`;
       }
   };
 
@@ -272,16 +273,13 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
     >
       <div>
         {(product?.image_url ||
-          // product?.product_images[0] ||
-          // product?.product_images||
           product?.images) &&
         !imageError ? (
-          <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[190px]">
+          <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[260px]">
             <img
               src={
                 product?.image_url ||
                 product?.product_images ||
-                // product?.product_images[0]||
                 product?.images
               }
               alt={product?.title || product?.product_name || product?.images}
@@ -375,6 +373,9 @@ const HistoricalMessage = forwardRef(
       isFirstMessage,
       applyForReplacement,
       submitReplacement,
+      matchPhoneNoForReorder,
+      menu,
+      handleProductIssueData,
     },
     ref
   ) => {
@@ -559,7 +560,65 @@ const HistoricalMessage = forwardRef(
       }
 
       if (intent) {
-        if (intent?.order_names) {
+        if (intent?.intent === "frontend_operation") {
+          const [hoveredIndex, setHoveredIndex] = useState(null);
+          const faqs = [
+            "I was looking for something else !",
+            "Show me some trendy products !",
+          ];
+
+          return (
+            <>
+              <div
+                className={`allm-flex allm-items-start allm-w-full allm-h-fit 
+             allm-justify-start`}
+                ref={ref}
+              >
+                <div
+                  style={{
+                    wordBreak: "break-word",
+                    backgroundColor: settings.assistantBgColor,
+                    color: settings.botTextColor,
+                    marginRight: "5px",
+                  }}
+                  className={`allm-py-[16px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-gap-2`}
+                >
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[12px]">
+                    {textBeforeSuggestions}
+                  </p>
+
+                  {menu.map((item, idx) => (
+                    <button
+                      key={idx}
+                      style={{
+                        backgroundColor: "#2563eb",
+                        borderRadius: 12,
+                        padding: 10,
+                        borderWidth: 0,
+                        cursor: "pointer",
+                        opacity:
+                          hoveredIndex === null
+                            ? 1
+                            : hoveredIndex === idx
+                              ? 1
+                              : 0.3,
+                        transition: "opacity 0.2s ease",
+                      }}
+                      onMouseEnter={() => setHoveredIndex(idx)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                      onClick={() => item.onSubmit()}
+                    >
+                      <span style={{ color: "#fff" }}>{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {isLastBotReply &&
+                faqs?.length > 0 &&
+                followUpQuestions(settings, handlePrompt, faqs, isLastBotReply)}
+            </>
+          );
+        } else if (intent?.order_names) {
           return (
             <div
               className={`allm-flex allm-items-start allm-w-full allm-h-fit 
@@ -904,8 +963,11 @@ const HistoricalMessage = forwardRef(
                               : "not-allowed",
                         }}
                         onClick={() => {
-                          const message = `Product issue details : \n\n Order Id : ${productIssueOrderId} \n\n Issue type is : ${selectedProductIssue} \n\n Drive URL : ${productIssueUrl}`;
-                          handlePrompt(message);
+                          handleProductIssueData(
+                            productIssueOrderId,
+                            selectedProductIssue,
+                            productIssueUrl
+                          );
                         }}
                       >
                         <span className="allm-text-white">Submit</span>
@@ -936,8 +998,7 @@ const HistoricalMessage = forwardRef(
                 className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[65%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-min-w-[65%]`}
               >
                 <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[8px]">
-                  Please provide the necessary details, for updating your order
-                  details :
+                  {intent?.response}
                 </p>
                 <div className="allm-flex allm-flex-col allm-gap-2">
                   <p className="allm-m-0 allm-text-[12px] allm-leading-[20px]">
@@ -1015,7 +1076,8 @@ const HistoricalMessage = forwardRef(
               </div>
             </div>
           );
-        } else if (intent.intent === "clone_order") {
+        } else if (intent?.intent === "validation_for_cloning") {
+          const [mobileNo, setMobileNo] = useState("");
           const faqs = ["How do I get Refund !", "Connect me to human agent !"];
           return (
             <div ref={ref}>
@@ -1035,6 +1097,15 @@ const HistoricalMessage = forwardRef(
                   <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mb-[8px]">
                     {intent?.message}
                   </p>
+                  <input
+                    key={"mobile for cloning"}
+                    disabled={!isLastMessage}
+                    style={{ borderRadius: 12 }}
+                    placeholder={"Enter mobile no"}
+                    className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                    value={mobileNo}
+                    onChange={(e) => setMobileNo(e.target.value)}
+                  />
                   <button
                     className="allm-flex-1 allm-mt-[10px]"
                     disabled={!isLastMessage}
@@ -1043,14 +1114,23 @@ const HistoricalMessage = forwardRef(
                       borderRadius: 12,
                       padding: 10,
                       borderWidth: 0,
-                      opacity: isLastMessage ? 1 : 0.5,
-                      cursor: isLastMessage ? "pointer" : "not-allowed",
+                      opacity: isLastMessage && mobileNo.length >= 10 ? 1 : 0.5,
+                      cursor:
+                        isLastMessage && mobileNo.length >= 10
+                          ? "pointer"
+                          : "not-allowed",
                     }}
                     onClick={() => {
-                      applyForReplacement(intent?.order_name, intent?.data);
+                      if (mobileNo.length >= 10) {
+                        matchPhoneNoForReorder(
+                          intent?.order_name,
+                          intent?.data,
+                          mobileNo
+                        );
+                      }
                     }}
                   >
-                    <span className="allm-text-white">Apply for reorder</span>
+                    <span className="allm-text-white">Verify mobile no</span>
                   </button>
                 </div>
               </div>
@@ -1061,7 +1141,9 @@ const HistoricalMessage = forwardRef(
           );
         } else if (intent?.intent === "check_cloning_details") {
           const faqs = ["I need help with something else !"];
-          const [phone, setPhone] = useState(intent.data.user.phone || "");
+          const prodcutArray = { products: intent.data.product };
+
+          const [phone, setPhone] = useState("");
           const [email, setEmail] = useState(intent.data.user.email || "");
           const [address1, setAddress1] = useState(
             intent.data.shipping_address.address1 || ""
@@ -1069,15 +1151,11 @@ const HistoricalMessage = forwardRef(
           const [address2, setAddress2] = useState(
             intent.data.shipping_address.address2 || " "
           );
-          const [city, setCity] = useState(
-            intent.data.shipping_address.city || ""
-          );
+          const [city, setCity] = useState(intent.data.shipping_address.city || "");
           const [province, setProvince] = useState(
             intent.data.shipping_address.province || ""
           );
-          const [zip, setZip] = useState(
-            intent.data.shipping_address.zip || ""
-          );
+          const [zip, setZip] = useState(intent.data.shipping_address.zip || "");
 
           const detailFeilds = [
             {
@@ -1119,8 +1197,8 @@ const HistoricalMessage = forwardRef(
             },
             {
               type: "text",
-              placeholder: "Enter province",
-              label: "Province :",
+              placeholder: "Enter state",
+              label: "State :",
               value: province,
               onChange: (val) => setProvince(val),
             },
@@ -1191,7 +1269,7 @@ const HistoricalMessage = forwardRef(
                       )}
                     </>
                   ))}
-                  {productCardArray(intent.data)}
+                  {productCardArray(prodcutArray)}
                   <button
                     className="allm-flex-1 allm-mt-[10px]"
                     disabled={!isValid}
@@ -1206,7 +1284,7 @@ const HistoricalMessage = forwardRef(
                     onClick={() => {
                       if (isValid) {
                         const data = {
-                          order_name: intent.order_name,
+                          order_id: intent.order_name,
                           first_name: intent.data.user.first_name,
                           last_name: intent.data.user.last_name,
                           phone: phone,
@@ -1222,7 +1300,9 @@ const HistoricalMessage = forwardRef(
                       }
                     }}
                   >
-                    <span className="allm-text-white">Submit details</span>
+                    <span className="allm-text-white">
+                      Submit details for reordering
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1660,7 +1740,7 @@ const HistoricalMessage = forwardRef(
           </div>
 
           <div>
-            {suggestions?.products.length > 0 && (
+            {suggestions?.products?.length > 0 && (
               <div className="allm-pl-4">
                 <ProductSuggestions
                   suggestions={suggestions}
@@ -1908,6 +1988,11 @@ const productCardArray = (orderDetails) => {
                   {product.variant_title && (
                     <span className="allm-text-xs allm-text-gray-600">
                       Variant: {product.variant_title}
+                    </span>
+                  )}
+                  {product.quantity && (
+                    <span className="allm-text-xs allm-text-gray-600">
+                      Quantity: {product.quantity}
                     </span>
                   )}
                   {product.price && (

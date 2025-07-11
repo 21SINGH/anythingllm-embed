@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS = {
   eamilTo: null,
   emailToggle: false,
   whatsappToggle: false,
+  brandDomain: null,
 
   // nudge
 
@@ -163,6 +164,7 @@ export default function useGetScriptAttributes() {
         emailToggle: data.email_toggle,
         whatsappToggle: data.whatsapp_toggle,
         anonymous: data.anonymous,
+        brandDomain: data.domain,
         loaded: true,
       }));
     }
@@ -177,13 +179,6 @@ export default function useGetScriptAttributes() {
       }));
     }
   }, [brandConfig]);
-
-  // useEffect(() => {
-  //   setSettings((prevSettings) => ({
-  //     ...prevSettings,
-  //     embedId: "e10f1118-acdb-444d-9c84-fd60828a0a28",
-  //   }));
-  // }, []);
 
   return settings;
 }

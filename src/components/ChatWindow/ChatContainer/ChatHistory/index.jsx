@@ -21,6 +21,9 @@ export default function ChatHistory({
   directlyUpdateUserDetails,
   applyForReplacement,
   submitReplacement,
+  matchPhoneNoForReorder,
+  menu,
+  handleProductIssueData
 }) {
   const replyRef = useRef(null);
   const chatHistoryRef = useRef(null);
@@ -59,7 +62,6 @@ export default function ChatHistory({
 
   return (
     <div
-      // className="allm-pb-[30px] allm-pt-[5px] allm-rounded-[24px] allm-px-2 allm-h-full allm-gap-y-2 allm-overflow-y-scroll allm-flex allm-flex-col allm-justify-start allm-no-scroll allm-md:max-h-[500px] allm-overflow-hidden"
       className="allm-h-full allm-overflow-y-auto allm-px-2 allm-pt-4 allm-pb-8 allm-flex allm-flex-col allm-justify-start allm-no-scroll"
       id="chat-history"
       ref={chatHistoryRef}
@@ -124,6 +126,9 @@ export default function ChatHistory({
               isFirstMessage={index === 0}
               applyForReplacement={applyForReplacement}
               submitReplacement={submitReplacement}
+              matchPhoneNoForReorder={matchPhoneNoForReorder}
+              menu={menu}
+              handleProductIssueData={handleProductIssueData}
             />
           );
         })}

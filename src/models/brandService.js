@@ -16,7 +16,7 @@ const BrandService = {
       }
 
       let data = await response.json();
-
+      
       if (baseApiUrl === "https://anythingllm-dev1.goshoppie.com/api/embed") {
         console.log("setting up dev emebed id");
 

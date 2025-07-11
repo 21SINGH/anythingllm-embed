@@ -5,11 +5,10 @@ import handleChat from "@/utils/chat";
 import ChatService from "@/models/chatService";
 export const SEND_TEXT_EVENT = "anythingllm-embed-send-prompt";
 import BrandAnalytics from "@/models/brandAnalytics";
-import { motion, AnimatePresence, animate } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
 import StoreMessageDB from "@/models/storeMessageInDB";
-import BrandService from "@/models/brandService";
-import json from "highlight.js/lib/languages/json";
+import useFetchFollowUpQuestion from "@/hooks/useFetchFollowUpQuestion";
 
 export default function ChatContainer({
   isChatOpen,
@@ -21,11 +20,10 @@ export default function ChatContainer({
   nudgeClick,
   setNudgeClick,
   nudgeText,
-  followUpQuestion,
-  setFollowUpQuestions,
-  loadingFollowUpQuestion,
+  upsellingProdct,
 }) {
   const PRODUCT_CONTEXT_INDENTIFIER = `allm_${settings.embedId}_product_id`;
+  const PAGE_CONTEXT_IDENTIFIER = `allm_${settings.embedId}_page_context`;
   const [replyProduct, setReplyProduct] = useState();
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
@@ -34,6 +32,13 @@ export default function ChatContainer({
   const [allowAnonymous, setAllowAnonymus] = useState(false);
   const [loading, setLoading] = useState(false);
   const ANONYMOUS_MODE = `allm_${settings.embedId}_anonymous_mode`;
+  const { fetchFollowUpQuestion } = useFetchFollowUpQuestion(
+    settings,
+    nudgeText,
+    sessionId
+  );
+
+  console.log("settings", settings);
 
   const addUser = async () => {
     try {
@@ -81,17 +86,804 @@ export default function ChatContainer({
   useEffect(() => {
     const stored = window.localStorage.getItem(ANONYMOUS_MODE);
     setAllowAnonymus(stored === "true"); // Ensure it's a boolean
-  }, []); // <- run only once on mount
+  }, []);
 
   useEffect(() => {
     if (knownHistory.length !== chatHistory.length)
       setChatHistory([...knownHistory]);
   }, [knownHistory]);
 
-  useEffect(() => {
-    const initializeChat = async () => {
-      if (!settings.shopifyContext?.product?.id) return;
+  const initializeTrackOrder = async () => {
+    const textResponse =
+      "@@INTENT START@@{  'response': 'Please provide us the appropriate data. \n\n We’ll fetch your tracking info in a moment. \n\n',  'intent': 'order_tracking'}@@INTENT END@@";
 
+    const botReply = {
+      content: textResponse,
+      role: "assistant",
+      pending: false,
+      animate: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, botReply]);
+    await StoreMessageDB.postMessageInDB(settings, "", textResponse);
+  };
+
+  const initializeUpdateDetails = async () => {
+    const response_template =
+      "@@INTENT START@@{  'response': 'Please provide the necessary details, for updating your order details : ',  'intent': 'update_details'}@@INTENT END@@";
+
+    const botReply = {
+      content: response_template,
+      role: "assistant",
+      pending: false,
+      animate: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, botReply]);
+    await StoreMessageDB.postMessageInDB(settings, "", response_template);
+  };
+
+  const initializeProductIssue = async () => {
+    const response_template =
+      "@@INTENT START@@{  'response': 'Please provide the following details to move further :  \n\n',  'intent': 'product_issue'}@@INTENT END@@";
+
+    const botReply = {
+      content: response_template,
+      role: "assistant",
+      pending: false,
+      animate: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, botReply]);
+    await StoreMessageDB.postMessageInDB(settings, "", response_template);
+  };
+
+  const handleProductIssueData = async (
+    productIssueOrderId,
+    selectedProductIssue,
+    productIssueUrl
+  ) => {
+    if (!productIssueOrderId || !selectedProductIssue || !productIssueUrl)
+      return null;
+    const message = `Product issue details : \n\n Order Id : ${productIssueOrderId} \n\n Issue type is : ${selectedProductIssue} \n\n Drive URL : ${productIssueUrl}`;
+
+    const userReply = {
+      content: message,
+      role: "user",
+      pending: false,
+      animate: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+    const response_template =
+      '@@INTENT START@@{"response": "I can\'t help with this, I will connect you to our support team ✨\\n\\n", "intent": "connect_to_human"}@@INTENT END@@';
+
+    const botReply = {
+      content: response_template,
+      role: "assistant",
+      pending: false,
+      animate: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, userReply, botReply]);
+    await StoreMessageDB.postMessageInDB(settings, message, response_template);
+  };
+
+  const menu = [
+    { name: "Track my order", onSubmit: initializeTrackOrder },
+    { name: "Update order details", onSubmit: initializeUpdateDetails },
+    { name: "My order has been delayed ", onSubmit: initializeTrackOrder },
+    {
+      name: "Product issue (wrong, missing, damaged)",
+      onSubmit: initializeProductIssue,
+    },
+  ];
+
+  useEffect(() => {
+    const storedProductId = window.sessionStorage.getItem(
+      PRODUCT_CONTEXT_INDENTIFIER
+    );
+    const storedPage = window.sessionStorage.getItem(PAGE_CONTEXT_IDENTIFIER);
+
+    const page = `${settings?.shopifyContext?.page_context?.template}_${settings?.shopifyContext?.page_context?.handle}`;
+
+    const productId = settings?.shopifyContext?.product?.id || null;
+
+    const productAndNudge = async () => {
+      if (!settings.shopifyContext.product.title) return null;
+      try {
+        // first store title directly
+        const textResponse = `@@TITLE@@${settings.shopifyContext.product.title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+        const productMessage = {
+          content: textResponse,
+          role: "assistant",
+          pending: false,
+          animate: true,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+
+        setChatHistory((prev) => [...prev, productMessage]);
+
+        await StoreMessageDB.postMessageInDB(settings, "", textResponse);
+
+        // store follow up question
+        if (upsellingProdct) {
+          let nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@{  
+          "products": [    
+            {      
+              "title": "Adinos - Skin Brightening Duo",      
+              "variant_title": "Default Title",      
+              "images": "https://cdn.shopify.com/s/files/1/0637/6194/0660/files/Frame_2147226802_1.png?v=1751398080",      
+              "compare_at_price": "",      
+              "price": "₹999.00",      
+              "description": "Skin revival for busy men",      
+              "handle": "adonis"    
+            }
+          ]
+        }@@SUGGESTIONS END@@ \n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+          const nudgeUpsellingBotReply = {
+            content: nudgeUpsellingText,
+            role: "assistant",
+            pending: false,
+            animate: true,
+            sentAt: Math.floor(Date.now() / 1000),
+          };
+
+          setChatHistory((prev) => [...prev, nudgeUpsellingBotReply]);
+
+          fetch(
+            `https://shoppie-backend.goshoppie.com/api/products/product-by-title?host=${settings.host}&title=${encodeURIComponent(upsellingProdct?.title)}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          )
+            .then((res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.json();
+            })
+            .then(async (data) => {
+              const followUp = await fetchFollowUpQuestion(nudgeText);
+              if (followUp.length) {
+                const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                  {
+                    products: [
+                      {
+                        title: upsellingProdct?.title,
+                        variant_title: data.variant_title,
+                        images: upsellingProdct?.image,
+                        compare_at_price: data.compare_at_price,
+                        price: data.price,
+                        description: data.description,
+                        handle: data.handle,
+                      },
+                    ],
+                  },
+                  null,
+                  2
+                )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n]\n@@PROMPTS END@@`;
+
+                const nudgeUpsellingBotReply = {
+                  content: nudgeUpsellingText,
+                  role: "assistant",
+                  pending: false,
+                  animate: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                };
+
+                setChatHistory((prev) => [
+                  ...prev.slice(0, -1),
+                  nudgeUpsellingBotReply,
+                ]);
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  "",
+                  nudgeUpsellingText
+                );
+              } else {
+                const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                  {
+                    products: [
+                      {
+                        title: upsellingProdct?.title,
+                        variant_title: data.variant_title,
+                        images: upsellingProdct?.image,
+                        compare_at_price: data.compare_at_price,
+                        price: data.price,
+                        description: data.description,
+                        handle: data.handle,
+                      },
+                    ],
+                  },
+                  null,
+                  2
+                )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[]\n@@PROMPTS END@@`;
+
+                const nudgeUpsellingBotReply = {
+                  content: nudgeUpsellingText,
+                  role: "assistant",
+                  pending: false,
+                  animate: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                };
+
+                setChatHistory((prev) => [
+                  ...prev.slice(0, -1),
+                  nudgeUpsellingBotReply,
+                ]);
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  "",
+                  nudgeUpsellingText
+                );
+              }
+            })
+            .catch(async () => {
+              // not able to load product
+              const followUp = await fetchFollowUpQuestion(nudgeText);
+              if (followUp.length) {
+                const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                  {
+                    products: [],
+                  },
+                  null,
+                  2
+                )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n]\n@@PROMPTS END@@`;
+
+                const nudgeUpsellingBotReply = {
+                  content: nudgeUpsellingText,
+                  role: "assistant",
+                  pending: false,
+                  animate: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                };
+
+                setChatHistory((prev) => [
+                  ...prev.slice(0, -1),
+                  nudgeUpsellingBotReply,
+                ]);
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  "",
+                  nudgeUpsellingText
+                );
+              } else {
+                const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                  {
+                    products: [],
+                  },
+                  null,
+                  2
+                )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[]\n@@PROMPTS END@@`;
+
+                const nudgeUpsellingBotReply = {
+                  content: nudgeUpsellingText,
+                  role: "assistant",
+                  pending: false,
+                  animate: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                };
+
+                setChatHistory((prev) => [
+                  ...prev.slice(0, -1),
+                  nudgeUpsellingBotReply,
+                ]);
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  "",
+                  nudgeUpsellingText
+                );
+              }
+            });
+        } else {
+          // store nudgeText
+          const nudgeResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+          const nudgeBotReply = {
+            content: nudgeResponse,
+            role: "assistant",
+            pending: false,
+            animate: true,
+            sentAt: Math.floor(Date.now() / 1000),
+          };
+
+          setChatHistory((prev) => [...prev, nudgeBotReply]);
+
+          // generate follow up question
+
+          const followUp = await fetchFollowUpQuestion();
+          if (!followUp || !followUp.length) {
+            // No follow-up questions, keep nudge message
+            return;
+          }
+          const nudgeFollowUpResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n\n]\n@@PROMPTS END@@`;
+
+          const nudgeFollowUp = {
+            content: nudgeFollowUpResponse,
+            role: "assistant",
+            pending: false,
+            animate: false,
+            sentAt: Math.floor(Date.now() / 1000),
+          };
+
+          setChatHistory((prev) => [...prev.slice(0, -1), nudgeFollowUp]);
+
+          await StoreMessageDB.postMessageInDB(
+            settings,
+            "",
+            nudgeFollowUpResponse
+          );
+        }
+        setNudgeClick(false);
+
+        window.sessionStorage.setItem(PRODUCT_CONTEXT_INDENTIFIER, productId);
+      } catch (error) {
+        throw new Error(error);
+      }
+    };
+
+    const pageAndNudge = async () => {
+      if (!settings?.shopifyContext?.page_context?.page_title) return null;
+      try {
+        // first store title directly
+        const textResponse = `@@TITLE@@${settings.shopifyContext.page_context.page_title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+        const productMessage = {
+          content: textResponse,
+          role: "assistant",
+          pending: false,
+          animate: true,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+
+        setChatHistory((prev) => [...prev, productMessage]);
+
+        await StoreMessageDB.postMessageInDB(settings, "", textResponse);
+
+        // store nudgeText
+
+        if (upsellingProdct) {
+          let nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@{  
+          "products": [    
+            {      
+              "title": "Adinos - Skin Brightening Duo",      
+              "variant_title": "Default Title",      
+              "images": "https://cdn.shopify.com/s/files/1/0637/6194/0660/files/Frame_2147226802_1.png?v=1751398080",      
+              "compare_at_price": "",      
+              "price": "₹999.00",      
+              "description": "Skin revival for busy men",      
+              "handle": "adonis"    
+            }
+          ]
+        }@@SUGGESTIONS END@@ \n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+          const nudgeUpsellingBotReply = {
+            content: nudgeUpsellingText,
+            role: "assistant",
+            pending: false,
+            animate: true,
+            sentAt: Math.floor(Date.now() / 1000),
+          };
+
+          setChatHistory((prev) => [...prev, nudgeUpsellingBotReply]);
+
+          fetch(
+            `https://shoppie-backend.goshoppie.com/api/products/product-by-title?host=${settings.host}&title=${encodeURIComponent(upsellingProdct?.title)}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          )
+            .then((res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.json();
+            })
+            .then(async (data) => {
+              const followUp = await fetchFollowUpQuestion(nudgeText);
+              if (followUp.length) {
+                const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                  {
+                    products: [
+                      {
+                        title: upsellingProdct?.title,
+                        variant_title: data.variant_title,
+                        images: upsellingProdct?.image,
+                        compare_at_price: data.compare_at_price,
+                        price: data.price,
+                        description: data.description,
+                        handle: data.handle,
+                      },
+                    ],
+                  },
+                  null,
+                  2
+                )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n]\n@@PROMPTS END@@`;
+
+                const nudgeUpsellingBotReply = {
+                  content: nudgeUpsellingText,
+                  role: "assistant",
+                  pending: false,
+                  animate: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                };
+
+                setChatHistory((prev) => [
+                  ...prev.slice(0, -1),
+                  nudgeUpsellingBotReply,
+                ]);
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  "",
+                  nudgeUpsellingText
+                );
+              } else {
+                const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                  {
+                    products: [
+                      {
+                        title: upsellingProdct?.title,
+                        variant_title: data.variant_title,
+                        images: upsellingProdct?.image,
+                        compare_at_price: data.compare_at_price,
+                        price: data.price,
+                        description: data.description,
+                        handle: data.handle,
+                      },
+                    ],
+                  },
+                  null,
+                  2
+                )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[]\n@@PROMPTS END@@`;
+
+                const nudgeUpsellingBotReply = {
+                  content: nudgeUpsellingText,
+                  role: "assistant",
+                  pending: false,
+                  animate: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                };
+
+                setChatHistory((prev) => [
+                  ...prev.slice(0, -1),
+                  nudgeUpsellingBotReply,
+                ]);
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  "",
+                  nudgeUpsellingText
+                );
+              }
+            })
+            .catch(async () => {
+              // not able to load product
+              const followUp = await fetchFollowUpQuestion(nudgeText);
+              if (followUp.length) {
+                const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                  {
+                    products: [],
+                  },
+                  null,
+                  2
+                )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n]\n@@PROMPTS END@@`;
+
+                const nudgeUpsellingBotReply = {
+                  content: nudgeUpsellingText,
+                  role: "assistant",
+                  pending: false,
+                  animate: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                };
+
+                setChatHistory((prev) => [
+                  ...prev.slice(0, -1),
+                  nudgeUpsellingBotReply,
+                ]);
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  "",
+                  nudgeUpsellingText
+                );
+              } else {
+                const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                  {
+                    products: [],
+                  },
+                  null,
+                  2
+                )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[]\n@@PROMPTS END@@`;
+
+                const nudgeUpsellingBotReply = {
+                  content: nudgeUpsellingText,
+                  role: "assistant",
+                  pending: false,
+                  animate: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                };
+
+                setChatHistory((prev) => [
+                  ...prev.slice(0, -1),
+                  nudgeUpsellingBotReply,
+                ]);
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  "",
+                  nudgeUpsellingText
+                );
+              }
+            });
+        } else {
+          const nudgeResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+          const nudgeBotReply = {
+            content: nudgeResponse,
+            role: "assistant",
+            pending: false,
+            animate: true,
+            sentAt: Math.floor(Date.now() / 1000),
+          };
+
+          setChatHistory((prev) => [...prev, nudgeBotReply]);
+
+          // generate follow up question
+
+          const followUp = await fetchFollowUpQuestion();
+          if (!followUp || !followUp.length) {
+            // No follow-up questions, keep nudge message
+            return;
+          }
+
+          // store follow up question
+
+          const nudgeFollowUpResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n\n]\n@@PROMPTS END@@`;
+
+          const nudgeFollowUp = {
+            content: nudgeFollowUpResponse,
+            role: "assistant",
+            pending: false,
+            animate: false,
+            sentAt: Math.floor(Date.now() / 1000),
+          };
+
+          setChatHistory((prev) => [...prev.slice(0, -1), nudgeFollowUp]);
+
+          await StoreMessageDB.postMessageInDB(
+            settings,
+            "",
+            nudgeFollowUpResponse
+          );
+        }
+        setNudgeClick(false);
+        window.sessionStorage.setItem(PAGE_CONTEXT_IDENTIFIER, page);
+      } catch (error) {
+        throw new Error(error);
+      }
+    };
+
+    const nudgeOnly = async () => {
+      if (upsellingProdct) {
+        let nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@{  
+          "products": [    
+            {      
+              "title": "Adinos - Skin Brightening Duo",      
+              "variant_title": "Default Title",      
+              "images": "https://cdn.shopify.com/s/files/1/0637/6194/0660/files/Frame_2147226802_1.png?v=1751398080",      
+              "compare_at_price": "",      
+              "price": "₹999.00",      
+              "description": "Skin revival for busy men",      
+              "handle": "adonis"    
+            }
+          ]
+        }@@SUGGESTIONS END@@ \n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+        const nudgeUpsellingBotReply = {
+          content: nudgeUpsellingText,
+          role: "assistant",
+          pending: false,
+          animate: true,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+
+        setChatHistory((prev) => [...prev, nudgeUpsellingBotReply]);
+        fetch(
+          `https://shoppie-backend.goshoppie.com/api/products/product-by-title?host=${settings.host}&title=${encodeURIComponent(upsellingProdct?.title)}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+          })
+          .then(async (data) => {
+            const followUp = await fetchFollowUpQuestion(nudgeText);
+            if (followUp.length) {
+              const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                {
+                  products: [
+                    {
+                      title: upsellingProdct?.title,
+                      variant_title: data.variant_title,
+                      images: upsellingProdct?.image,
+                      compare_at_price: data.compare_at_price,
+                      price: data.price,
+                      description: data.description,
+                      handle: data.handle,
+                    },
+                  ],
+                },
+                null,
+                2
+              )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n]\n@@PROMPTS END@@`;
+
+              const nudgeUpsellingBotReply = {
+                content: nudgeUpsellingText,
+                role: "assistant",
+                pending: false,
+                animate: false,
+                sentAt: Math.floor(Date.now() / 1000),
+              };
+
+              setChatHistory((prev) => [
+                ...prev.slice(0, -1),
+                nudgeUpsellingBotReply,
+              ]);
+              await StoreMessageDB.postMessageInDB(
+                settings,
+                "",
+                nudgeUpsellingText
+              );
+            } else {
+              const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                {
+                  products: [
+                    {
+                      title: upsellingProdct?.title,
+                      variant_title: data.variant_title,
+                      images: upsellingProdct?.image,
+                      compare_at_price: data.compare_at_price,
+                      price: data.price,
+                      description: data.description,
+                      handle: data.handle,
+                    },
+                  ],
+                },
+                null,
+                2
+              )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[]\n@@PROMPTS END@@`;
+
+              const nudgeUpsellingBotReply = {
+                content: nudgeUpsellingText,
+                role: "assistant",
+                pending: false,
+                animate: false,
+                sentAt: Math.floor(Date.now() / 1000),
+              };
+
+              setChatHistory((prev) => [
+                ...prev.slice(0, -1),
+                nudgeUpsellingBotReply,
+              ]);
+              await StoreMessageDB.postMessageInDB(
+                settings,
+                "",
+                nudgeUpsellingText
+              );
+            }
+          })
+          .catch(async () => {
+            // not able to load product
+            const followUp = await fetchFollowUpQuestion(nudgeText);
+            if (followUp.length) {
+              const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                {
+                  products: [],
+                },
+                null,
+                2
+              )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n]\n@@PROMPTS END@@`;
+
+              const nudgeUpsellingBotReply = {
+                content: nudgeUpsellingText,
+                role: "assistant",
+                pending: false,
+                animate: false,
+                sentAt: Math.floor(Date.now() / 1000),
+              };
+
+              setChatHistory((prev) => [
+                ...prev.slice(0, -1),
+                nudgeUpsellingBotReply,
+              ]);
+              await StoreMessageDB.postMessageInDB(
+                settings,
+                "",
+                nudgeUpsellingText
+              );
+            } else {
+              const nudgeUpsellingText = `${nudgeText}✨\n\n@@SUGGESTIONS START@@${JSON.stringify(
+                {
+                  products: [],
+                },
+                null,
+                2
+              )}@@SUGGESTIONS END@@\n\n@n@@PROMPTS START@@\n[]\n@@PROMPTS END@@`;
+
+              const nudgeUpsellingBotReply = {
+                content: nudgeUpsellingText,
+                role: "assistant",
+                pending: false,
+                animate: false,
+                sentAt: Math.floor(Date.now() / 1000),
+              };
+
+              setChatHistory((prev) => [
+                ...prev.slice(0, -1),
+                nudgeUpsellingBotReply,
+              ]);
+              await StoreMessageDB.postMessageInDB(
+                settings,
+                "",
+                nudgeUpsellingText
+              );
+            }
+          });
+      } else {
+        const nudgeResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+        const nudgeBotReply = {
+          content: nudgeResponse,
+          role: "assistant",
+          pending: false,
+          animate: true,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+
+        setChatHistory((prev) => [...prev, nudgeBotReply]);
+
+        const followUp = await fetchFollowUpQuestion();
+        if (!followUp || !followUp.length) {
+          // No follow-up questions, keep nudge message
+          return;
+        }
+
+        // store follow up question
+
+        const nudgeFollowUpResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "${followUp[0]}",\n  " ${followUp[1]}"\n,\n  " ${followUp[2]}"\n\n]\n@@PROMPTS END@@`;
+
+        const nudgeFollowUp = {
+          content: nudgeFollowUpResponse,
+          role: "assistant",
+          pending: false,
+          animate: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+
+        setChatHistory((prev) => [...prev.slice(0, -1), nudgeFollowUp]);
+
+        await StoreMessageDB.postMessageInDB(
+          settings,
+          "",
+          nudgeFollowUpResponse
+        );
+      }
+
+      setNudgeClick(false);
+    };
+
+    const productOnly = async () => {
+      if (!settings.shopifyContext.product.title) return null;
       const textResponse = `@@TITLE@@${settings.shopifyContext.product.title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
 
       const productMessage = {
@@ -104,98 +896,92 @@ export default function ChatContainer({
 
       setChatHistory((prev) => [...prev, productMessage]);
 
-      try {
-        const followUpQuestion = await BrandService.generateFollowUpQuestion(
-          settings.host,
-          settings.shopifyContext.product.title,
-          sessionId
-        );
-        if (followUpQuestion) {
-          const followUpText = `@@TITLE@@${settings.shopifyContext.product.title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "${followUpQuestion[0]}",\n  " ${followUpQuestion[1]}"\n,\n  " ${followUpQuestion[2]}"\n\n]\n@@PROMPTS END@@`;
+      const followUpQuestion = await fetchFollowUpQuestion(
+        settings.shopifyContext.product.title
+      );
+      const followUpText = `@@TITLE@@${settings.shopifyContext.product.title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "${followUpQuestion[0]}",\n  " ${followUpQuestion[1]}"\n,\n  " ${followUpQuestion[2]}"\n\n]\n@@PROMPTS END@@`;
 
-          const followUpMessage = {
-            content: followUpText,
-            role: "assistant",
-            pending: false,
-            animate: false,
-            sentAt: Math.floor(Date.now() / 1000),
-          };
+      const followUpMessage = {
+        content: followUpText,
+        role: "assistant",
+        pending: false,
+        animate: false,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
 
-          setChatHistory((prev) => [...prev.slice(0, -1), followUpMessage]);
+      setChatHistory((prev) => [...prev.slice(0, -1), followUpMessage]);
 
-          await StoreMessageDB.postMessageInDB(settings, "", followUpText);
-          BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+      await StoreMessageDB.postMessageInDB(settings, "", followUpText);
 
-          window.sessionStorage.setItem(
-            PRODUCT_CONTEXT_INDENTIFIER,
-            settings.shopifyContext?.product?.id
-          );
-
-          if (chatHistory.length === 1) {
-            addUser();
-          }
-        }
-      } catch (err) {
-        console.error("❌ Failed to store message or fetch follow-up:", err);
-      }
+      window.sessionStorage.setItem(PRODUCT_CONTEXT_INDENTIFIER, productId);
     };
 
-    if (
-      window.sessionStorage.getItem(PRODUCT_CONTEXT_INDENTIFIER) !==
-      settings.shopifyContext?.product?.id
-    ) {
-      initializeChat();
+    const pageOnly = async () => {
+      if (!settings.shopifyContext.page_context.page_title) return null;
+      const textResponse = `@@TITLE@@${settings.shopifyContext.page_context.page_title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
+
+      const productMessage = {
+        content: textResponse,
+        role: "assistant",
+        pending: false,
+        animate: true,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+
+      setChatHistory((prev) => [...prev, productMessage]);
+
+      const followUpQuestion = await fetchFollowUpQuestion(
+        settings.shopifyContext.page_context.page_title
+      );
+      const followUpText = `@@TITLE@@${settings.shopifyContext.page_context.page_title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "${followUpQuestion[0]}",\n  " ${followUpQuestion[1]}"\n,\n  " ${followUpQuestion[2]}"\n\n]\n@@PROMPTS END@@`;
+
+      const followUpMessage = {
+        content: followUpText,
+        role: "assistant",
+        pending: false,
+        animate: false,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+
+      setChatHistory((prev) => [...prev.slice(0, -1), followUpMessage]);
+
+      await StoreMessageDB.postMessageInDB(settings, "", followUpText);
+
+      window.sessionStorage.setItem(PAGE_CONTEXT_IDENTIFIER, page);
+    };
+
+    // products page
+    if (productId) {
+      if (storedProductId !== productId && nudgeClick) {
+        productAndNudge();
+        BrandAnalytics.sendAnalytics(settings, sessionId, "tap_widget");
+      } else if (nudgeClick) {
+        nudgeOnly();
+        BrandAnalytics.sendAnalytics(settings, sessionId, "tap_widget");
+      } else if (storedProductId !== productId) {
+        productOnly();
+      }
     }
-  }, [settings.shopifyContext?.product?.id, settings.host, sessionId]); // Narrow dependencies
-
-  useEffect(() => {
-    const handleNudge = async () => {
-      if (
-        loadingFollowUpQuestion &&
-        nudgeText &&
-        nudgeClick &&
-        followUpQuestion.length === 0
-      ) {
-        const textResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
-        const botReply = {
-          content: textResponse,
-          role: "assistant",
-          pending: false,
-          animate: true,
-          sentAt: Math.floor(Date.now() / 1000),
-        };
-
-        setChatHistory((prev) => [...prev, botReply]);
+    // index page
+    else if (settings?.shopifyContext?.page_context?.template === "index") {
+      if (nudgeClick) {
+        nudgeOnly();
+        BrandAnalytics.sendAnalytics(settings, sessionId, "tap_widget");
       }
-
-      if (followUpQuestion.length > 0 && nudgeText && nudgeClick) {
-        const textResponse = `${nudgeText}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "${followUpQuestion[0]}",\n  " ${followUpQuestion[1]}"\n,\n  " ${followUpQuestion[2]}"\n\n]\n@@PROMPTS END@@`;
-
-        const botReply = {
-          content: textResponse,
-          role: "assistant",
-          pending: false,
-          animate: false,
-          sentAt: Math.floor(Date.now() / 1000),
-        };
-
-        setChatHistory((prev) => [...prev.slice(0, -1), botReply]);
-
-        setNudgeClick(false);
-        setFollowUpQuestions([]);
-
-        try {
-          await StoreMessageDB.postMessageInDB(settings, "", textResponse);
-        } catch (err) {
-          console.error("❌ Failed to store message:", err);
-        }
-
-        await BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+    }
+    // normal page
+    else if (page) {
+      if (storedPage !== page && nudgeClick) {
+        pageAndNudge();
+        BrandAnalytics.sendAnalytics(settings, sessionId, "tap_widget");
+      } else if (nudgeClick) {
+        nudgeOnly();
+        BrandAnalytics.sendAnalytics(settings, sessionId, "tap_widget");
+      } else if (storedPage !== page && !nudgeClick) {
+        pageOnly();
       }
-    };
-
-    handleNudge();
-  }, [followUpQuestion, nudgeText, nudgeClick, loadingFollowUpQuestion]);
+    }
+  }, [settings?.shopifyContext, nudgeClick, nudgeText]);
 
   const handleUserUpdate = (orderId, phoneNo) => {
     const orderIdPattern = /^(#?[rR][mM])?\d+$/;
@@ -350,7 +1136,7 @@ export default function ChatContainer({
       const prevChatHistory = [
         ...chatHistory,
         {
-           content: `Phone no: ${cleanedPhone} \n\n Order Id: ${orderId}`,
+          content: `Phone no: ${cleanedPhone} \n\n Order Id: ${orderId}`,
           role: "user",
           sentAt: Math.floor(Date.now() / 1000),
         },
@@ -605,119 +1391,6 @@ export default function ChatContainer({
       });
   };
 
-  const applyForReplacement = async (orderId, data) => {
-    const userMessage = "Applying for Reorder";
-
-    const userEntry = {
-      content: userMessage,
-      role: "user",
-      sentAt: Math.floor(Date.now() / 1000),
-    };
-    const intentPayload = {
-      intent: "check_cloning_details",
-      message: `Check corresponding details for your orderID : ${orderId}`,
-      order_name: orderId,
-      data: data,
-    };
-
-    const reply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
-
-    const botReply = {
-      content: reply,
-      role: "assistant",
-      pending: false,
-      sentAt: Math.floor(Date.now() / 1000),
-    };
-
-    setChatHistory((prev) => [...prev, userEntry, botReply]);
-
-    StoreMessageDB.postMessageInDB(settings, userMessage, reply).catch(
-      (err) => {
-        console.error("❌ Failed to store message:", err);
-      }
-    );
-  };
-
-  const submitReplacement = async (data) => {
-    const userMessage = "Submit details for reordering !";
-    const userEntry = {
-      content: userMessage,
-      role: "user",
-      sentAt: Math.floor(Date.now() / 1000),
-    };
-    const loadingEntry = {
-      content: "Creating your order, give me a second ☺️",
-      role: "assistant",
-      pending: false,
-      sentAt: Math.floor(Date.now() / 1000),
-    };
-
-    setChatHistory((prev) => [...prev, userEntry, loadingEntry]);
-
-    const body = {
-      host: settings.host,
-      order_name: data.order_name,
-      user_details: {
-        first_name: data.first_name,
-        last_name: data.last_name,
-        phone: data.phone,
-        email: data.email,
-      },
-      address: {
-        address1: data.address1,
-        address2: data.address2,
-        city: data.city,
-        zip: data.zip,
-        province: data.province,
-        country: data.country,
-      },
-    };
-
-    fetch(`https://shoppie-backend.goshoppie.com/api/stores/rto-order`, {
-      body: JSON.stringify(body),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-    })
-      .then((res) => res.json())
-      .then(async (data) => {
-        const botReply = `Your order is successfully recreated, order id is ${data.order_name}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "Show me some trendy products !",\n  "Help me with something !"\n\n]\n@@PROMPTS END@@`;
-
-        const botMessage = {
-          content: botReply,
-          role: "assistant",
-          pending: false,
-          sentAt: Math.floor(Date.now() / 1000),
-        };
-
-        setChatHistory((prev) => [...prev.slice(0, -1), botMessage]);
-
-        StoreMessageDB.postMessageInDB(settings, userMessage, botReply).catch(
-          (err) => {
-            console.error("❌ Failed to store message:", err);
-          }
-        );
-      })
-      .catch((err) => {
-        const botReply = `Could not reorder right now . Please try again later.✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "Show me some trendy products !",\n  "Help me with something !"\n\n]\n@@PROMPTS END@@`;
-
-        const botMessage = {
-          content: botReply,
-          role: "assistant",
-          pending: false,
-          sentAt: Math.floor(Date.now() / 1000),
-        };
-
-        setChatHistory((prev) => [...prev.slice(0, -1), botMessage]);
-        StoreMessageDB.postMessageInDB(settings, userMessage, botReply).catch(
-          (err) => {
-            console.error("❌ Failed to store message:", err);
-          }
-        );
-      });
-  };
-
   const handledirectOrderTrackingViaId = async (mess) => {
     const orderIdPattern = /^(?=.*[0-9])[a-zA-Z0-9.]+$/;
 
@@ -824,11 +1497,14 @@ export default function ChatContainer({
           const userMessage = orderId;
           const botReply = `Order details:\n${JSON.stringify(extracted, null, 2)}`;
 
-          if (orderId === "RM5562" || shipment.status.includes("RTO")) {
+          if (
+            orderId === "RM173493" ||
+            orderId === "RM5562" ||
+            shipment.status.includes("RTO")
+          ) {
             const intentPayload = {
-              intent: "clone_order",
-              message:
-                "We're deeply sorry we couldn't deliver your order. We ask for a chance to make it right with a reorder.\n\n Please confirm !",
+              intent: "validation_for_cloning",
+              message: `Please enter your realted mobile no with this order id ${orderId}, for reordering ✨`,
               order_name: orderId,
               data: extracted,
             };
@@ -939,6 +1615,182 @@ export default function ChatContainer({
       ];
       setChatHistory(prevChatHistory);
     }
+  };
+
+  const matchPhoneNoForReorder = async (orderId, data, mobileNo) => {
+    // Function to clean phone number by removing non-digits and country code
+    const cleanPhoneNumber = (phone) => {
+      if (!phone) return ""; // Handle null or undefined
+      // Convert to string, trim whitespace, remove non-digits
+      let cleaned = String(phone).trim().replace(/\D/g, "");
+      // Remove leading '91' country code if present
+      if (cleaned.startsWith("91")) {
+        cleaned = cleaned.slice(2);
+      }
+      return cleaned;
+    };
+
+    // Clean the input mobile number
+    const cleanedMobileNo = cleanPhoneNumber(mobileNo);
+    // Clean phone_1 and phone_2
+    const cleanedPhone1 = cleanPhoneNumber(data.user.phone_1);
+    const cleanedPhone2 = cleanPhoneNumber(data.user.phone_2);
+
+    const userMessage = `Validate with this no : ${cleanedMobileNo}`;
+
+    const userEntry = {
+      content: userMessage,
+      role: "user",
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, userEntry]);
+
+    // Check if cleanedMobileNo matches either cleanedPhone1 or cleanedPhone2
+    const isMatch =
+      cleanedMobileNo === cleanedPhone1 || cleanedMobileNo === cleanedPhone2;
+
+    if (isMatch) {
+      applyForReplacement(orderId, userMessage, data);
+    } else {
+      const botReply = `Your entered mobile ${cleanedMobileNo} no didn't match your previous checkout/ shipping no please try again later✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n  "What are your refund policy !"\n\n]\n@@PROMPTS END@@`;
+
+      const botMessage = {
+        content: botReply,
+        role: "assistant",
+        pending: false,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+
+      setChatHistory((prev) => [...prev, botMessage]);
+      StoreMessageDB.postMessageInDB(settings, userMessage, botReply).catch(
+        (err) => {
+          console.error("❌ Failed to store message:", err);
+        }
+      );
+    }
+  };
+
+  const applyForReplacement = async (orderId, userMessage, data) => {
+    const intentPayload = {
+      intent: "check_cloning_details",
+      message: `Check corresponding details for your orderID : ${orderId}`,
+      order_name: orderId,
+      data: data,
+    };
+
+    const reply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
+
+    const botReply = {
+      content: reply,
+      role: "assistant",
+      pending: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, botReply]);
+    ``;
+    StoreMessageDB.postMessageInDB(settings, userMessage, reply).catch(
+      (err) => {
+        console.error("❌ Failed to store message:", err);
+      }
+    );
+  };
+
+  const submitReplacement = async (data) => {
+    const body = {
+      host: settings.host,
+      session_id: settings.sessionId,
+      order_name: data.order_id,
+      user_details: {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        phone: data.phone,
+        email: data.email,
+      },
+      address: {
+        address1: data.address1,
+        address2: data.address2,
+        city: data.city,
+        zip: data.zip,
+        province: data.province,
+        country: data.country,
+      },
+    };
+
+    const userMessage = `
+    Submit details for reordering!
+
+- **Customer Email:** ${body.user_details.email}
+- **Phone Number:** ${body.user_details.phone}
+- **Address:**
+  - Name: "${body.user_details.first_name} ${body.user_details.last_name}"
+  - Address: ${body.address.address1}
+  ${body.address.address2 ? `  - Address 2: ${body.address.address2}` : ""}
+  - City: ${body.address.city}
+  - State: ${body.address.province}
+  - Pincode: ${body.address.zip}
+`.trim();
+
+    const userEntry = {
+      content: userMessage,
+      role: "user",
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+    const loadingEntry = {
+      content: "Creating your order, give me a second ☺️",
+      role: "assistant",
+      pending: false,
+      sentAt: Math.floor(Date.now() / 1000),
+    };
+
+    setChatHistory((prev) => [...prev, userEntry, loadingEntry]);
+    fetch(`https://shoppie-backend.goshoppie.com/api/stores/rto-order`, {
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(async (data) => {
+        const botReply = `Your order is successfully recreated, order id is ${data.order_name}✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "Show me some trendy products !",\n  "Help me with something !"\n\n]\n@@PROMPTS END@@`;
+
+        const botMessage = {
+          content: botReply,
+          role: "assistant",
+          pending: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+
+        setChatHistory((prev) => [...prev.slice(0, -1), botMessage]);
+
+        StoreMessageDB.postMessageInDB(settings, userMessage, botReply).catch(
+          (err) => {
+            console.error("❌ Failed to store message:", err);
+          }
+        );
+      })
+      .catch((err) => {
+        const botReply = `Could not reorder right now . Please try again later.✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "Show me some trendy products !",\n  "Help me with something !"\n\n]\n@@PROMPTS END@@`;
+
+        const botMessage = {
+          content: botReply,
+          role: "assistant",
+          pending: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        };
+
+        setChatHistory((prev) => [...prev.slice(0, -1), botMessage]);
+        StoreMessageDB.postMessageInDB(settings, userMessage, botReply).catch(
+          (err) => {
+            console.error("❌ Failed to store message:", err);
+          }
+        );
+      });
   };
 
   const handleSubmit = async (event, message, setMessage) => {
@@ -1077,7 +1929,10 @@ export default function ChatContainer({
             setLoadingResponse,
             setChatHistory,
             remHistory,
-            _chatHistory
+            _chatHistory,
+            settings.host,
+            settings.embedId,
+            settings.sessionId
           )
       );
       return;
@@ -1448,7 +2303,7 @@ export default function ChatContainer({
         // allm-overflow-y-auto allm-overscroll-contain
       >
         <ChatHistory
-        isChatOpen={isChatOpen}
+          isChatOpen={isChatOpen}
           settings={settings}
           history={chatHistory}
           handlePrompt={handlePrompt}
@@ -1466,6 +2321,9 @@ export default function ChatContainer({
           directlyUpdateUserDetails={directlyUpdateUserDetails}
           applyForReplacement={applyForReplacement}
           submitReplacement={submitReplacement}
+          matchPhoneNoForReorder={matchPhoneNoForReorder}
+          menu={menu}
+          handleProductIssueData={handleProductIssueData}
         />
       </div>
       <PromptInput

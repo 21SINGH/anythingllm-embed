@@ -11,13 +11,13 @@ const PromptReply = forwardRef(
     let isProducts = false;
     let isTitle = false;
     let titleText = "";
+    let isIntent = false;
 
     if (reply.includes("@@TITLE@@")) {
       isTitle = true;
       const titleMatch = reply.match(/@@TITLE@@(.*?)@@TITLT END@@/);
       titleText = titleMatch ? titleMatch[1] : "";
     }
-
     if (reply.includes("@@SUGGESTIONS START@@")) {
       // Stop display content at the marker
       displayContent = reply.split("@@SUGGESTIONS START@@")[0];
@@ -34,6 +34,11 @@ const PromptReply = forwardRef(
     // Check if there are prompts
     if (reply.includes("@@PROMPTS START@@\n") && !isSuggestions) {
       isProducts = true;
+    }
+
+    if (reply.includes("@@INTENT START@@\n") && !isSuggestions) {
+      displayContent = reply.split("@@INTENT START@@")[0];
+      isIntent = true;
     }
 
     if (!reply && sources.length === 0 && !pending && !error) return null;
@@ -91,7 +96,7 @@ const PromptReply = forwardRef(
             />
           </div>
           {isProducts && (
-            <div className="allm-flex allm-items-end allm-justify-end allm-w-[420px] allm-h-auto">
+            <div className="allm-flex allm-items-end allm-justify-end allm-w-full">
               <PromptShimmer />
             </div>
           )}
@@ -203,6 +208,7 @@ const PromptReply = forwardRef(
               </div>
             )}
           </div>
+          {isIntent && <TypingIndicator />}
         </div>
       );
   }

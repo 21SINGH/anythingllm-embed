@@ -13,9 +13,7 @@ export default function ChatWindow({
   nudgeClick,
   setNudgeClick,
   nudgeText,
-  followUpQuestion,
-  setFollowUpQuestions,
-  loadingFollowUpQuestion,
+  upsellingProdct
 }) {
   const { chatHistory, setChatHistory, loading } = useChatHistory(
     settings,
@@ -75,9 +73,7 @@ export default function ChatWindow({
           nudgeClick={nudgeClick}
           setNudgeClick={setNudgeClick}
           nudgeText={nudgeText}
-          followUpQuestion={followUpQuestion}
-          setFollowUpQuestions={setFollowUpQuestions}
-          loadingFollowUpQuestion={loadingFollowUpQuestion}
+          upsellingProdct={upsellingProdct}
         />
       </div>
     </div>
