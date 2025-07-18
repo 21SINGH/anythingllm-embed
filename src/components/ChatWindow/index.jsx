@@ -13,7 +13,9 @@ export default function ChatWindow({
   nudgeClick,
   setNudgeClick,
   nudgeText,
-  upsellingProdct
+  upsellingProdct,
+  humanConnect,
+  setHumanConnect,
 }) {
   const { chatHistory, setChatHistory, loading } = useChatHistory(
     settings,
@@ -42,8 +44,8 @@ export default function ChatWindow({
         </div>
       </div>
     );
-  } 
- 
+  }
+
   setEventDelegatorForCodeSnippets();
 
   return (
@@ -64,7 +66,7 @@ export default function ChatWindow({
         style={{ backgroundColor: settings.bgColor }}
       >
         <ChatContainer
-        isChatOpen={isChatOpen}
+          isChatOpen={isChatOpen}
           sessionId={sessionId}
           settings={settings}
           knownHistory={chatHistory}
@@ -74,6 +76,8 @@ export default function ChatWindow({
           setNudgeClick={setNudgeClick}
           nudgeText={nudgeText}
           upsellingProdct={upsellingProdct}
+          humanConnect={humanConnect}
+          setHumanConnect={setHumanConnect}
         />
       </div>
     </div>

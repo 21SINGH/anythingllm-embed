@@ -27,7 +27,6 @@ const DEFAULT_SETTINGS = {
   emailToggle: false,
   whatsappToggle: false,
   brandDomain: null,
-
   // nudge
 
   nudgeAppear: false,

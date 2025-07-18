@@ -166,7 +166,7 @@ const parseMessageWithSuggestionsAndPrompts = (message) => {
   if (intentMatch) {
     let rawIntent = intentMatch[1];
     const intent = fixMalformedJson(rawIntent);
-    textBeforeSuggestions =  message.substring(0, intentMatch.index);
+    textBeforeSuggestions = message.substring(0, intentMatch.index);
     const textAfterIntent =
       message.substring(0, intentMatch.index) +
       message.substring(intentMatch.index + intentMatch[0].length);
@@ -272,15 +272,11 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
       onClick={handleAnchorClick}
     >
       <div>
-        {(product?.image_url ||
-          product?.images) &&
-        !imageError ? (
+        {(product?.image_url || product?.images) && !imageError ? (
           <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[260px]">
             <img
               src={
-                product?.image_url ||
-                product?.product_images ||
-                product?.images
+                product?.image_url || product?.product_images || product?.images
               }
               alt={product?.title || product?.product_name || product?.images}
               className="allm-h-full allm-w-full allm-object-cover"
@@ -376,6 +372,7 @@ const HistoricalMessage = forwardRef(
       matchPhoneNoForReorder,
       menu,
       handleProductIssueData,
+      connectToSocket,
     },
     ref
   ) => {
@@ -915,6 +912,10 @@ const HistoricalMessage = forwardRef(
                       <p className="allm-m-0 allm-text-[14px]  allm-pl-3">
                         2. photos of the issue.
                       </p>
+                      <p className="allm-m-[8px] allm-text-[13px] allm-text-red-600 allm-pl-3">
+                        Please grant access to the Drive link so we can review
+                        it and assist you effectively.
+                      </p>
 
                       {/* Dynamic input field with enforced prefix */}
                       <input
@@ -1151,11 +1152,15 @@ const HistoricalMessage = forwardRef(
           const [address2, setAddress2] = useState(
             intent.data.shipping_address.address2 || " "
           );
-          const [city, setCity] = useState(intent.data.shipping_address.city || "");
+          const [city, setCity] = useState(
+            intent.data.shipping_address.city || ""
+          );
           const [province, setProvince] = useState(
             intent.data.shipping_address.province || ""
           );
-          const [zip, setZip] = useState(intent.data.shipping_address.zip || "");
+          const [zip, setZip] = useState(
+            intent.data.shipping_address.zip || ""
+          );
 
           const detailFeilds = [
             {
@@ -1374,9 +1379,11 @@ const HistoricalMessage = forwardRef(
                         borderWidth: 0,
                         marginTop: 15,
                       }}
-                      onClick={() => {
+                      onClick={async () => {
                         setIntent(intent?.intent);
                         setOpenBottomSheet(true);
+                 
+                        // connectToSocket();
                       }}
                     >
                       <span className="allm-text-white">
@@ -1890,12 +1897,25 @@ const OrderDetailsCard = ({
           <span className="allm-font-extralight">{orderDetails.status}</span>
         </span>
       )}
-      {orderDetails?.edd && (
-        <span>
-          <span className="allm-font-semibold">Delivery Date:</span>{" "}
-          <span className="allm-font-extralight">{orderDetails.edd}</span>
-        </span>
-      )}
+      {orderDetails?.edd &&
+        (() => {
+          const eddDate = new Date(orderDetails.edd);
+          const today = new Date();
+          // Strip time for accurate comparison
+          today.setHours(0, 0, 0, 0);
+          eddDate.setHours(0, 0, 0, 0);
+
+          const isFutureOrToday = eddDate >= today;
+          return (
+            <span>
+              <span className="allm-font-semibold">
+                {isFutureOrToday ? "Expected Delivery Date:" : "Delivery Date:"}
+              </span>{" "}
+              <span className="allm-font-extralight">{orderDetails.edd}</span>
+            </span>
+          );
+        })()}
+
       {/* Products section */}
       {productCardArray(orderDetails)}
 

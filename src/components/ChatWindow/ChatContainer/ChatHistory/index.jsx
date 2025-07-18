@@ -23,7 +23,9 @@ export default function ChatHistory({
   submitReplacement,
   matchPhoneNoForReorder,
   menu,
-  handleProductIssueData
+  handleProductIssueData,
+  setHumanConnect,
+  connectToSocket
 }) {
   const replyRef = useRef(null);
   const chatHistoryRef = useRef(null);
@@ -129,6 +131,7 @@ export default function ChatHistory({
               matchPhoneNoForReorder={matchPhoneNoForReorder}
               menu={menu}
               handleProductIssueData={handleProductIssueData}
+              connectToSocket={connectToSocket}
             />
           );
         })}

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon -e js,jsx,css --watch src --exec \"yarn run dev:preview\"",
-    "dev:preview": "yarn run dev:build && yarn serve . -p 3000 --no-clipboard",
+    "dev:preview": "yarn run dev:build && yarn serve . -p 3001 --no-clipboard",
     "dev:build": "vite build && yarn styles",
     "styles": "npx cleancss -o dist/anythingllm-chat-widget.min.css dist/style.css",
     "build": "vite build && yarn styles && npx terser --compress -o dist/anythingllm-chat-widget.min.js -- dist/anythingllm-chat-widget.js",
@@ -31,6 +31,7 @@
     "react-hot-toast": "^2.5.2",
     "react-icons": "^5.5.0",
     "react-markdown": "^10.1.0",
+    "socket.io-client": "^4.8.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

@@ -8,12 +8,12 @@ import ChatWindow from "./components/ChatWindow";
 import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
 import sound3 from "@/assets/3.mp3";
-import silence from "@/assets/silence.mp3";
-import useShakeAndBounceAnimation from "./hooks/useShakeAndBounceAnimation";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
   const embedSettings = useGetScriptAttributes();
+  const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
+  const [humanConnect, setHumanConnect] = useState(false); // not known yet!
   const { sessionId, serialNo } = useSessionId(embedSettings);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
   const [nudgeAppear, setNudgeAppear] = useState(false);
@@ -27,6 +27,7 @@ export default function App() {
   const [openingMessage, setOpeningMessage] = useState("");
   const DEFAULT_NUDGE_MESSAGE = "Welcome! How can I assist you?";
   const DEFAULT_NUDGE_ALLOW = `allm_${embedSettings.embedId}_default_nudge_allow`;
+
   // const { y } = useShakeAndBounceAnimation(nudgeText, openingMessage);
 
   const playSound = (variant) => {
@@ -204,6 +205,21 @@ export default function App() {
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "bottom";
 
+  // useEffect(() => {
+  //   if (embedSettings && embedSettings.embedId) {
+  //     const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
+  //     const saved = window.localStorage.getItem(HUMAN_CONNECT);
+  //     setHumanConnect(saved === "true"); // boolean
+  //   }
+  // }, [embedSettings?.embedId]);
+
+  // useEffect(() => {
+  //   if (embedSettings && embedSettings.embedId) {
+  //     const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
+  //     window.localStorage.setItem(HUMAN_CONNECT, String(humanConnect));
+  //   }
+  // }, [humanConnect, embedSettings?.embedId]);
+
   if (!embedSettings.loaded || !sessionId) return null;
 
   return (
@@ -237,6 +253,8 @@ export default function App() {
                   setNudgeClick={setNudgeClick}
                   nudgeText={nudgeText}
                   upsellingProdct={upsellingProdct}
+                  humanConnect={humanConnect}
+                  setHumanConnect={setHumanConnect}
                 />
               </motion.div>
             )}
@@ -285,7 +303,9 @@ export default function App() {
                         //  hover:allm-border-white hover:allm-border-solid allm-border-[1px]
                         onClick={() => {
                           if (cartHandle) {
-                            window.location.href = cartHandle;
+                            if (embedSettings.brandDomain === "reginaldmen.com")
+                              window.openGokwikSideCart();
+                            else window.location.href = cartHandle;
                           } else {
                             openBot();
                           }

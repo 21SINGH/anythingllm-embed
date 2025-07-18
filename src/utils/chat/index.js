@@ -24,17 +24,74 @@ export default async function handleChat(
 
   let modifiedResponse = textResponse;
 
+  // if (textResponse.includes("@@SUGGESTIONS START@@")) {
+  //   const suggestionMatch = textResponse.match(
+  //     /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/
+  //   );
+  //   if (suggestionMatch) {
+  //     try {
+  //       const suggestionData = JSON.parse(suggestionMatch[1]);
+  //       if (suggestionData.products?.length > 0) {
+  //         console.log("Processing suggestion data:", suggestionData.products);
+
+  //         const variantIds = suggestionData.products.map((product) => ({
+  //           variant_id: product.variant_id.toString(),
+  //         }));
+  //         console.log("Fetching product details for variants:", variantIds);
+
+  //         const apiResponse = await fetch(
+  //           "https://shoppie-backend.goshoppie.com/api/products/product-by-variant",
+  //           {
+  //             method: "POST",
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //             },
+  //             body: JSON.stringify({
+  //               host: host,
+  //               variant_ids: variantIds,
+  //             }),
+  //           }
+  //         );
+
+  //         const updatedProducts = await apiResponse.json();
+
+  //         modifiedResponse = modifiedResponse.replace(
+  //           suggestionMatch[0],
+  //           `@@SUGGESTIONS START@@\n${JSON.stringify(
+  //             { products: updatedProducts },
+  //             null,
+  //             2
+  //           )}\n@@SUGGESTIONS END@@`
+  //         );
+  //       }
+  //     } catch (e) {
+  //       console.error("Failed to process API response:", e);
+  //     }
+  //   }
+  // }
+
   if (textResponse.includes("@@SUGGESTIONS START@@")) {
     const suggestionMatch = textResponse.match(
       /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/
     );
+
     if (suggestionMatch) {
       try {
         const suggestionData = JSON.parse(suggestionMatch[1]);
-        if (suggestionData.products?.length > 0) {
-          const variantIds = suggestionData.products.map((product) => ({
+
+        // Filter out products without variant_id
+        const filteredProducts = (suggestionData.products || []).filter(
+          (product) => !!product.variant_id
+        );
+
+        if (filteredProducts.length > 0) {
+          console.log("Processing filtered suggestion data:", filteredProducts);
+
+          const variantIds = filteredProducts.map((product) => ({
             variant_id: product.variant_id.toString(),
           }));
+
+          console.log("Fetching product details for variants:", variantIds);
 
           const apiResponse = await fetch(
             "https://shoppie-backend.goshoppie.com/api/products/product-by-variant",
@@ -60,6 +117,10 @@ export default async function handleChat(
               2
             )}\n@@SUGGESTIONS END@@`
           );
+        } else {
+          console.log("No valid variant_ids found, skipping product fetch.");
+          // You can also choose to remove the entire SUGGESTIONS block if no valid variants
+          modifiedResponse = modifiedResponse.replace(suggestionMatch[0], "");
         }
       } catch (e) {
         console.error("Failed to process API response:", e);
@@ -157,7 +218,7 @@ export default async function handleChat(
     }
     setChatHistory([..._chatHistory]);
   }
-    if (textResponse !== modifiedResponse) {
+  if (textResponse !== modifiedResponse) {
     const apiResponse = await fetch(
       "https://shoppie-backend.goshoppie.com/api/anythingllm/",
       {

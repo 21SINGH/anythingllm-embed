@@ -9,6 +9,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
 import StoreMessageDB from "@/models/storeMessageInDB";
 import useFetchFollowUpQuestion from "@/hooks/useFetchFollowUpQuestion";
+import { io } from "socket.io-client";
+
+// const socket = io("http://localhost:3000");
 
 export default function ChatContainer({
   isChatOpen,
@@ -21,6 +24,8 @@ export default function ChatContainer({
   setNudgeClick,
   nudgeText,
   upsellingProdct,
+  humanConnect,
+  setHumanConnect,
 }) {
   const PRODUCT_CONTEXT_INDENTIFIER = `allm_${settings.embedId}_product_id`;
   const PAGE_CONTEXT_IDENTIFIER = `allm_${settings.embedId}_page_context`;
@@ -32,13 +37,12 @@ export default function ChatContainer({
   const [allowAnonymous, setAllowAnonymus] = useState(false);
   const [loading, setLoading] = useState(false);
   const ANONYMOUS_MODE = `allm_${settings.embedId}_anonymous_mode`;
+  const HUMAN_CONNECT = `allm_${settings.embedId}_human_connect`;
   const { fetchFollowUpQuestion } = useFetchFollowUpQuestion(
     settings,
     nudgeText,
     sessionId
   );
-
-  console.log("settings", settings);
 
   const addUser = async () => {
     try {
@@ -1416,7 +1420,17 @@ export default function ChatContainer({
       )
         .then((res) => res.json())
         .then(async (data) => {
-          if (data?.detail?.includes("Order not found")) {
+          if (data?.detail?.includes("Order recently created")) {
+            const date = new Date(data?.created_at);
+
+            const readableDate = new Intl.DateTimeFormat("en-IN", {
+              dateStyle: "medium", // or "full", "long", "short"
+              timeStyle: "short", // or "full", "long", "medium"
+              timeZone: "Asia/Kolkata",
+            }).format(date);
+
+            const reply = `Your order "${orderId}" was placed recently on ${readableDate}, therefore it hasn’t been dispatched yet. Please try again after 24 hours for an update.✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n  "I was looking for something else !"\n, "Show me some more products !"\n\n]\n@@PROMPTS END@@`;
+
             const notFoundChat = [
               ...chatHistory,
               {
@@ -1425,96 +1439,26 @@ export default function ChatContainer({
                 sentAt: Math.floor(Date.now() / 1000),
               },
               {
-                content: `❌ Order for ID "${orderId}" not found. Please enter the correct Order ID.`,
+                content: reply,
                 role: "assistant",
                 pending: false,
                 sentAt: Math.floor(Date.now() / 1000),
               },
             ];
             setChatHistory(notFoundChat);
+            setOrderTrackingInProgress(false);
+            try {
+              await StoreMessageDB.postMessageInDB(settings, orderId, reply);
+            } catch (err) {
+              console.error("❌ Failed to store message:", err);
+            }
             return; // ⛔ Stop further execution
-          }
-
-          const shipment = data?.shipments?.track;
-          const shipmentStatus = shipment?.status;
-          const desc = shipment?.desc || "";
-          const eddMs = data.shipments?.edd;
-
-          let delay = false;
-
-          if (shipmentStatus === "In Transit") {
-            const transitEntry = shipment?.details?.find(
-              (entry) => entry.status === "In Transit"
-            );
-
-            const inTransitStartTime = transitEntry?.ctime;
-            const now = Date.now();
-            const msIn7Days = 7 * 24 * 60 * 60 * 1000;
-
-            if (inTransitStartTime) {
-              const delayDuration = now - inTransitStartTime;
-              if (delayDuration >= msIn7Days) {
-                delay = true;
-              }
-            }
-          }
-
-          const eddDate = eddMs
-            ? new Date(eddMs).toLocaleDateString("en-IN", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })
-            : "";
-
-          const extracted = {
-            products: data?.products,
-            tracking_number: data.shipments?._id || "",
-            payment_mode: data.payment_mode || "",
-            status: shipment?.status || "",
-            tracking_url: data?.tracking_url,
-            edd: eddDate,
-            delay: delay,
-            shipping_address: data.shipping_address,
-            user: data?.user_details,
-          };
-
-          // If status is "Delivered", extract extra info
-          if (
-            shipment?.status === "Delivered" &&
-            desc.includes("Shipment Delivered by SR")
-          ) {
-            const match = desc.match(
-              /Shipment Delivered by SR:\s*(.+?),\s*DeliveryDate:\s*([\d\- :]+),\s*Receiver Name:\s*(.+)/
-            );
-            if (match) {
-              extracted.delivered_by = match[1].trim();
-              extracted.delivery_date = match[2].trim();
-              extracted.receiver_name = match[3].trim();
-            }
-          }
-
-          const userMessage = orderId;
-          const botReply = `Order details:\n${JSON.stringify(extracted, null, 2)}`;
-
-          if (
-            orderId === "RM173493" ||
-            orderId === "RM5562" ||
-            shipment.status.includes("RTO")
-          ) {
-            const intentPayload = {
-              intent: "validation_for_cloning",
-              message: `Please enter your realted mobile no with this order id ${orderId}, for reordering ✨`,
-              order_name: orderId,
-              data: extracted,
-            };
-
-            const rtoReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
-
-            const updatedChat = [
+          } else if (data?.detail?.includes("Order not found")) {
+            const botReply = `❌ Order for ID "${orderId}" not found. Please enter the correct Order ID.\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n  "I was looking for something else !"\n, "Show me some more products !"\n\n]\n@@PROMPTS END@@`;
+            const notFoundChat = [
               ...chatHistory,
               {
-                content: userMessage,
+                content: orderId,
                 role: "user",
                 sentAt: Math.floor(Date.now() / 1000),
               },
@@ -1524,50 +1468,153 @@ export default function ChatContainer({
                 pending: false,
                 sentAt: Math.floor(Date.now() / 1000),
               },
-              {
-                content: rtoReply,
-                role: "assistant",
-                pending: false,
-                sentAt: Math.floor(Date.now() / 1000),
-              },
             ];
-            setChatHistory(updatedChat);
-
+            setChatHistory(notFoundChat);
+            setOrderTrackingInProgress(false);
             try {
               // Store first message
-              await StoreMessageDB.postMessageInDB(
-                settings,
-                userMessage,
-                botReply
-              );
+              await StoreMessageDB.postMessageInDB(settings, orderId, botReply);
               // Store second message only after first is successful
               await StoreMessageDB.postMessageInDB(settings, "", rtoReply);
             } catch (err) {
               console.error("❌ Failed to store message:", err);
             }
+            return; // ⛔ Stop further execution
           } else {
-            const updatedChat = [
-              ...chatHistory,
-              {
-                content: userMessage,
-                role: "user",
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-              {
-                content: botReply,
-                role: "assistant",
-                pending: false,
-                sentAt: Math.floor(Date.now() / 1000),
-              },
-            ];
-            setChatHistory(updatedChat);
-            StoreMessageDB.postMessageInDB(
-              settings,
-              userMessage,
-              botReply
-            ).catch((err) => {
-              console.error("❌ Failed to store message:", err);
-            });
+            const shipment = data?.shipments?.track;
+            const shipmentStatus = shipment?.status;
+            const desc = shipment?.desc || "";
+            const eddMs = data.shipments?.edd;
+
+            let delay = false;
+
+            if (shipmentStatus === "In Transit") {
+              const transitEntry = shipment?.details?.find(
+                (entry) => entry.status === "In Transit"
+              );
+
+              const inTransitStartTime = transitEntry?.ctime;
+              const now = Date.now();
+              const msIn7Days = 7 * 24 * 60 * 60 * 1000;
+
+              if (inTransitStartTime) {
+                const delayDuration = now - inTransitStartTime;
+                if (delayDuration >= msIn7Days) {
+                  delay = true;
+                }
+              }
+            }
+
+            const eddDate = eddMs
+              ? new Date(eddMs).toLocaleDateString("en-IN", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              : "";
+
+            const extracted = {
+              products: data?.products,
+              tracking_number: data.shipments?._id || "",
+              payment_mode: data.payment_mode || "",
+              status: shipment?.status || "",
+              tracking_url: data?.tracking_url,
+              edd: eddDate,
+              delay: delay,
+              shipping_address: data.shipping_address,
+              user: data?.user_details,
+            };
+
+            // If status is "Delivered", extract extra info
+            if (
+              shipment?.status === "Delivered" &&
+              desc.includes("Shipment Delivered by SR")
+            ) {
+              const match = desc.match(
+                /Shipment Delivered by SR:\s*(.+?),\s*DeliveryDate:\s*([\d\- :]+),\s*Receiver Name:\s*(.+)/
+              );
+              if (match) {
+                extracted.delivered_by = match[1].trim();
+                extracted.delivery_date = match[2].trim();
+                extracted.receiver_name = match[3].trim();
+              }
+            }
+
+            const userMessage = orderId;
+            const botReply = `Order details:\n${JSON.stringify(extracted, null, 2)}`;
+
+            if (
+              orderId === "RM173493" ||
+              orderId === "RM5562" ||
+              shipment.status.includes("RTO")
+            ) {
+              const intentPayload = {
+                intent: "validation_for_cloning",
+                message: `Please enter your realted mobile no with this order id ${orderId}, for reordering ✨`,
+                order_name: orderId,
+                data: extracted,
+              };
+
+              const rtoReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
+
+              const updatedChat = [
+                ...chatHistory,
+                {
+                  content: userMessage,
+                  role: "user",
+                  sentAt: Math.floor(Date.now() / 1000),
+                },
+                {
+                  content: botReply,
+                  role: "assistant",
+                  pending: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                },
+                {
+                  content: rtoReply,
+                  role: "assistant",
+                  pending: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                },
+              ];
+              setChatHistory(updatedChat);
+
+              try {
+                // Store first message
+                await StoreMessageDB.postMessageInDB(
+                  settings,
+                  userMessage,
+                  botReply
+                );
+                // Store second message only after first is successful
+                await StoreMessageDB.postMessageInDB(settings, "", rtoReply);
+              } catch (err) {
+                console.error("❌ Failed to store message:", err);
+              }
+            } else {
+              const updatedChat = [
+                ...chatHistory,
+                {
+                  content: userMessage,
+                  role: "user",
+                  sentAt: Math.floor(Date.now() / 1000),
+                },
+                {
+                  content: botReply,
+                  role: "assistant",
+                  pending: false,
+                  sentAt: Math.floor(Date.now() / 1000),
+                },
+              ];
+              setChatHistory(updatedChat);
+              StoreMessageDB.postMessageInDB(
+                settings,
+                userMessage,
+                botReply
+              ).catch((err) => {
+                console.error("❌ Failed to store message:", err);
+              });
+            }
           }
         })
         .catch((err) => {
@@ -1793,6 +1840,119 @@ export default function ChatContainer({
       });
   };
 
+  // useEffect(() => {
+  //   const socketPresent = window.localStorage.getItem(HUMAN_CONNECT);
+  //   if (socketPresent === "true") {
+  //     console.log("connected to socket ");
+
+  //     socket.emit("joinRoom", {
+  //       room: settings.sessionId,
+  //       userName: "user",
+  //     });
+  //   }
+  // }, []);
+
+  const connectToSocket = async () => {
+    setHumanConnect(true);
+
+    socket.emit("joinRoom", {
+      room: settings.sessionId,
+      userName: "user",
+    });
+
+    // Step 2: Try to create a ticket
+    try {
+      const res = await fetch("http://localhost:3000/api/ticket", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Ticket creation failed:", data.error);
+      } else {
+        console.log("Ticket created:", data.ticket);
+        const textResponse = `@@TITLE@@Ticket created ${data.ticket.id}@@TITLT END@@`;
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            content: textResponse,
+            role: "assistant",
+            pending: false,
+            userMessage: " ",
+            animate: false,
+            sentAt: Math.floor(Date.now() / 1000),
+          },
+        ]);
+
+        StoreMessageDB.postMessageInDB(settings, "", textResponse).catch(
+          (err) => {
+            console.error("❌ Failed to store message:", err);
+          }
+        );
+      }
+    } catch (err) {
+      console.error("Error calling ticket API:", err);
+    }
+  };
+
+  // useEffect(() => {
+  //   const handleMessage = async (data) => {
+  //     setChatHistory((prev) => [
+  //       ...prev,
+  //       {
+  //         content: data.message,
+  //         role: "assistant",
+  //         pending: false,
+  //         userMessage: " ",
+  //         animate: false,
+  //         sentAt: Math.floor(Date.now() / 1000),
+  //       },
+  //     ]);
+
+  //     await StoreMessageDB.postMessageInDB(settings, "", data.message).catch(
+  //       (err) => {
+  //         console.error("❌ Failed to store message:", err);
+  //       }
+  //     );
+  //   };
+
+  //   const handleTicketClosed = async (data) => {
+  //     const textResponse = `@@TITLE@@${data.userName} closed ticket ${data.ticketId}@@TITLT END@@`;
+  //     setChatHistory((prev) => [
+  //       ...prev,
+  //       {
+  //         content: textResponse,
+  //         role: "assistant",
+  //         pending: false,
+  //         userMessage: " ",
+  //         animate: false,
+  //         sentAt: Math.floor(Date.now() / 1000),
+  //       },
+  //     ]);
+
+  //     await StoreMessageDB.postMessageInDB(settings, "", textResponse).catch(
+  //       (err) => {
+  //         console.error("❌ Failed to store message:", err);
+  //       }
+  //     );
+  //     console.log("handleTicketClosed calling setHumanConnect(false)");
+  //     setHumanConnect(false);
+  //   };
+
+  //   socket.on("message", handleMessage);
+  //   socket.on("ticket_closed", handleTicketClosed);
+
+  //   return () => {
+  //     socket.off("message", handleMessage);
+  //     socket.off("ticket_closed", handleTicketClosed);
+  //   };
+  // }, []);
+
   const handleSubmit = async (event, message, setMessage) => {
     event.preventDefault();
 
@@ -1801,8 +1961,22 @@ export default function ChatContainer({
     const mess = message;
 
     setMessage("");
-
-    if (replyProduct) {
+    if (humanConnect) {
+      const data = { room: sessionId, message: mess, sender: "user" };
+      socket.emit("message", data);
+      const prevChatHistory = [
+        ...chatHistory,
+        {
+          content: mess,
+          role: "user",
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+      setChatHistory(prevChatHistory);
+      StoreMessageDB.postMessageInDB(settings, mess, "").catch((err) => {
+        console.error("❌ Failed to store message:", err);
+      });
+    } else if (replyProduct) {
       const replied_product = JSON.stringify(replyProduct);
       const replyText = `->REPLY START-> ${replied_product} ->REPLY END-> ${mess}`;
       const prevChatHistory = [
@@ -1914,7 +2088,11 @@ export default function ChatContainer({
       const remHistory = chatHistory.length > 0 ? chatHistory.slice(0, -1) : [];
       var _chatHistory = [...remHistory];
 
-      if (!promptMessage || !promptMessage?.userMessage) {
+      if (
+        !promptMessage ||
+        !promptMessage?.userMessage ||
+        humanConnect
+      ) {
         setLoadingResponse(false);
         return false;
       }
@@ -2324,6 +2502,8 @@ export default function ChatContainer({
           matchPhoneNoForReorder={matchPhoneNoForReorder}
           menu={menu}
           handleProductIssueData={handleProductIssueData}
+          setHumanConnect={setHumanConnect}
+          connectToSocket={connectToSocket}
         />
       </div>
       <PromptInput
