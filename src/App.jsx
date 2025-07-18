@@ -1,83 +1,135 @@
+import React, { useEffect, useState, useRef } from "react";
 import useGetScriptAttributes from "@/hooks/useScriptAttributes";
 import useSessionId from "@/hooks/useSessionId";
 import useOpenChat from "@/hooks/useOpen";
 import Head from "@/components/Head";
 import OpenButton from "@/components/OpenButton";
 import ChatWindow from "./components/ChatWindow";
-import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RxCross2 } from "react-icons/rx";
-import BrandAnalytics from "@/models/brandAnalytics";
-import BrandService from "@/models/brandService";
+import sound3 from "@/assets/3.mp3";
 
 export default function App() {
   const { isChatOpen, toggleOpenChat } = useOpenChat();
   const embedSettings = useGetScriptAttributes();
+  const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
+  const [humanConnect, setHumanConnect] = useState(false); // not known yet!
   const { sessionId, serialNo } = useSessionId(embedSettings);
   const [isLargeScreen, setIsLargeScreen] = useState(true);
-  const [interaction, setInteraction] = useState(false);
-  const [showFirstMessage, setShowFirstMessage] = useState(true);
   const [nudgeAppear, setNudgeAppear] = useState(false);
   const [nudgeText, setNudgeText] = useState("");
+  const [upsellingProdct, setUpsellingProduct] = useState(null);
+  const [cartHandle, setCartHandle] = useState(null);
   const [nudgeClick, setNudgeClick] = useState(false);
-  const [followUpQuestion, setFollowUpQuestions] = useState([]);
-  const [loadingFollowUpQuestion, setLoadingFollowUpQuestions] =
-    useState(false);
+  const [nudgeKey, setNudgeKey] = useState(0);
+  const hasPlayed = useRef(false);
+  const previousNudgeText = useRef("");
+  const [openingMessage, setOpeningMessage] = useState("");
+  const DEFAULT_NUDGE_MESSAGE = "Welcome! How can I assist you?";
+  const DEFAULT_NUDGE_ALLOW = `allm_${embedSettings.embedId}_default_nudge_allow`;
+
+  // const { y } = useShakeAndBounceAnimation(nudgeText, openingMessage);
+
+  const playSound = (variant) => {
+    if (
+      variant === "open" &&
+      !hasPlayed.current &&
+      nudgeText !== openingMessage &&
+      nudgeText !== previousNudgeText.current
+    ) {
+      try {
+        const audio = new Audio(sound3);
+        audio.play().catch(() => {});
+        hasPlayed.current = true;
+        previousNudgeText.current = nudgeText;
+      } catch (error) {}
+    }
+  };
 
   useEffect(() => {
-    if (isChatOpen)
-      BrandAnalytics.sendAnalytics(embedSettings, sessionId, "tap_widget");
-  }, [isChatOpen]);
+    hasPlayed.current = false;
+  }, [nudgeAppear]);
 
   useEffect(() => {
-    setNudgeText(
-      "Consider adding Kratos - Barrier Repair Moisturizer for hydration and skin protection"
-    );
-    setNudgeAppear(true);
-    setNudgeClick(true);
-  }, [nudgeText]);
+    const newOpeningMessage =
+      embedSettings.openingMessage || DEFAULT_NUDGE_MESSAGE;
+    setOpeningMessage(newOpeningMessage);
+  }, [embedSettings.openingMessage]);
 
   useEffect(() => {
     const handleNudgeUpdate = (event) => {
       const { key, value } = event.detail || {};
 
-      if (key === "shoppieAINudgeMessage") {
-        setNudgeAppear(false);
-        setNudgeText(value);
-
-        setTimeout(() => {
-          setNudgeAppear(true);
-        }, 400);
-
-        console.log("New nudge message:", value);
+      if (key !== "shoppieAINudgeMessage") {
+        return;
       }
+      let parsedValue;
+      try {
+        parsedValue = JSON.parse(value);
+        if (parsedValue?.usecase)
+          setNudgeText(`${parsedValue?.nudge} ${parsedValue?.usecase}`);
+        else setNudgeText(`${parsedValue?.nudge} `);
+        setUpsellingProduct(parsedValue?.product);
+        setCartHandle(parsedValue?.handle);
+      } catch (e) {
+        setNudgeText(value);
+        setUpsellingProduct(null);
+        setCartHandle(null);
+      }
+
+      setNudgeAppear(false);
+
+      const showTimer = setTimeout(() => {
+        setNudgeAppear(true);
+        setNudgeClick(true);
+      }, 350);
+
+      const defaultTimer = setTimeout(() => {
+        // const defaultMessage = openingMessage || DEFAULT_NUDGE_MESSAGE;
+        setNudgeAppear(false);
+        setUpsellingProduct(null);
+        setCartHandle(null);
+        setNudgeKey((prev) => prev + 1);
+        setNudgeClick(false);
+        // setTimeout(() => {
+        //   if (window.sessionStorage.getItem(DEFAULT_NUDGE_ALLOW) === "true") {
+        //     setNudgeText(defaultMessage);
+        //     setUpsellingProduct(null);
+        //     setNudgeAppear(true);
+        //     setNudgeKey((prev) => prev + 1);
+        //     setNudgeClick(false);
+        //   }
+        // }, 450);
+      }, 20000);
+
+      // Cleanup timers
+      return () => {
+        clearTimeout(showTimer);
+        clearTimeout(defaultTimer);
+      };
     };
 
     window.addEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
 
+    // Cleanup event listener on unmount
     return () => {
       window.removeEventListener("shoppieAINudgeUpdated", handleNudgeUpdate);
     };
-  }, []);
+  }, [openingMessage, embedSettings]);
 
   useEffect(() => {
-    if (embedSettings?.openingMessage !== "") {
+    if (
+      embedSettings?.openingMessage !== "" &&
+      window.sessionStorage.getItem(DEFAULT_NUDGE_ALLOW) === "true"
+    ) {
       setNudgeAppear(true);
       setNudgeText(embedSettings?.openingMessage);
+      setUpsellingProduct(null);
+      setCartHandle(null);
     }
-  }, [embedSettings]);
+  }, [embedSettings, sessionId]);
 
   useEffect(() => {
-    console.log("nudge text", nudgeText);
-    console.log("nudge appear", nudgeAppear);
-  }, [nudgeAppear, nudgeText]);
-
-  useEffect(() => {
-    // const firstMessageShown = sessionStorage.getItem("firstMessageShown");
-    // if (!firstMessageShown) {
-    //   setShowFirstMessage(true);
-    // }
-
     const handleResize = () => {
       setIsLargeScreen(window.innerWidth > 560);
     };
@@ -88,27 +140,10 @@ export default function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleCloseFirstMessage = () => {
-    // sessionStorage.setItem("firstMessageShown", "true");
-    setShowFirstMessage(false);
+  const handleCloseFirstMessage = async () => {
     setNudgeAppear(false);
+    window.sessionStorage.setItem(DEFAULT_NUDGE_ALLOW, "false");
   };
-
-  useEffect(() => {
-    const handleUserInteraction = () => {
-      if (!interaction) {
-        setInteraction(true);
-      }
-    };
-
-    window.addEventListener("click", handleUserInteraction);
-    window.addEventListener("keydown", handleUserInteraction);
-
-    return () => {
-      window.removeEventListener("click", handleUserInteraction);
-      window.removeEventListener("keydown", handleUserInteraction);
-    };
-  }, [interaction]);
 
   useEffect(() => {
     if (sessionId === "d5c5134a-ab48-458d-bc90-16cb66456426") {
@@ -117,35 +152,6 @@ export default function App() {
     embedSettings.sessionId = sessionId;
     embedSettings.serialNo = serialNo;
   }, [embedSettings?.loaded, sessionId]);
-
-  // useEffect(() => {
-  //   const sendBrandView = async () => {
-  //     await BrandAnalytics.sendAnalytics(
-  //       embedSettings,
-  //       sessionId,
-  //       "brand_view"
-  //     );
-  //   };
-  //   const sendWidgetClick = async () => {
-  //     toggleOpenChat(true);
-  //     await BrandAnalytics.sendAnalytics(
-  //       embedSettings,
-  //       sessionId,
-  //       "tap_widget"
-  //     );
-  //   };
-
-  //   if (embedSettings.openOnLoad === "on") {
-  //     sendWidgetClick();
-  //   }
-  //   if (isChatOpen) sendWidgetClick();
-
-  //   if (embedSettings.loaded) {
-  //     sendBrandView();
-  //   }
-  // }, [embedSettings.loaded, sessionId]);
-
-  console.log("embed settings", embedSettings);
 
   const positionClasses = {
     "bottom-left": "allm-bottom-0 allm-left-0 allm-ml-4",
@@ -185,61 +191,34 @@ export default function App() {
     },
   };
 
-  const buttonVariants = {
-    open: {
-      scale: embedSettings.inputbarDisabled ? 1 : 1,
-      opacity: embedSettings.inputbarDisabled ? 1 : 1,
-      transition: embedSettings.inputbarDisabled
-        ? {} // No transition if disabled
-        : { duration: 0.4, ease: [0.76, 0, 0.24, 1] },
-    },
-    closed: {
-      scale: embedSettings.inputbarDisabled ? 1 : 0,
-      opacity: embedSettings.inputbarDisabled ? 1 : 0,
-      transition: embedSettings.inputbarDisabled
-        ? {} // No transition if disabled
-        : { duration: 0.1, ease: [0.6, 0, 0.24, 1] },
-    },
+  const openingMessageVariants = {
+    closed: { opacity: 0, scale: 0.8 },
+    open: { opacity: 1, scale: 1 },
   };
 
-  const openingMessageVariants = {
-    open: {
-      scale: embedSettings.inputbarDisabled ? 1 : 1,
-      opacity: embedSettings.inputbarDisabled ? 1 : 1,
-      transition: embedSettings.inputbarDisabled
-        ? {} // No transition if disabled
-        : { duration: 0.3, ease: [0.76, 0, 0.24, 1] },
-    },
-    closed: {
-      scale: embedSettings.inputbarDisabled ? 1 : 0,
-      opacity: embedSettings.inputbarDisabled ? 1 : 0,
-      transition: embedSettings.inputbarDisabled
-        ? {} // No transition if disabled
-        : { duration: 0.2, ease: [0.6, 0, 0.24, 1] },
-    },
+  const buttonVariants = {
+    closed: { opacity: 0, scale: 0.8 },
+    open: { opacity: 1, scale: 1 },
   };
 
   const transformOrigin = isLargeScreen
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "bottom";
 
-  const fetchFollowUpQuestion = async () => {
-    try {
-      setLoadingFollowUpQuestions(true);
-      openBot();
-      const followUpQuestion = await BrandService.generateFollowUpQuestion(
-        embedSettings.host,
-        nudgeText,
-        sessionId
-      );
-      setFollowUpQuestions(followUpQuestion);
-      setLoadingFollowUpQuestions(false);
-    } catch (error) {
-      setLoadingFollowUpQuestions(false);
-      console.error("Failed to fetch follow-up question:", error);
-      return null;
-    }
-  };
+  // useEffect(() => {
+  //   if (embedSettings && embedSettings.embedId) {
+  //     const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
+  //     const saved = window.localStorage.getItem(HUMAN_CONNECT);
+  //     setHumanConnect(saved === "true"); // boolean
+  //   }
+  // }, [embedSettings?.embedId]);
+
+  // useEffect(() => {
+  //   if (embedSettings && embedSettings.embedId) {
+  //     const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
+  //     window.localStorage.setItem(HUMAN_CONNECT, String(humanConnect));
+  //   }
+  // }, [humanConnect, embedSettings?.embedId]);
 
   if (!embedSettings.loaded || !sessionId) return null;
 
@@ -251,6 +230,7 @@ export default function App() {
           <AnimatePresence>
             {isChatOpen && (
               <motion.div
+                id="anything-llm-chat"
                 variants={variants}
                 initial="closed"
                 animate="open"
@@ -264,25 +244,28 @@ export default function App() {
                 ${isLargeScreen ? positionClasses[position] : ""} allm-rounded-2xl`}
               >
                 <ChatWindow
+                  isChatOpen={isChatOpen}
                   closeChat={() => toggleOpenChat(false)}
                   settings={embedSettings}
                   sessionId={sessionId}
                   isLargeScreen={isLargeScreen}
+                  nudgeClick={nudgeClick}
+                  setNudgeClick={setNudgeClick}
                   nudgeText={nudgeText}
-                  followUpQuestion={followUpQuestion}
-                  loadingFollowUpQuestion={loadingFollowUpQuestion}
+                  upsellingProdct={upsellingProdct}
+                  humanConnect={humanConnect}
+                  setHumanConnect={setHumanConnect}
                 />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
         {!isChatOpen && (
           <div>
             <AnimatePresence>
               {nudgeAppear && (
                 <motion.div
-                  key="welcome-message"
+                  key={`welcome-message-${nudgeKey}`}
                   variants={openingMessageVariants}
                   initial="closed"
                   animate="open"
@@ -291,9 +274,10 @@ export default function App() {
                   style={{
                     ...positionStyle,
                     transformOrigin,
-                    bottom: Number(embedSettings.bottom) + 70,
+                    bottom: Number(embedSettings.bottom) + 90,
+                    // y,
                   }}
-                  // onAnimationStart={playSound}
+                  onAnimationStart={playSound}
                 >
                   {nudgeText && (
                     <div className="allm-relative allm-flex allm-flex-col allm-items-end allm-py-[16px] allm-mr-[5px] allm-gap-2">
@@ -302,7 +286,7 @@ export default function App() {
                         style={{
                           backgroundColor: embedSettings.nudgeBgColor,
                         }}
-                        className="allm-right-[5px]  hover:allm-cursor-pointer allm-rounded-full allm-p-1  allm-flex allm-items-center allm-justify-center"
+                        className="allm-right-[5px] hover:allm-cursor-pointer allm-rounded-full allm-p-1 allm-flex allm-items-center allm-justify-center"
                       >
                         <RxCross2
                           size={18}
@@ -315,19 +299,37 @@ export default function App() {
                           backgroundColor: embedSettings.nudgeBgColor,
                           color: embedSettings.nudgeTextColor,
                         }}
-                        className="allm-rounded-2xl allm-p-[14px] hover:allm-shadow-[0_0_15px_rgba(255,255,255,0.5)] hover:allm-cursor-pointer hover:allm-border-white hover:allm-border-solid allm-border-[1px] "
+                        className="allm-flex allm-flex-row allm-rounded-2xl allm-p-[14px] hover:allm-shadow-[0_0_15px_rgba(255,255,255,0.5)] hover:allm-cursor-pointer"
+                        //  hover:allm-border-white hover:allm-border-solid allm-border-[1px]
                         onClick={() => {
-                          if (nudgeClick) {
-                            fetchFollowUpQuestion();
+                          if (cartHandle) {
+                            if (embedSettings.brandDomain === "reginaldmen.com")
+                              window.openGokwikSideCart();
+                            else window.location.href = cartHandle;
+                          } else {
+                            openBot();
                           }
                         }}
                       >
+                        {upsellingProdct && (
+                          <img
+                            src={upsellingProdct?.image}
+                            alt="Product Image"
+                            style={{ width: "80px", height: "80px" }}
+                            className="allm-rounded-lg allm-mr-[10px]"
+                          />
+                        )}
                         <span
                           id="allm-starting-message"
                           style={{
                             wordBreak: "break-word",
+                            WebkitLineClamp: upsellingProdct?.image ? 4 : 3,
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            maxHeight: upsellingProdct?.image ? "80px" : "60px", // Adjust based on line-height (e.g., 20px * 3)
                           }}
-                          className="allm-text-[14px]  allm-line-clamp-3 allm-leading-[20px]"
+                          className="allm-text-[14px] allm-leading-[20px]"
                         >
                           {nudgeText}
                         </span>
@@ -345,8 +347,12 @@ export default function App() {
                 animate="open"
                 exit="closed"
                 id="anything-llm-embed-chat-button-container"
-                className={`allm-fixed allm-z-50`}
-                style={{ ...positionStyle, transformOrigin }}
+                className="allm-fixed allm-z-50 allm-p-4 allm-rounded-full "
+                style={{
+                  ...positionStyle,
+                  transformOrigin,
+                  // y,
+                }}
               >
                 <OpenButton
                   settings={embedSettings}
@@ -361,13 +367,3 @@ export default function App() {
     </>
   );
 }
-
-const playSound = () => {
-  if (!sessionStorage.getItem("stop-sound")) {
-    const audio = new Audio(
-      "https://pub-8c1bb6e7c1dc4de9a9c50ab4d399094d.r2.dev/discord-message.mp3"
-    );
-    audio.play();
-    sessionStorage.setItem("stop-sound", "true");
-  }
-};

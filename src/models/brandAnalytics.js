@@ -5,7 +5,7 @@ const BrandAnalytics = {
     type,
     product = null
   ) {
-    const url = "https://analytics-backend.aroundme.global/api/shoppie/";
+    const url = "https://analytics-backend.goshoppie.com/api/shoppie/";
 
     const body = {
       type,
@@ -36,7 +36,7 @@ const BrandAnalytics = {
   },
   sendTokenAnalytics: async function (embedSettings, sessionId) {
     const url =
-      "https://analytics-backend.aroundme.global/api/shoppie/chat-token";
+      "https://analytics-backend.goshoppie.com/api/shoppie/chat-token";
 
     const body = {
       host: embedSettings?.host,
@@ -66,7 +66,7 @@ const BrandAnalytics = {
   },
   connectToLiveAgent: async function (embedSettings, sessionId) {
     const url =
-      "https://analytics-backend.aroundme.global/api/shoppie/live-agent";
+      "https://analytics-backend.goshoppie.com/api/shoppie/live-agent";
 
     const body = {
       host: embedSettings?.host,

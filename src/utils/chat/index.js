@@ -1,10 +1,12 @@
-// For handling of synchronous chats that are not utilizing streaming or chat requests.
-export default function handleChat(
+export default async function handleChat(
   chatResult,
   setLoadingResponse,
   setChatHistory,
   remHistory,
-  _chatHistory
+  _chatHistory,
+  host,
+  embed_id,
+  session_id
 ) {
   const {
     uuid,
@@ -20,13 +22,119 @@ export default function handleChat(
   const lastMessage = _chatHistory[_chatHistory.length - 1];
   const sentAt = lastMessage?.sentAt;
 
+  let modifiedResponse = textResponse;
+
+  // if (textResponse.includes("@@SUGGESTIONS START@@")) {
+  //   const suggestionMatch = textResponse.match(
+  //     /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/
+  //   );
+  //   if (suggestionMatch) {
+  //     try {
+  //       const suggestionData = JSON.parse(suggestionMatch[1]);
+  //       if (suggestionData.products?.length > 0) {
+  //         console.log("Processing suggestion data:", suggestionData.products);
+
+  //         const variantIds = suggestionData.products.map((product) => ({
+  //           variant_id: product.variant_id.toString(),
+  //         }));
+  //         console.log("Fetching product details for variants:", variantIds);
+
+  //         const apiResponse = await fetch(
+  //           "https://shoppie-backend.goshoppie.com/api/products/product-by-variant",
+  //           {
+  //             method: "POST",
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //             },
+  //             body: JSON.stringify({
+  //               host: host,
+  //               variant_ids: variantIds,
+  //             }),
+  //           }
+  //         );
+
+  //         const updatedProducts = await apiResponse.json();
+
+  //         modifiedResponse = modifiedResponse.replace(
+  //           suggestionMatch[0],
+  //           `@@SUGGESTIONS START@@\n${JSON.stringify(
+  //             { products: updatedProducts },
+  //             null,
+  //             2
+  //           )}\n@@SUGGESTIONS END@@`
+  //         );
+  //       }
+  //     } catch (e) {
+  //       console.error("Failed to process API response:", e);
+  //     }
+  //   }
+  // }
+
+  if (textResponse.includes("@@SUGGESTIONS START@@")) {
+    const suggestionMatch = textResponse.match(
+      /@@SUGGESTIONS START@@\s*([\s\S]*?)\s*@@SUGGESTIONS END@@/
+    );
+
+    if (suggestionMatch) {
+      try {
+        const suggestionData = JSON.parse(suggestionMatch[1]);
+
+        // Filter out products without variant_id
+        const filteredProducts = (suggestionData.products || []).filter(
+          (product) => !!product.variant_id
+        );
+
+        if (filteredProducts.length > 0) {
+          console.log("Processing filtered suggestion data:", filteredProducts);
+
+          const variantIds = filteredProducts.map((product) => ({
+            variant_id: product.variant_id.toString(),
+          }));
+
+          console.log("Fetching product details for variants:", variantIds);
+
+          const apiResponse = await fetch(
+            "https://shoppie-backend.goshoppie.com/api/products/product-by-variant",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                host: host,
+                variant_ids: variantIds,
+              }),
+            }
+          );
+
+          const updatedProducts = await apiResponse.json();
+
+          modifiedResponse = modifiedResponse.replace(
+            suggestionMatch[0],
+            `@@SUGGESTIONS START@@\n${JSON.stringify(
+              { products: updatedProducts },
+              null,
+              2
+            )}\n@@SUGGESTIONS END@@`
+          );
+        } else {
+          console.log("No valid variant_ids found, skipping product fetch.");
+          // You can also choose to remove the entire SUGGESTIONS block if no valid variants
+          modifiedResponse = modifiedResponse.replace(suggestionMatch[0], "");
+        }
+      } catch (e) {
+        console.error("Failed to process API response:", e);
+      }
+    }
+  }
+
   if (type === "abort") {
     setLoadingResponse(false);
     setChatHistory([
       ...remHistory,
       {
         uuid,
-        content: textResponse,
+        content: modifiedResponse,
         role: "assistant",
         sources,
         closed: true,
@@ -39,7 +147,7 @@ export default function handleChat(
     ]);
     _chatHistory.push({
       uuid,
-      content: textResponse,
+      content: modifiedResponse,
       role: "assistant",
       sources,
       closed: true,
@@ -55,7 +163,7 @@ export default function handleChat(
       ...remHistory,
       {
         uuid,
-        content: textResponse,
+        content: modifiedResponse,
         role: "assistant",
         sources,
         closed: close,
@@ -68,7 +176,7 @@ export default function handleChat(
     ]);
     _chatHistory.push({
       uuid,
-      content: textResponse,
+      content: modifiedResponse,
       role: "assistant",
       sources,
       closed: close,
@@ -84,7 +192,7 @@ export default function handleChat(
       const existingHistory = { ..._chatHistory[chatIdx] };
       const updatedHistory = {
         ...existingHistory,
-        content: existingHistory.content + textResponse,
+        content: existingHistory.content + modifiedResponse,
         sources,
         error,
         errorMsg,
@@ -100,7 +208,7 @@ export default function handleChat(
         sources,
         error,
         errorMsg,
-        content: textResponse,
+        content: modifiedResponse,
         role: "assistant",
         closed: close,
         animate: !close,
@@ -109,6 +217,22 @@ export default function handleChat(
       });
     }
     setChatHistory([..._chatHistory]);
+  }
+  if (textResponse !== modifiedResponse) {
+    const apiResponse = await fetch(
+      "https://shoppie-backend.goshoppie.com/api/anythingllm/",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          embed_id: embed_id,
+          session_id: session_id,
+          response: modifiedResponse,
+        }),
+      }
+    );
   }
 }
 

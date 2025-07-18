@@ -1,15 +1,37 @@
 <!doctype html>
 
 <head>
-  <meta name="shopify-api-key" content="440a180fb28e38a76efb7ca5d17be679" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.1.2/howler.core.min.js">
+  </script>
 </head>
 <html lang="en">
 
-<body style="background-color: grey; color: black">
+<body style="background-color: blueviolet; color: black; height: 600vh;">
 
   </div>
-  <!-- <script>
+  <script>
+    const upsellData = {
+      "nudge": "Stay fresh and hydrated all day long!",
+      "product": {
+        "title": "Hermes - All in one Serum - Naicinamide , Succinic Acid & AlphaArbutin",
+        "image": "https://cdn.shopify.com/s/files/1/0637/6194/0660/files/Frame_2147226712.png?v=1751034153"
+      },
+      "usecase": "Pairing with the face wash, this serum enhances hydration and skin clarity."
+    }
+
+
+    const cartAbondMent = {
+      "nudge": "currentAbandonmentValue",
+      "handle": "https://shoppiepublic.myshopify.com/cart"
+
+    };
+
+
+    const stringifiedUpsellData = JSON.stringify(upsellData);
+
+    const stringifiedcartAbondMent = JSON.stringify(cartAbondMent);
+
     const customer = {
       id: "1234",
       firstName: "sourav",
@@ -46,14 +68,14 @@
       },
       "page_context": {
         "template": "collection",
-        "page_title": "Products",
-        "canonical_url": "https://devshoppiestore.myshopify.com/collections/all",
-        "handle": "all",
+        "page_title": "skincare",
+        "canonical_url": "https://shoppietestingstore.myshopify.com/collections/skincare-1",
+        "handle": "skincare-1",
         "current_tags": null,
         "scroll_percentage": 0,
-        "time_spent_seconds": 0,
-        "checkout_time_seconds": 0
+        "time_spent_seconds": 0
       },
+      "product": null,
       "customer": {
         "id": "7732601749607",
         "first_name": "Prayag",
@@ -156,7 +178,31 @@
           }
         ]
       },
-      "product": null,
+      // "product": {
+      //   "id": "7910441746612",
+      //   "title": "Helios - 3 In 1 Sunscreen (Resorcinol , Glabridin &amp; Kojic Acid)",
+      //   "handle": "sunscreen",
+      //   "description": "&lt;p&gt;Men&#39;s shield for outdoor adventures&lt;/p&gt;",
+      //   "price": "Rs. 850.00",
+      //   "price_min": "Rs. 850.00",
+      //   "price_max": "Rs. 850.00",
+      //   "available": true,
+      //   "type": "",
+      //   "vendor": "Reginald Men",
+      //   "tags": [
+      //     "Sunscreen"
+      //   ],
+      //   "published_at": "2025-01-15",
+      //   "featured_image": "//reginaldmen.com/cdn/shop/files/Frame_2147225251_4b69f51f-4400-4373-b387-b3ba339fb233_medium.png?v=1749213544",
+      //   "image_count": 8,
+      //   "has_only_default_variant": false,
+      //   "options": [
+      //     "weight"
+      //   ],
+      //   "variants_count": 1,
+      //   "selected_variant": null
+      // },
+
       "collection": {
         "id": "",
         "title": "Products",
@@ -271,33 +317,81 @@
       "search": null
     }
 
+
+
     const script = document.createElement('script');
     script.src = 'dist/anythingllm-chat-widget.js';
-    script.setAttribute('data-base-api-url', 'https://anythingllm.aroundme.global/api/embd');
-    // / dist/anythingllm-chat-widget.js
-    // https://anythingllm-dev1.aroundme.global/embed/anythingllm-chat-widget.min.js
+    // 'dist/anythingllm-chat-widget.js';
+
+    script.setAttribute('data-base-api-url', 'https://anythingllm.goshoppie.com/api/embed');
+    // script.setAttribute('data-host', 'c2hvcHBpZXB1YmxpYy5teXNob3BpZnkuY29t');
     script.setAttribute('data-customer', JSON.stringify(customer));
     script.setAttribute('data-shopify-context', JSON.stringify(shopifyContext));
-    // script.setAttribute('data-nudge-appear', true);
-    // script.setAttribute('data-nudge-text', "I saw u were checking our shampoo, get this conditioner also makes your hair bouncy");
 
     document.body.appendChild(script);
-  </script> -->
+    // Scroll event listener to fire shoppieAINudgeUpdated
+    let fired2 = false;
+    let fired4 = false;
+
+    window.addEventListener('scroll', () => {
+      const scrollHeight = window.scrollY / window.innerHeight; // Scroll position in vh
+
+      if (scrollHeight >= 2 && !fired2) {
+        console.log('Firing shoppieAINudgeUpdated at 2vh:', new Date().toISOString());
+        const event = new CustomEvent('shoppieAINudgeUpdated', {
+          detail: {
+            key: 'shoppieAINudgeMessage', value: stringifiedUpsellData
+          }
+        });
+        window.dispatchEvent(event);
+        fired2 = true;
+      }
+
+      if (scrollHeight >= 4 && !fired4) {
+        console.log('Firing shoppieAINudgeUpdated at 4vh:', new Date().toISOString());
+        const event = new CustomEvent('shoppieAINudgeUpdated', {
+          detail: { key: 'shoppieAINudgeMessage', value: stringifiedcartAbondMent }
+        });
+        window.dispatchEvent(event);
+        fired4 = true;
+      }
+    });
+
+    window.addEventListener("chatbot_open", (event) => {
+      console.log("Chatbot open state changed:", event.detail.value);
+      // Handle the event, e.g., trigger analytics or UI updates
+    });
+
+    // Debug listener to confirm event reception
+    window.addEventListener('shoppieAINudgeUpdated', (event) => {
+      console.log('shoppieAINudgeUpdated received:', event.detail);
+    });
+  </script>
 
   <!--
 Paste this script at the bottom of your HTML before the </body> tag.
 See more style and config options on our docs
 https://github.com/Mintplex-Labs/anything-llm/tree/master/embed/README.md
 -->
-
-  <script data-base-api-url="https://anythingllm-dev1.aroundme.global/api/embed" src="dist/anythingllm-chat-widget.js">
-  </script>
+  <!-- <script
+  data-embed-id="337815d0-17a5-4de8-b331-ff28c766d12f"
+  data-base-api-url="https://anythingllm.goshoppie.com/api/embed"
+  src="dist/anythingllm-chat-widget.js">
+</script> -->
   <!-- AnythingLLM (https://anythingllm.com) -->
-
-  <!-- dist/anythingllm-chat-widget.js -->
 
 
 
 </body>
 
 </html>
+
+
+
+<!-- <script data-base-api-url="https://anythingllm-dev1.goshoppie.com/api/embed" src="dist/anythingllm-chat-widget.js">
+  </script> -->
+<!-- // script.setAttribute('data-nudge-appear', true);
+    // script.setAttribute('data-nudge-text', "I saw u were checking our shampoo, get this conditioner also makes your hair bouncy"); -->
+
+<!-- // / dist/anythingllm-chat-widget.js
+    // https://anythingllm-dev1.goshoppie.com/embed/anythingllm-chat-widget.min.js -->

@@ -3,17 +3,20 @@ import useChatHistory from "@/hooks/chat/useChatHistory";
 import ChatContainer from "./ChatContainer";
 import { ChatHistoryLoading } from "./ChatContainer/ChatHistory";
 import { useState } from "react";
-import { embedderSettings } from "@/main";
-import ReactMarkdown from "react-markdown";
+import Sponsor from "./Sponsor";
 
 export default function ChatWindow({
+  isChatOpen,
   closeChat,
   settings,
   sessionId,
   isLargeScreen,
+  nudgeClick,
+  setNudgeClick,
   nudgeText,
-  followUpQuestion,
-  loadingFollowUpQuestion,
+  upsellingProdct,
+  humanConnect,
+  setHumanConnect,
 }) {
   const { chatHistory, setChatHistory, loading } = useChatHistory(
     settings,
@@ -42,59 +45,7 @@ export default function ChatWindow({
         </div>
       </div>
     );
-  } 
-  // else if (loadingFollowUpQuestion) {
-  //   return (
-  //     <div className="allm-flex allm-flex-col allm-h-full md:allm-rounded-[24px] allm-overflow-hidden ">
-  //       <ChatWindowHeader
-  //         chatHistory={chatHistory}
-  //         sessionId={sessionId}
-  //         settings={settings}
-  //         iconUrl={settings.brandImageUrl}
-  //         closeChat={closeChat}
-  //         setChatHistory={setChatHistory}
-  //         setOpenBottomSheet={setOpenBottomSheet}
-  //         isLargeScreen={isLargeScreen}
-  //       />
-  //       <div
-  //         className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
-  //         style={{ backgroundColor: settings.bgColor }}
-  //       >
-  //         <div
-  //           className={`allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-start `}
-  //         >
-  //           <div
-  //             style={{
-  //               wordBreak: "break-word",
-  //               backgroundColor: settings.assistantBgColor,
-  //             }}
-  //             className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${`${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-mt-[12px] allm-ml-[4px]`}`}
-  //           >
-  //             <div className="allm-flex allm-flex-col">
-  //               <ReactMarkdown
-  //                 children={nudgeText}
-  //                 components={{
-  //                   p: ({ node, ...props }) => (
-  //                     <p
-  //                       className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-  //                       style={{
-  //                         color: settings.botTextColor,
-  //                       }}
-  //                       {...props}
-  //                     />
-  //                   ),
-  //                 }}
-  //               />
-  //             </div>
-  //           </div>
-  //         </div>
-  //         <div className="allm-flex allm-items-end allm-justify-end allm-w-[420px]">
-  //           <PromptShimmer />
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  }
 
   setEventDelegatorForCodeSnippets();
 
@@ -110,20 +61,32 @@ export default function ChatWindow({
         setOpenBottomSheet={setOpenBottomSheet}
         isLargeScreen={isLargeScreen}
       />
+
       <div
-        className="allm-flex-grow allm-overflow-y-auto allm-overscroll-contain"
+        className="allm-flex-grow allm-overflow-y-auto "
+        // // allm-overscroll-contain
         style={{ backgroundColor: settings.bgColor }}
       >
         <ChatContainer
+          isChatOpen={isChatOpen}
           sessionId={sessionId}
           settings={settings}
           knownHistory={chatHistory}
           openBottomSheet={openBottomSheet}
           setOpenBottomSheet={setOpenBottomSheet}
+          nudgeClick={nudgeClick}
+          setNudgeClick={setNudgeClick}
           nudgeText={nudgeText}
-          followUpQuestion={followUpQuestion}
-          loadingFollowUpQuestion={loadingFollowUpQuestion}
+          upsellingProdct={upsellingProdct}
+          humanConnect={humanConnect}
+          setHumanConnect={setHumanConnect}
         />
+      </div>
+      <div
+        className="allm-pb-4 allm-h-fit allm-gap-y-2 allm-z-50"
+        style={{ backgroundColor: settings.bgColor }}
+      >
+        <Sponsor settings={settings} />
       </div>
     </div>
   );
