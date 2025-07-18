@@ -27,6 +27,8 @@ const DEFAULT_SETTINGS = {
   emailToggle: false,
   whatsappToggle: false,
   brandDomain: null,
+  sponsorText: "Powered by Shoppie.AI",
+  sponsorLink: "https://goshoppie.com",
   // nudge
 
   nudgeAppear: false,

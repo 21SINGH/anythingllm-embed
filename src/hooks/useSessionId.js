@@ -13,6 +13,7 @@ export default function useSessionId(embedSettings) {
     const PAGE_CONTEXT_IDENTIFIER = `allm_${embedSettings.embedId}_page_context`;
     const DEFAULT_NUDGE_ALLOW = `allm_${embedSettings.embedId}_default_nudge_allow`;
     const currentId = window.localStorage.getItem(STORAGE_IDENTIFIER);
+    
 
     const sendSessionToAPI = async (id) => {
       try {
@@ -36,14 +37,14 @@ export default function useSessionId(embedSettings) {
         setSerialNo(data.serial_no);
         window.localStorage.setItem(STORAGE_IDENTIFIER, data.session_id);
 
+        const event = new CustomEvent("session_changed", {
+          detail: { value: data.session_id },
+        });
+        window.dispatchEvent(event);
+
         if (!isSameSession) {
           window.localStorage.setItem(ANONYMOUS_MODE, "false");
           window.sessionStorage.setItem(DEFAULT_NUDGE_ALLOW, "true");
-
-          const event = new CustomEvent("session_changed", {
-            detail: { value: data.session_id },
-          });
-          window.dispatchEvent(event);
         }
 
         if (!window.sessionStorage.getItem(PRODUCT_CONTEXT_INDENTIFIER)) {

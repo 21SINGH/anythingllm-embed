@@ -3,6 +3,7 @@ import useChatHistory from "@/hooks/chat/useChatHistory";
 import ChatContainer from "./ChatContainer";
 import { ChatHistoryLoading } from "./ChatContainer/ChatHistory";
 import { useState } from "react";
+import Sponsor from "./Sponsor";
 
 export default function ChatWindow({
   isChatOpen,
@@ -60,9 +61,10 @@ export default function ChatWindow({
         setOpenBottomSheet={setOpenBottomSheet}
         isLargeScreen={isLargeScreen}
       />
+
       <div
         className="allm-flex-grow allm-overflow-y-auto "
-        // allm-overscroll-contain
+        // // allm-overscroll-contain
         style={{ backgroundColor: settings.bgColor }}
       >
         <ChatContainer
@@ -79,6 +81,12 @@ export default function ChatWindow({
           humanConnect={humanConnect}
           setHumanConnect={setHumanConnect}
         />
+      </div>
+      <div
+        className="allm-pb-4 allm-h-fit allm-gap-y-2 allm-z-50"
+        style={{ backgroundColor: settings.bgColor }}
+      >
+        <Sponsor settings={settings} />
       </div>
     </div>
   );
