@@ -1,6 +1,19 @@
 const StoreMessageDB = {
-  postMessageInDB: async function (settings, userMessage, botReply) {
+  postMessageInDB: async function (
+    settings,
+    userMessage,
+    botReply,
+    include // optional param
+  ) {
     const url = `https://shoppie-backend-dev.goshoppie.com/api/anythingllm/`;
+
+    const bodyPayload = {
+      embed_id: `${settings.embedId}`,
+      prompt: `${userMessage}`,
+      response: { text: `${botReply}` },
+      session_id: `${settings.sessionId}`,
+      include: include ?? true, // include is false if passed, otherwise defaults to true
+    };
 
     try {
       const response = await fetch(url, {
@@ -8,13 +21,7 @@ const StoreMessageDB = {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          embed_id: `${settings.embedId}`,
-          prompt: `${userMessage}`,
-          response: { text: `${botReply}` },
-          session_id: `${settings.sessionId}`,
-          include: true,
-        }),
+        body: JSON.stringify(bodyPayload),
       });
 
       if (!response.ok) {
