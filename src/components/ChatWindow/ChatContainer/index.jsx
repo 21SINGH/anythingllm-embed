@@ -11,7 +11,7 @@ import StoreMessageDB from "@/models/storeMessageInDB";
 import useFetchFollowUpQuestion from "@/hooks/useFetchFollowUpQuestion";
 import { io } from "socket.io-client";
 
-// const socket = io("http://localhost:3000");
+const socket = io("http://localhost:3000");
 
 export default function ChatContainer({
   isChatOpen,
@@ -1840,17 +1840,17 @@ export default function ChatContainer({
       });
   };
 
-  // useEffect(() => {
-  //   const socketPresent = window.localStorage.getItem(HUMAN_CONNECT);
-  //   if (socketPresent === "true") {
-  //     console.log("connected to socket ");
+  useEffect(() => {
+    const socketPresent = window.localStorage.getItem(HUMAN_CONNECT);
+    if (socketPresent === "true") {
+      console.log("connected to socket ");
 
-  //     socket.emit("joinRoom", {
-  //       room: settings.sessionId,
-  //       userName: "user",
-  //     });
-  //   }
-  // }, []);
+      socket.emit("joinRoom", {
+        room: settings.sessionId,
+        userName: "user",
+      });
+    }
+  }, []);
 
   const connectToSocket = async () => {
     setHumanConnect(true);
@@ -1859,7 +1859,7 @@ export default function ChatContainer({
       room: settings.sessionId,
       userName: "user",
     });
-
+    const channel = "bot";
     // Step 2: Try to create a ticket
     try {
       const res = await fetch("http://localhost:3000/api/ticket", {
@@ -1867,7 +1867,7 @@ export default function ChatContainer({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({ sessionId, channel }),
       });
 
       const data = await res.json();
@@ -1875,7 +1875,6 @@ export default function ChatContainer({
       if (!res.ok) {
         console.error("Ticket creation failed:", data.error);
       } else {
-        console.log("Ticket created:", data.ticket);
         const textResponse = `@@TITLE@@Ticket created ${data.ticket.id}@@TITLT END@@`;
         setChatHistory((prev) => [
           ...prev,
@@ -1900,58 +1899,58 @@ export default function ChatContainer({
     }
   };
 
-  // useEffect(() => {
-  //   const handleMessage = async (data) => {
-  //     setChatHistory((prev) => [
-  //       ...prev,
-  //       {
-  //         content: data.message,
-  //         role: "assistant",
-  //         pending: false,
-  //         userMessage: " ",
-  //         animate: false,
-  //         sentAt: Math.floor(Date.now() / 1000),
-  //       },
-  //     ]);
+  useEffect(() => {
+    const handleMessage = async (data) => {
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          content: data.message,
+          role: "assistant",
+          pending: false,
+          userMessage: " ",
+          animate: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+      ]);
 
-  //     await StoreMessageDB.postMessageInDB(settings, "", data.message).catch(
-  //       (err) => {
-  //         console.error("❌ Failed to store message:", err);
-  //       }
-  //     );
-  //   };
+      await StoreMessageDB.postMessageInDB(settings, "", data.message).catch(
+        (err) => {
+          console.error("❌ Failed to store message:", err);
+        }
+      );
+    };
 
-  //   const handleTicketClosed = async (data) => {
-  //     const textResponse = `@@TITLE@@${data.userName} closed ticket ${data.ticketId}@@TITLT END@@`;
-  //     setChatHistory((prev) => [
-  //       ...prev,
-  //       {
-  //         content: textResponse,
-  //         role: "assistant",
-  //         pending: false,
-  //         userMessage: " ",
-  //         animate: false,
-  //         sentAt: Math.floor(Date.now() / 1000),
-  //       },
-  //     ]);
+    const handleTicketClosed = async (data) => {
+      const textResponse = `@@TITLE@@${data.userName} closed ticket ${data.ticketId}@@TITLT END@@`;
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          content: textResponse,
+          role: "assistant",
+          pending: false,
+          userMessage: " ",
+          animate: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+      ]);
 
-  //     await StoreMessageDB.postMessageInDB(settings, "", textResponse).catch(
-  //       (err) => {
-  //         console.error("❌ Failed to store message:", err);
-  //       }
-  //     );
-  //     console.log("handleTicketClosed calling setHumanConnect(false)");
-  //     setHumanConnect(false);
-  //   };
+      await StoreMessageDB.postMessageInDB(settings, "", textResponse).catch(
+        (err) => {
+          console.error("❌ Failed to store message:", err);
+        }
+      );
+      console.log("handleTicketClosed calling setHumanConnect(false)");
+      setHumanConnect(false);
+    };
 
-  //   socket.on("message", handleMessage);
-  //   socket.on("ticket_closed", handleTicketClosed);
+    socket.on("message", handleMessage);
+    socket.on("ticket_closed", handleTicketClosed);
 
-  //   return () => {
-  //     socket.off("message", handleMessage);
-  //     socket.off("ticket_closed", handleTicketClosed);
-  //   };
-  // }, []);
+    return () => {
+      socket.off("message", handleMessage);
+      socket.off("ticket_closed", handleTicketClosed);
+    };
+  }, []);
 
   const handleSubmit = async (event, message, setMessage) => {
     event.preventDefault();
@@ -1962,7 +1961,7 @@ export default function ChatContainer({
 
     setMessage("");
     if (humanConnect) {
-      const data = { room: sessionId, message: mess, sender: "user" };
+      const data = { role: "user", message: mess, room: sessionId };
       socket.emit("message", data);
       const prevChatHistory = [
         ...chatHistory,
@@ -2088,11 +2087,7 @@ export default function ChatContainer({
       const remHistory = chatHistory.length > 0 ? chatHistory.slice(0, -1) : [];
       var _chatHistory = [...remHistory];
 
-      if (
-        !promptMessage ||
-        !promptMessage?.userMessage ||
-        humanConnect
-      ) {
+      if (!promptMessage || !promptMessage?.userMessage || humanConnect) {
         setLoadingResponse(false);
         return false;
       }

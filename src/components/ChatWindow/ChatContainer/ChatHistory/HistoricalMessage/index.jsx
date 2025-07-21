@@ -1380,10 +1380,10 @@ const HistoricalMessage = forwardRef(
                         marginTop: 15,
                       }}
                       onClick={async () => {
-                        setIntent(intent?.intent);
-                        setOpenBottomSheet(true);
+                        // setIntent(intent?.intent);
+                        // setOpenBottomSheet(true);
                  
-                        // connectToSocket();
+                        connectToSocket();
                       }}
                     >
                       <span className="allm-text-white">

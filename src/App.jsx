@@ -205,20 +205,20 @@ export default function App() {
     ? `${position.split("-")[1] === "right" ? "right" : "left"} ${position.split("-")[0]}`
     : "bottom";
 
-  // useEffect(() => {
-  //   if (embedSettings && embedSettings.embedId) {
-  //     const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
-  //     const saved = window.localStorage.getItem(HUMAN_CONNECT);
-  //     setHumanConnect(saved === "true"); // boolean
-  //   }
-  // }, [embedSettings?.embedId]);
+  useEffect(() => {
+    if (embedSettings && embedSettings.embedId) {
+      const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
+      const saved = window.localStorage.getItem(HUMAN_CONNECT);
+      setHumanConnect(saved === "true"); // boolean
+    }
+  }, [embedSettings?.embedId]);
 
-  // useEffect(() => {
-  //   if (embedSettings && embedSettings.embedId) {
-  //     const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
-  //     window.localStorage.setItem(HUMAN_CONNECT, String(humanConnect));
-  //   }
-  // }, [humanConnect, embedSettings?.embedId]);
+  useEffect(() => {
+    if (embedSettings && embedSettings.embedId) {
+      const HUMAN_CONNECT = `allm_${embedSettings.embedId}_human_connect`;
+      window.localStorage.setItem(HUMAN_CONNECT, String(humanConnect));
+    }
+  }, [humanConnect, embedSettings?.embedId]);
 
   if (!embedSettings.loaded || !sessionId) return null;
 
