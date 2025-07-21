@@ -448,9 +448,19 @@ export default function ChatContainer({
         };
 
         setChatHistory((prev) => [...prev, productMessage]);
+        const isOrderTrackPage =
+          settings.shopifyContext.page_context.page_title === "order-track";
 
-        await StoreMessageDB.postMessageInDB(settings, "", textResponse);
-
+        if (isOrderTrackPage) {
+          await StoreMessageDB.postMessageInDB(
+            settings,
+            "",
+            textResponse,
+            false
+          );
+        } else {
+          await StoreMessageDB.postMessageInDB(settings, "", textResponse);
+        }
         // store nudgeText
 
         if (upsellingProdct) {
@@ -659,11 +669,20 @@ export default function ChatContainer({
 
           setChatHistory((prev) => [...prev.slice(0, -1), nudgeFollowUp]);
 
-          await StoreMessageDB.postMessageInDB(
-            settings,
-            "",
-            nudgeFollowUpResponse
-          );
+          if (isOrderTrackPage) {
+            await StoreMessageDB.postMessageInDB(
+              settings,
+              "",
+              nudgeFollowUpResponse,
+              false
+            );
+          } else {
+            await StoreMessageDB.postMessageInDB(
+              settings,
+              "",
+              nudgeFollowUpResponse
+            );
+          }
         }
         setNudgeClick(false);
         window.sessionStorage.setItem(PAGE_CONTEXT_IDENTIFIER, page);
@@ -876,11 +895,23 @@ export default function ChatContainer({
 
         setChatHistory((prev) => [...prev.slice(0, -1), nudgeFollowUp]);
 
-        await StoreMessageDB.postMessageInDB(
-          settings,
-          "",
-          nudgeFollowUpResponse
-        );
+        const isOrderTrackPage =
+          settings.shopifyContext.page_context.page_title === "order-track";
+
+        if (isOrderTrackPage) {
+          await StoreMessageDB.postMessageInDB(
+            settings,
+            "",
+            nudgeFollowUpResponse,
+            false
+          );
+        } else {
+          await StoreMessageDB.postMessageInDB(
+            settings,
+            "",
+            nudgeFollowUpResponse
+          );
+        }
       }
 
       setNudgeClick(false);
@@ -922,6 +953,8 @@ export default function ChatContainer({
 
     const pageOnly = async () => {
       if (!settings.shopifyContext.page_context.page_title) return null;
+      console.log("page only clicked ");
+
       const textResponse = `@@TITLE@@${settings.shopifyContext.page_context.page_title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
 
       const productMessage = {
@@ -949,7 +982,15 @@ export default function ChatContainer({
 
       setChatHistory((prev) => [...prev.slice(0, -1), followUpMessage]);
 
-      await StoreMessageDB.postMessageInDB(settings, "", followUpText);
+      const isOrderTrackPage =
+        settings.shopifyContext.page_context.page_title === "order-track";
+
+      // Send `include: false` only on the order-track page
+      if (isOrderTrackPage) {
+        await StoreMessageDB.postMessageInDB(settings, "", followUpText, false);
+      } else {
+        await StoreMessageDB.postMessageInDB(settings, "", followUpText);
+      }
 
       window.sessionStorage.setItem(PAGE_CONTEXT_IDENTIFIER, page);
     };
