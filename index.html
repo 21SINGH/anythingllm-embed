@@ -39,6 +39,7 @@
       email: "developer@testing.com",
       phone: ""
     };
+    
     const shopifyContext = {
       "shop": {
         "name": "devshoppiestore",
@@ -323,7 +324,7 @@
     script.src = 'dist/anythingllm-chat-widget.js';
     // 'dist/anythingllm-chat-widget.js';
 
-    script.setAttribute('data-base-api-url', 'https://anythingllm.goshoppie.com/api/embed');
+    script.setAttribute('data-base-api-url', 'https://anythingllm-dev1.goshoppie.com/api/embed');
     // script.setAttribute('data-host', 'c2hvcHBpZXB1YmxpYy5teXNob3BpZnkuY29t');
     script.setAttribute('data-customer', JSON.stringify(customer));
     script.setAttribute('data-shopify-context', JSON.stringify(shopifyContext));

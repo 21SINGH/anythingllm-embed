@@ -25,7 +25,8 @@ export default function ChatHistory({
   menu,
   handleProductIssueData,
   setHumanConnect,
-  connectToSocket
+  connectToSocket,
+  handleMediaUploadProductIssue
 }) {
   const replyRef = useRef(null);
   const chatHistoryRef = useRef(null);
@@ -132,6 +133,7 @@ export default function ChatHistory({
               menu={menu}
               handleProductIssueData={handleProductIssueData}
               connectToSocket={connectToSocket}
+              handleMediaUploadProductIssue={handleMediaUploadProductIssue}
             />
           );
         })}
