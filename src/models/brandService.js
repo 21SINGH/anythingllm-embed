@@ -16,13 +16,13 @@ const BrandService = {
       }
 
       let data = await response.json();
-      
+
       if (baseApiUrl === "https://anythingllm-dev1.goshoppie.com/api/embed") {
         console.log("setting up dev emebed id");
 
         data = {
           ...data,
-          embed_id: "ad86110c-462b-41bd-b8b5-b7a889eb1b50",
+          embed_id: "7414ae0c-42bc-46d9-9fdc-3bb47ef21e31",
         };
       }
 
