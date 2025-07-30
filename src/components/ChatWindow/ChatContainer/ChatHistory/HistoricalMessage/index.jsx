@@ -1,5 +1,5 @@
 import React, { memo, forwardRef, useState, useEffect, Suspense } from "react";
-import { Warning } from "@phosphor-icons/react";
+import { Warning, UploadSimple, XCircle } from "@phosphor-icons/react";
 import { embedderSettings } from "@/main";
 import { v4 } from "uuid";
 import { ChatTeardropDots } from "@phosphor-icons/react";
@@ -373,6 +373,7 @@ const HistoricalMessage = forwardRef(
       menu,
       handleProductIssueData,
       connectToSocket,
+      handleMediaUploadProductIssue,
     },
     ref
   ) => {
@@ -740,7 +741,7 @@ const HistoricalMessage = forwardRef(
                           key={index}
                           type={field.type}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12 }}
+                          style={{ borderRadius: 12, display: "block" }}
                           placeholder={field.placeholder}
                           className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
@@ -807,6 +808,22 @@ const HistoricalMessage = forwardRef(
             </div>
           );
         } else if (intent?.intent === "product_issue") {
+          const [phoneNo, setPhoneNo] = useState("");
+          const [orderNo, setOrderNo] = useState("");
+          const detailsFields = [
+            {
+              label: "Enter phone number :",
+              placeholder: "Enter Phone number",
+              value: phoneNo,
+              onChange: (val) => setPhoneNo(val),
+            },
+            {
+              label: "Enter order no :",
+              placeholder: "Enter Order ID #RM123456",
+              value: orderNo,
+              onChange: (val) => setOrderNo(val),
+            },
+          ];
           const faqs = [
             "Is it mandatory to provide unboxing video ?",
             "What are refund policies ?",
@@ -823,158 +840,304 @@ const HistoricalMessage = forwardRef(
                     wordBreak: "break-word",
                     backgroundColor: settings.assistantBgColor,
                     marginRight: "5px",
+                    color: settings.botTextColor,
                   }}
                   className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-max-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message}`}
                 >
-                  <div className="allm-flex allm-flex-col">
-                    {intent?.response && (
-                      <ReactMarkdown
-                        children={intent?.response}
-                        components={{
-                          p: ({ node, ...props }) => (
-                            <p
-                              className="allm-m-0 allm-text-[14px] allm-leading-[20px]"
-                              style={{
-                                color: settings.botTextColor,
-                              }}
-                              {...props}
-                            />
-                          ),
-                        }}
-                      />
-                    )}
-                  </div>
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px]">
+                    {intent?.response}
+                  </p>
+
                   <div
                     style={{
                       color: settings.botTextColor,
                       marginTop: 10,
                     }}
                   >
-                    <div className="allm-flex allm-flex-col allm-gap-2">
-                      <p className="allm-m-0 allm-text-[14px] allm-leading-[20px]">
-                        Select prodcut issue :
-                      </p>
-
-                      <div className="allm-flex allm-justify-between allm-items-center">
-                        {[
-                          { value: "missing", label: "Missing" },
-                          { value: "damaged", label: "Damaged" },
-                          { value: "wrong", label: "Wrong" },
-                        ].map(({ value, label }) => (
-                          <label
-                            key={value}
-                            className="allm-flex allm-items-center allm-gap-[4px] allm-text-[14px]"
-                            style={{ cursor: "pointer" }}
-                          >
-                            <input
-                              type="radio"
-                              name="productIssue" // Group radio buttons
-                              id={`productIssue-${value}`} // Unique ID
-                              disabled={!isLastMessage}
-                              value={selectedProductIssue}
-                              checked={selectedProductIssue === value}
-                              onChange={() => {
-                                setSelectedProductIssue(value);
-                              }}
-                              style={{
-                                width: 18,
-                                height: 18,
-                                accentColor: "#2563eb",
-                                display: "block",
-                              }}
-                            />
-                            <span>{label}</span>
-                          </label>
-                        ))}
-                      </div>
-
-                      <input
-                        type="text"
-                        disabled={!isLastMessage}
-                        style={{
-                          borderRadius: 12,
-                        }}
-                        placeholder={"Enter Order ID #RM123456"}
-                        className="allm-p-2 allm-border allm-rounded allm-mt-[8px]"
-                        value={productIssueOrderId}
-                        onChange={(e) => {
-                          let val = e.target.value;
-                          setProductIssueOrderId(val);
-                        }}
-                      />
-
-                      <p className="allm-m-0 allm-text-[14px] allm-leading-[20px] allm-mt-[8px]">
-                        Provide drive link :
-                      </p>
-                      <p className="allm-m-0 allm-text-[14px] allm-pl-3">
-                        1. unboxing video (from seal opening to full unboxing).
-                      </p>
-                      <p className="allm-m-0 allm-text-[14px]  allm-pl-3">
-                        2. photos of the issue.
-                      </p>
-                      <p className="allm-m-[8px] allm-text-[13px] allm-text-red-600 allm-pl-3">
-                        Please grant access to the Drive link so we can review
-                        it and assist you effectively.
-                      </p>
-
-                      {/* Dynamic input field with enforced prefix */}
-                      <input
-                        type="text"
-                        disabled={!isLastMessage}
-                        style={{
-                          borderRadius: 12,
-                        }}
-                        placeholder={"Enter drive link"}
-                        className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
-                        value={productIssueUrl}
-                        onChange={(e) => {
-                          let val = e.target.value;
-                          setProductIssueUrl(val);
-                        }}
-                      />
-
-                      {/* Submit button */}
+                    <div className="allm-flex allm-flex-col allm-gap-2 ">
+                      {detailsFields.map((field, idx) => (
+                        <div key={idx} style={{ cursor: "pointer" }}>
+                          <p className="allm-m-0 allm-text-[13px]">
+                            {field.label}
+                          </p>
+                          <input
+                            type="text"
+                            disabled={!isLastMessage}
+                            placeholder={field.placeholder}
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            style={{
+                              borderRadius: 12,
+                              border: "1px solid #ccc",
+                              backgroundColor: "white",
+                              outline: "none",
+                              padding: "8px",
+                              display: "block",
+                            }}
+                            className="allm-p-2 allm-mt-[8px] allm-w-[90%]"
+                          />
+                        </div>
+                      ))}
 
                       <button
-                        className="allm-flex-1"
-                        disabled={
-                          !selectedProductIssue ||
-                          !productIssueOrderId ||
-                          !productIssueUrl ||
-                          !isLastMessage
-                        }
+                        className="allm-flex-1 allm-mt-[10px]"
+                        disabled={!orderNo || !phoneNo || !isLastMessage}
                         style={{
                           backgroundColor: "#2563eb",
                           borderRadius: 12,
                           padding: 10,
                           borderWidth: 0,
                           opacity:
-                            selectedProductIssue &&
-                            productIssueOrderId &&
-                            productIssueUrl &&
-                            isLastMessage
-                              ? 1
-                              : 0.5,
+                            orderNo && phoneNo && isLastMessage ? 1 : 0.5,
                           cursor:
-                            selectedProductIssue &&
-                            productIssueOrderId &&
-                            productIssueUrl &&
-                            isLastMessage
+                            orderNo && phoneNo && isLastMessage
                               ? "pointer"
                               : "not-allowed",
                         }}
                         onClick={() => {
-                          handleProductIssueData(
-                            productIssueOrderId,
-                            selectedProductIssue,
-                            productIssueUrl
-                          );
+                          handleProductIssueData(orderNo, phoneNo);
                         }}
                       >
                         <span className="allm-text-white">Submit</span>
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+              {isLastBotReply &&
+                faqs?.length > 0 &&
+                followUpQuestions(settings, handlePrompt, faqs, isLastBotReply)}
+            </div>
+          );
+        } else if (intent?.intent === "product_issue_details") {
+          const [selectedProducts, setSelectedProducts] = useState([]);
+
+          const handleCheckboxChange = (index) => {
+            setSelectedProducts(
+              (prev) =>
+                prev.includes(index)
+                  ? prev.filter((i) => i !== index) // remove if already selected
+                  : [...prev, index] // add if not selected
+            );
+          };
+
+          const [imageFile, setImageFile] = useState(null);
+          const [videoFile, setVideoFile] = useState(null);
+
+          const MAX_SIZE_MB = 10;
+          const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+          const handleImageChange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              if (!file.type.startsWith("image/")) {
+                alert("Please select a valid image file.");
+                e.target.value = ""; // reset input
+                return;
+              }
+              if (file.size > MAX_SIZE_BYTES) {
+                alert(
+                  `Image size exceeds ${MAX_SIZE_MB} MB. Please select a smaller file.`
+                );
+                e.target.value = ""; // reset input
+                return;
+              }
+              setImageFile(file);
+            }
+          };
+
+          const handleVideoChange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              if (!file.type.startsWith("video/")) {
+                alert("Please select a valid video file.");
+                e.target.value = ""; // reset input
+                return;
+              }
+              if (file.size > MAX_SIZE_BYTES) {
+                alert(
+                  `Video size exceeds ${MAX_SIZE_MB} MB. Please select a smaller file.`
+                );
+                e.target.value = ""; // reset input
+                return;
+              }
+              setVideoFile(file);
+            }
+          };
+
+          const faqs = ["I was looking for something else !"];
+          return (
+            <div ref={ref}>
+              <div
+                className={`allm-flex allm-items-start allm-w-full allm-h-fit allm-justify-start `}
+              >
+                <div
+                  style={{
+                    wordBreak: "break-word",
+                    backgroundColor: settings.assistantBgColor,
+                    marginRight: "5px",
+                    color: settings.botTextColor,
+                  }}
+                  className={`allm-py-[11px] allm-px-[16px] allm-flex allm-flex-col  allm-w-[80%] ${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message allm-gap-[6px]`}
+                >
+                  <p className="allm-m-0 allm-text-[14px] allm-leading-[20px]">
+                    Select prodcut issue :
+                  </p>
+
+                  <div className="allm-flex allm-justify-between allm-w-[90%] allm-items-center">
+                    {[
+                      { value: "missing", label: "Missing" },
+                      { value: "damaged", label: "Damaged" },
+                      { value: "wrong", label: "Wrong" },
+                    ].map(({ value, label }) => (
+                      <label
+                        key={value}
+                        className="allm-flex allm-items-center allm-gap-[4px] allm-text-[14px]"
+                        style={{ cursor: "pointer" }}
+                      >
+                        <input
+                          type="radio"
+                          name="productIssue" // Group radio buttons
+                          id={`productIssue-${value}`} // Unique ID
+                          disabled={!isLastMessage}
+                          value={selectedProductIssue}
+                          checked={selectedProductIssue === value}
+                          onChange={() => {
+                            setSelectedProductIssue(value);
+                          }}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            accentColor: "#2563eb",
+                            display: "block",
+                          }}
+                        />
+                        <span>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="allm-m-0 allm-mt-[10px] allm-text-[14px] allm-leading-[20px]">
+                    Please select which product have issue :
+                  </p>
+
+                  <div className="allm-flex allm-flex-col allm-overflow-x-auto allm-gap-[12px] allm-py-2">
+                    {intent?.products?.map((product, index) => (
+                      <div key={index} className="allm-flex allm-gap-[10px]">
+                        <div
+                          className="allm-flex allm-flex-1 allm-border allm-rounded-xl allm-shadow-md allm-p-3 allm-gap-3"
+                          style={{
+                            backgroundColor: selectedProducts.includes(index)
+                              ? "rgb(250,250,250)"
+                              : "rgba(166,166,166,0.30)",
+                            color: selectedProducts.includes(index)
+                              ? "black"
+                              : "white",
+                          }}
+                          onClick={() => {
+                            handleCheckboxChange(index);
+                          }}
+                        >
+                          {product.image && (
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="allm-w-[64px] allm-h-[64px] allm-object-cover allm-rounded-md"
+                            />
+                          )}
+                          <div className="allm-flex allm-flex-col allm-gap-1 allm-flex-1">
+                            <span className=" allm-text-[14px] allm-leading-[20px] allm-line-clamp-1">
+                              {product.name}
+                            </span>
+                            {product.variant_title && (
+                              <span className="allm-text-[12px] allm-leading-[16px] ">
+                                Variant: {product.variant_title}
+                              </span>
+                            )}
+                            {product.quantity && (
+                              <span className="allm-text-[12px] allm-leading-[16px] ">
+                                Quantity: {product.quantity}
+                              </span>
+                            )}
+                            {product.price && (
+                              <span className="allm-text-[12px] allm-leading-[16px]">
+                                ₹{product.price}
+                              </span>
+                            )}
+                          </div>
+                          <div className="allm-flex">
+                            {selectedProducts.includes(index) ? (
+                              <div
+                                aria-label="Status indicator"
+                                role="img"
+                                style={{
+                                  backgroundColor: "rgb(37, 99, 235)",
+                                  width: 12,
+                                  height: 12,
+                                  borderRadius: "50%",
+                                  display: "block",
+                                }}
+                              ></div>
+                            ) : (
+                              <></>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {MediaUploadComponent(
+                    imageFile,
+                    setImageFile,
+                    videoFile,
+                    setVideoFile,
+                    handleImageChange,
+                    handleVideoChange
+                  )}
+
+                  <button
+                    className="allm-flex-1 allm-mt-[4px]"
+                    disabled={
+                      !imageFile ||
+                      !videoFile ||
+                      !selectedProductIssue ||
+                      !selectedProducts.length > 0 ||
+                      !isLastMessage
+                    }
+                    style={{
+                      backgroundColor: "#2563eb",
+                      borderRadius: 12,
+                      padding: 10,
+                      borderWidth: 0,
+                      opacity:
+                        imageFile &&
+                        videoFile &&
+                        selectedProductIssue &&
+                        selectedProducts.length > 0 &&
+                        isLastMessage
+                          ? 1
+                          : 0.5,
+                      cursor:
+                        imageFile &&
+                        videoFile &&
+                        selectedProductIssue &&
+                        selectedProducts.length > 0 &&
+                        isLastMessage
+                          ? "pointer"
+                          : "not-allowed",
+                    }}
+                    onClick={() => {
+                      handleMediaUploadProductIssue(
+                        imageFile,
+                        videoFile,
+                        selectedProductIssue,
+                        selectedProducts,
+                        intent.products
+                      );
+                    }}
+                  >
+                    <span className="allm-text-white">Submit</span>
+                  </button>
                 </div>
               </div>
               {isLastBotReply &&
@@ -1010,9 +1173,14 @@ const HistoricalMessage = forwardRef(
                     disabled={!isLastMessage}
                     style={{
                       borderRadius: 12,
+                      border: "1px solid #ccc",
+                      backgroundColor: "white",
+                      outline: "none",
+                      padding: "8px",
+                      display: "block",
                     }}
                     placeholder={"Enter order phone no "}
-                    className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                    className="allm-p-2 allm-mb-[8px]"
                     value={updateDetailsPhoneNo}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -1027,9 +1195,14 @@ const HistoricalMessage = forwardRef(
                     disabled={!isLastMessage}
                     style={{
                       borderRadius: 12,
+                      border: "1px solid #ccc",
+                      backgroundColor: "white",
+                      outline: "none",
+                      padding: "8px",
+                      display: "block",
                     }}
                     placeholder={"Enter order id ( #RM123456 )"}
-                    className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
+                    className="allm-p-2 allm-mb-[8px]"
                     value={updateDetailsOrderId}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -1101,7 +1274,7 @@ const HistoricalMessage = forwardRef(
                   <input
                     key={"mobile for cloning"}
                     disabled={!isLastMessage}
-                    style={{ borderRadius: 12 }}
+                    style={{ borderRadius: 12, display: "block" }}
                     placeholder={"Enter mobile no"}
                     className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                     value={mobileNo}
@@ -1142,7 +1315,7 @@ const HistoricalMessage = forwardRef(
           );
         } else if (intent?.intent === "check_cloning_details") {
           const faqs = ["I need help with something else !"];
-          const prodcutArray = { products: intent.data.product };
+          const prodcutArray = { products: intent.data.products };
 
           const [phone, setPhone] = useState("");
           const [email, setEmail] = useState(intent.data.user.email || "");
@@ -1265,7 +1438,7 @@ const HistoricalMessage = forwardRef(
                           key={index}
                           type={field.type}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12 }}
+                          style={{ borderRadius: 12, display: "block" }}
                           placeholder={field.placeholder}
                           className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
@@ -1439,6 +1612,7 @@ const HistoricalMessage = forwardRef(
                           disabled={!isLastMessage}
                           style={{
                             borderRadius: 12,
+                            display: "block",
                           }}
                           placeholder={
                             selectedOption === "orderId"
@@ -2027,3 +2201,127 @@ const productCardArray = (orderDetails) => {
     </>
   );
 };
+
+function MediaUploadComponent(
+  imageFile,
+  setImageFile,
+  videoFile,
+  setVideoFile,
+  handleImageChange,
+  handleVideoChange
+) {
+  const renderPreview = (file, type, onRemove) => {
+    const url = URL.createObjectURL(file);
+
+    return (
+      <div className="allm-relative allm-w-full allm-h-[140px]">
+        {/* Remove Icon */}
+        <button
+          type="button"
+          onClick={onRemove}
+          className="
+    allm-absolute allm-top-1/2 allm-left-1/2 allm-z-50
+    allm-flex allm-items-center allm-justify-center
+    allm-rounded-full allm-p-[4px]
+    hover:allm-border hover:allm-border-red-600 hover:allm-text-red-600
+    allm-cursor-pointer
+    allm-transform allm--translate-x-1/2 allm--translate-y-1/2
+  "
+          aria-label={`Remove ${type}`}
+          style={{
+            backgroundColor: "white",
+            border: "0.5px solid #f87171",
+          }}
+        >
+          <XCircle size={35} color="#f87171" />
+        </button>
+
+        {type === "image" ? (
+          <img
+            src={url}
+            alt="Preview"
+            className="allm-w-full allm-h-[140px] allm-rounded-lg allm-object-cover allm-opacity-65"
+          />
+        ) : (
+          <video
+            controls
+            className="allm-w-full allm-h-[140px] allm-rounded-lg allm-object-cover allm-opacity-65"
+          >
+            <source src={url} type={file.type} />
+            Your browser does not support the video tag.
+          </video>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="allm-flex allm-flex-col allm-gap-[12px]">
+      <p className="allm-m-0 allm-mt-[10px] allm-text-[14px] allm-leading-[20px]">
+        Provide the following media :<br />
+        <span className="allm-text-red-600">
+          {"( Not more than 10MB each ) "}
+        </span>
+      </p>
+      {/* Image Upload */}
+
+      <div className="allm-flex  allm-gap-[20px] allm-mb-[10px] allm-mt-[5px]">
+        <div className="allm-flex allm-w-full allm-flex-col ">
+          {!imageFile ? (
+            <>
+              {" "}
+              <label
+                htmlFor="image-upload"
+                style={{ border: "0.2px solid white", borderRadius: 12 }}
+                className="allm-cursor-pointer allm-px-4 allm-rounded-md allm-text-[12px]
+ hover:allm-bg-[rgba(166,166,166,0.29)]
+             allm-flex allm-flex-col allm-justify-center allm-items-center
+             allm-min-h-[140px] allm-flex-1 allm-gap-1"
+              >
+                <UploadSimple size={28} />
+                <span>Upload photo</span>
+              </label>
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="allm-hidden"
+              />
+            </>
+          ) : (
+            renderPreview(imageFile, "image", () => setImageFile(null))
+          )}
+        </div>
+
+        {/* Video Upload */}
+        <div className="allm-flex allm-w-full allm-flex-col ">
+          {!videoFile ? (
+            <>
+              <label
+                htmlFor="video-upload"
+                style={{ border: "0.2px solid white", borderRadius: 12 }}
+                className="allm-cursor-pointer allm-px-4 allm-rounded-md allm-text-[12px]
+             hover:allm-bg-[rgba(166,166,166,0.29)]
+             allm-flex allm-flex-col allm-justify-center allm-items-center
+             allm-min-h-[140px] allm-flex-1 allm-gap-1"
+              >
+                <UploadSimple size={28} />
+                <span>Unboxing video</span>
+              </label>
+              <input
+                id="video-upload"
+                type="file"
+                accept="video/*"
+                onChange={handleVideoChange}
+                className="allm-hidden"
+              />
+            </>
+          ) : (
+            renderPreview(videoFile, "video", () => setVideoFile(null))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

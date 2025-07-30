@@ -131,7 +131,7 @@ export default function ChatContainer({
 
   const initializeProductIssue = async () => {
     const response_template =
-      "@@INTENT START@@{  'response': 'Please provide the following details to move further :  \n\n',  'intent': 'product_issue'}@@INTENT END@@";
+      "@@INTENT START@@{  'response': 'Please provide the order number and the mobile number associated with the product issue :  \n\n',  'intent': 'product_issue'}@@INTENT END@@";
 
     const botReply = {
       content: response_template,
@@ -145,35 +145,289 @@ export default function ChatContainer({
     await StoreMessageDB.postMessageInDB(settings, "", response_template);
   };
 
-  const handleProductIssueData = async (
-    productIssueOrderId,
+  const handleProductIssueData = async (orderNo, phoneNO) => {
+    if (!orderNo || !phoneNO) return null;
+
+    const orderIdPattern = /^(#?[rR][mM])?\d+$/;
+    const cleanedPhone = phoneNO.replace(/\s+/g, "");
+    const cleanedOrderId = orderNo.replace(/^#/, "");
+
+    if (orderIdPattern.test(orderNo)) {
+      const userEntry = {
+        content: `Phone no: ${cleanedPhone} \n\n Order Id: ${orderNo}`,
+        role: "user",
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+      const loadingEntry = {
+        content: "Fetching user details, please give us a moment!",
+        role: "assistant",
+        pending: false,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+
+      setChatHistory((prev) => [...prev, userEntry, loadingEntry]);
+
+      fetch(
+        `https://shoppie-backend.goshoppie.com/api/stores/order-detail?order_name=${cleanedOrderId}&host=${settings?.host}&phone=${cleanedPhone}`,
+        {
+          method: "GET",
+        }
+      )
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          if (data?.message === "Please enter the right phone number.") {
+            const botReply = `Please enter right pair of phone number and associated order id. \n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@["Product related issue !" \n,"I am looking for something else!"]\n@@PROMPTS END@@`;
+
+            const message = {
+              content: botReply,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            };
+
+            const userMessage = `Phone no: ${cleanedPhone} \n\n Order Id:  ${cleanedOrderId}`;
+
+            setChatHistory((prev) => {
+              const withoutLast = prev.slice(0, -1);
+              return [...withoutLast, message];
+            });
+
+            StoreMessageDB.postMessageInDB(
+              settings,
+              userMessage,
+              botReply
+            ).catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
+            BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+          } else if (data?.detail) {
+            const botReply = `${data?.detail} for orderId ${cleanedOrderId}. Please try again later. \n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@["I am looking for something else!"]\n@@PROMPTS END@@`;
+
+            const message = {
+              content: botReply,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            };
+
+            const userMessage = `Phone no: ${cleanedPhone} \n\n Order Id:  ${cleanedOrderId}`;
+
+            setChatHistory((prev) => {
+              const withoutLast = prev.slice(0, -1);
+              return [...withoutLast, message];
+            });
+
+            StoreMessageDB.postMessageInDB(
+              settings,
+              userMessage,
+              botReply
+            ).catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
+            BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+          } else {
+            const intentPayload = {
+              products: data?.products || [],
+              intent: "product_issue_details",
+            };
+
+            const botReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
+
+            const message = {
+              content: botReply,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            };
+
+            setChatHistory((prev) => {
+              const withoutLast = prev.slice(0, -1);
+              return [...withoutLast, message];
+            });
+
+            const userMessage = `Phone no: ${cleanedPhone} \n\n Order Id:  ${orderNo}`;
+
+            StoreMessageDB.postMessageInDB(
+              settings,
+              userMessage,
+              botReply
+            ).catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
+            BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+          }
+        })
+        .catch((err) => {
+          const userMessage = `Phone no: ${cleanedPhone} \n\n Order Id:  ${cleanedOrderId}`;
+          const botReply = `Could not fetch the details. Please try again later. \n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@["I am looking for something else!"]\n@@PROMPTS END@@`;
+
+          const errorChat = [
+            ...chatHistory,
+            {
+              content: `Phone no: ${cleanedPhone} \n\n Order Id: ${orderNo}`,
+              role: "user",
+              sentAt: Math.floor(Date.now() / 1000),
+            },
+            {
+              content: botReply,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            },
+          ];
+
+          setChatHistory(errorChat);
+          StoreMessageDB.postMessageInDB(settings, userMessage, botReply).catch(
+            (err) => {
+              console.error("❌ Failed to store message:", err);
+            }
+          );
+          BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+        });
+    } else {
+      const prevChatHistory = [
+        ...chatHistory,
+        {
+          content: `Phone no: ${cleanedPhone} \n\n Order Id: ${orderNo}`,
+          role: "user",
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+        {
+          content: "Invalid Order ID. Only enter order id nothing else.",
+          role: "assistant",
+          pending: false,
+          animate: false,
+          sentAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+      setChatHistory(prevChatHistory);
+    }
+
+    // const message = `Product issue details : \n\n Order Id : ${productIssueOrderId} \n\n Issue type is : ${selectedProductIssue} \n\n Drive URL : ${productIssueUrl}`;
+
+    // const userReply = {
+    //   content: message,
+    //   role: "user",
+    //   pending: false,
+    //   animate: false,
+    //   sentAt: Math.floor(Date.now() / 1000),
+    // };
+    // const response_template =
+    //   '@@INTENT START@@{"response": "I can\'t help with this, I will connect you to our support team ✨\\n\\n", "intent": "connect_to_human"}@@INTENT END@@';
+
+    // const botReply = {
+    //   content: response_template,
+    //   role: "assistant",
+    //   pending: false,
+    //   animate: false,
+    //   sentAt: Math.floor(Date.now() / 1000),
+    // };
+
+    // setChatHistory((prev) => [...prev, userReply, botReply]);
+    // await StoreMessageDB.postMessageInDB(settings, message, response_template);
+  };
+
+  const handleMediaUploadProductIssue = async (
+    imageFile,
+    videoFile,
     selectedProductIssue,
-    productIssueUrl
+    selectedProducts,
+    products
   ) => {
-    if (!productIssueOrderId || !selectedProductIssue || !productIssueUrl)
-      return null;
-    const message = `Product issue details : \n\n Order Id : ${productIssueOrderId} \n\n Issue type is : ${selectedProductIssue} \n\n Drive URL : ${productIssueUrl}`;
+    if (
+      !imageFile ||
+      !videoFile ||
+      !selectedProductIssue ||
+      !selectedProducts ||
+      !products
+    )
+      return;
 
-    const userReply = {
-      content: message,
-      role: "user",
-      pending: false,
-      animate: false,
-      sentAt: Math.floor(Date.now() / 1000),
+    const uploadFile = async (file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch(
+          "https://shoppie-backend.goshoppie.com/api/upload/upload-file",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!response.ok) throw new Error("Upload failed");
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        return null;
+      }
     };
-    const response_template =
-      '@@INTENT START@@{"response": "I can\'t help with this, I will connect you to our support team ✨\\n\\n", "intent": "connect_to_human"}@@INTENT END@@';
 
-    const botReply = {
-      content: response_template,
-      role: "assistant",
-      pending: false,
-      animate: false,
-      sentAt: Math.floor(Date.now() / 1000),
-    };
+    const imageUploadResult = await uploadFile(imageFile);
+    const videoUploadResult = await uploadFile(videoFile);
 
-    setChatHistory((prev) => [...prev, userReply, botReply]);
-    await StoreMessageDB.postMessageInDB(settings, message, response_template);
+    if (!imageUploadResult || !videoUploadResult) {
+      const botMessage =
+        "Not able to upload your media right nowm please try later !";
+
+      const botResponse = {
+        content: botMessage,
+        role: "assistant",
+        pending: false,
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+
+      setChatHistory((prev) => [...prev, botResponse]);
+      StoreMessageDB.postMessageInDB(settings, "", botMessage).catch((err) => {
+        console.error("❌ Failed to store message:", err);
+      });
+      BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+    } else {
+      const selectedProductDetails = selectedProducts
+        .map((idx) => products[idx]) // Map each selected index to the product
+        .map(
+          (product, i) =>
+            `${i + 1}. Name: ${product.name}${product.variant_title ? ` | Variant: ${product.variant_title}` : ""}${product.quantity ? ` | Qty: ${product.quantity}` : ""}${product.price ? ` | Price: ₹${product.price}` : ""}`
+        )
+        .join("\n");
+
+      const userMessage =
+        `Product issue : ${selectedProductIssue}\n\n` +
+        `Issues with these products:\n${selectedProductDetails}\n\n\n` +
+        `Media Uploaded\n` +
+        `Uploaded image: \n${imageUploadResult.url}\n\n` +
+        `Uploaded video: \n${videoUploadResult.url}`;
+
+      const userEntry = {
+        content: userMessage,
+        role: "user",
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+      const intentPayload = {
+        intent: "Product Issue ",
+        response:
+          "Please connect to our support team they will resolve it in 24 to 48 hours.",
+      };
+      const botMessage = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
+      const botReply = {
+        content: botMessage,
+        role: "assistant",
+        sentAt: Math.floor(Date.now() / 1000),
+      };
+      setChatHistory((prev) => [...prev, userEntry, botReply]);
+      StoreMessageDB.postMessageInDB(settings, userMessage, botMessage).catch(
+        (err) => {
+          console.error("❌ Failed to store message:", err);
+        }
+      );
+      BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+    }
   };
 
   const menu = [
@@ -953,8 +1207,6 @@ export default function ChatContainer({
 
     const pageOnly = async () => {
       if (!settings.shopifyContext.page_context.page_title) return null;
-      console.log("page only clicked ");
-
       const textResponse = `@@TITLE@@${settings.shopifyContext.page_context.page_title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
 
       const productMessage = {
@@ -2540,6 +2792,7 @@ export default function ChatContainer({
           handleProductIssueData={handleProductIssueData}
           setHumanConnect={setHumanConnect}
           connectToSocket={connectToSocket}
+          handleMediaUploadProductIssue={handleMediaUploadProductIssue}
         />
       </div>
       <PromptInput
