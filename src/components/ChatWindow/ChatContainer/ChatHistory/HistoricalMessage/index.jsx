@@ -924,21 +924,44 @@ const HistoricalMessage = forwardRef(
           const [imageFile, setImageFile] = useState(null);
           const [videoFile, setVideoFile] = useState(null);
 
+          const MAX_SIZE_MB = 10;
+          const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
           const handleImageChange = (e) => {
             const file = e.target.files[0];
-            if (file && file.type.startsWith("image/")) {
+            if (file) {
+              if (!file.type.startsWith("image/")) {
+                alert("Please select a valid image file.");
+                e.target.value = ""; // reset input
+                return;
+              }
+              if (file.size > MAX_SIZE_BYTES) {
+                alert(
+                  `Image size exceeds ${MAX_SIZE_MB} MB. Please select a smaller file.`
+                );
+                e.target.value = ""; // reset input
+                return;
+              }
               setImageFile(file);
-            } else {
-              alert("Please select a valid image file.");
             }
           };
 
           const handleVideoChange = (e) => {
             const file = e.target.files[0];
-            if (file && file.type.startsWith("video/")) {
+            if (file) {
+              if (!file.type.startsWith("video/")) {
+                alert("Please select a valid video file.");
+                e.target.value = ""; // reset input
+                return;
+              }
+              if (file.size > MAX_SIZE_BYTES) {
+                alert(
+                  `Video size exceeds ${MAX_SIZE_MB} MB. Please select a smaller file.`
+                );
+                e.target.value = ""; // reset input
+                return;
+              }
               setVideoFile(file);
-            } else {
-              alert("Please select a valid video file.");
             }
           };
 
@@ -998,7 +1021,7 @@ const HistoricalMessage = forwardRef(
                   </p>
 
                   <div className="allm-flex allm-flex-col allm-overflow-x-auto allm-gap-[12px] allm-py-2">
-                    {intent?.products.map((product, index) => (
+                    {intent?.products?.map((product, index) => (
                       <div key={index} className="allm-flex allm-gap-[10px]">
                         <div
                           className="allm-flex allm-flex-1 allm-border allm-rounded-xl allm-shadow-md allm-p-3 allm-gap-3"
@@ -1291,8 +1314,6 @@ const HistoricalMessage = forwardRef(
             </div>
           );
         } else if (intent?.intent === "check_cloning_details") {
-          console.log("check_cloning_details", intent);
-
           const faqs = ["I need help with something else !"];
           const prodcutArray = { products: intent.data.products };
 
@@ -2237,7 +2258,10 @@ function MediaUploadComponent(
   return (
     <div className="allm-flex allm-flex-col allm-gap-[12px]">
       <p className="allm-m-0 allm-mt-[10px] allm-text-[14px] allm-leading-[20px]">
-        Provide the following media :
+        Provide the following media :<br />
+        <span className="allm-text-red-600">
+          {"( Not more than 10MB each ) "}
+        </span>
       </p>
       {/* Image Upload */}
 

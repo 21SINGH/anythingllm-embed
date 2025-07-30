@@ -203,9 +203,34 @@ export default function ChatContainer({
               console.error("❌ Failed to store message:", err);
             });
             BrandAnalytics.sendTokenAnalytics(settings, sessionId);
+          } else if (data?.detail) {
+            const botReply = `${data?.detail} for orderId ${cleanedOrderId}. Please try again later. \n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@["I am looking for something else!"]\n@@PROMPTS END@@`;
+
+            const message = {
+              content: botReply,
+              role: "assistant",
+              pending: false,
+              sentAt: Math.floor(Date.now() / 1000),
+            };
+
+            const userMessage = `Phone no: ${cleanedPhone} \n\n Order Id:  ${cleanedOrderId}`;
+
+            setChatHistory((prev) => {
+              const withoutLast = prev.slice(0, -1);
+              return [...withoutLast, message];
+            });
+
+            StoreMessageDB.postMessageInDB(
+              settings,
+              userMessage,
+              botReply
+            ).catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
+            BrandAnalytics.sendTokenAnalytics(settings, sessionId);
           } else {
             const intentPayload = {
-              products: data?.products || {},
+              products: data?.products || [],
               intent: "product_issue_details",
             };
 
@@ -236,7 +261,7 @@ export default function ChatContainer({
           }
         })
         .catch((err) => {
-          const userMessage = orderNo;
+          const userMessage = `Phone no: ${cleanedPhone} \n\n Order Id:  ${cleanedOrderId}`;
           const botReply = `Could not fetch the details. Please try again later. \n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@["I am looking for something else!"]\n@@PROMPTS END@@`;
 
           const errorChat = [
@@ -1182,8 +1207,6 @@ export default function ChatContainer({
 
     const pageOnly = async () => {
       if (!settings.shopifyContext.page_context.page_title) return null;
-      console.log("page only clicked ");
-
       const textResponse = `@@TITLE@@${settings.shopifyContext.page_context.page_title}@@TITLT END@@✨\n\n@@SUGGESTIONS START@@\n{\n    "products": []\n}\n@@SUGGESTIONS END@@\n\n@@PROMPTS START@@\n[\n "$  "hello"\n\n]\n@@PROMPTS END@@`;
 
       const productMessage = {
