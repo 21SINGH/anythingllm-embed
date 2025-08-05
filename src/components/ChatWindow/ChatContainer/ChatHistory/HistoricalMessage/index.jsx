@@ -432,9 +432,6 @@ const HistoricalMessage = forwardRef(
       const [formValue, setFormValue] = useState("");
 
       const [selectedProductIssue, setSelectedProductIssue] = useState("");
-      const [productIssueOrderId, setProductIssueOrderId] = useState("");
-      const [productIssueUrl, setProductIssueUrl] = useState("");
-
       const [updateDetailsOrderId, setUpdateDetailsOrderId] = useState("");
       const [updateDetailsPhoneNo, setUpdateDetailsPhoneNo] = useState("");
 
@@ -729,9 +726,16 @@ const HistoricalMessage = forwardRef(
                         <textarea
                           key={index}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12 }}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
+                            display: "block",
+                          }}
+                          className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
-                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
                           rows={field.rows}
@@ -741,9 +745,16 @@ const HistoricalMessage = forwardRef(
                           key={index}
                           type={field.type}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12, display: "block" }}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
+                            display: "block",
+                          }}
+                          className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
-                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
                         />
@@ -911,6 +922,7 @@ const HistoricalMessage = forwardRef(
           );
         } else if (intent?.intent === "product_issue_details") {
           const [selectedProducts, setSelectedProducts] = useState([]);
+          const [issueDiscription, setIssueDescription] = useState("");
 
           const handleCheckboxChange = (index) => {
             setSelectedProducts(
@@ -1086,6 +1098,28 @@ const HistoricalMessage = forwardRef(
                     ))}
                   </div>
 
+                  <p className="allm-m-0 allm-text-[13px]">
+                    Please outline the issues :
+                  </p>
+
+                  <textarea
+                    type="text"
+                    disabled={!isLastMessage}
+                    rows={4}
+                    placeholder={"Issue Description"}
+                    value={issueDiscription}
+                    onChange={(e) => setIssueDescription(e.target.value)}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid #ccc",
+                      backgroundColor: "white",
+                      outline: "none",
+                      padding: "8px",
+                      display: "block",
+                    }}
+                    className="allm-p-2 allm-mt-[8px] allm-w-[90%]"
+                  />
+
                   {MediaUploadComponent(
                     imageFile,
                     setImageFile,
@@ -1179,8 +1213,8 @@ const HistoricalMessage = forwardRef(
                       padding: "8px",
                       display: "block",
                     }}
+                    className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter order phone no "}
-                    className="allm-p-2 allm-mb-[8px]"
                     value={updateDetailsPhoneNo}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -1201,8 +1235,8 @@ const HistoricalMessage = forwardRef(
                       padding: "8px",
                       display: "block",
                     }}
+                    className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter order id ( #RM123456 )"}
-                    className="allm-p-2 allm-mb-[8px]"
                     value={updateDetailsOrderId}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -1274,9 +1308,16 @@ const HistoricalMessage = forwardRef(
                   <input
                     key={"mobile for cloning"}
                     disabled={!isLastMessage}
-                    style={{ borderRadius: 12, display: "block" }}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid #ccc",
+                      backgroundColor: "white",
+                      outline: "none",
+                      padding: "8px",
+                      display: "block",
+                    }}
+                    className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter mobile no"}
-                    className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                     value={mobileNo}
                     onChange={(e) => setMobileNo(e.target.value)}
                   />
@@ -1426,9 +1467,16 @@ const HistoricalMessage = forwardRef(
                         <textarea
                           key={index}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12 }}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
+                            display: "block",
+                          }}
+                          className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
-                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
                           rows={field.rows}
@@ -1438,9 +1486,16 @@ const HistoricalMessage = forwardRef(
                           key={index}
                           type={field.type}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12, display: "block" }}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
+                            display: "block",
+                          }}
+                          className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
-                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
                         />
@@ -1612,8 +1667,13 @@ const HistoricalMessage = forwardRef(
                           disabled={!isLastMessage}
                           style={{
                             borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
                             display: "block",
                           }}
+                          className="allm-p-2 allm-mt-[8px] "
                           placeholder={
                             selectedOption === "orderId"
                               ? "Enter Order ID #RM123456"
@@ -1621,7 +1681,6 @@ const HistoricalMessage = forwardRef(
                                 ? "Enter Phone Number "
                                 : "Enter Email"
                           }
-                          className="allm-p-2 allm-border allm-rounded"
                           value={formValue}
                           onChange={(e) => {
                             let val = e.target.value;
