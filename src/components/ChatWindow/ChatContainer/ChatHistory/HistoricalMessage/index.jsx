@@ -752,6 +752,7 @@ const HistoricalMessage = forwardRef(
                             outline: "none",
                             padding: "8px",
                             display: "block",
+                            fontSize: 16,
                           }}
                           className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
@@ -884,6 +885,7 @@ const HistoricalMessage = forwardRef(
                               outline: "none",
                               padding: "8px",
                               display: "block",
+                              fontSize: 16,
                             }}
                             className="allm-p-2 allm-mt-[8px] allm-w-[90%]"
                           />
@@ -1166,7 +1168,8 @@ const HistoricalMessage = forwardRef(
                         videoFile,
                         selectedProductIssue,
                         selectedProducts,
-                        intent.products
+                        intent.products,
+                        issueDiscription
                       );
                     }}
                   >
@@ -1212,6 +1215,7 @@ const HistoricalMessage = forwardRef(
                       outline: "none",
                       padding: "8px",
                       display: "block",
+                      fontSize: 16,
                     }}
                     className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter order phone no "}
@@ -1234,6 +1238,7 @@ const HistoricalMessage = forwardRef(
                       outline: "none",
                       padding: "8px",
                       display: "block",
+                      fontSize: 16,
                     }}
                     className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter order id ( #RM123456 )"}
@@ -1315,6 +1320,7 @@ const HistoricalMessage = forwardRef(
                       outline: "none",
                       padding: "8px",
                       display: "block",
+                      fontSize: 16,
                     }}
                     className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter mobile no"}
@@ -1493,6 +1499,7 @@ const HistoricalMessage = forwardRef(
                             outline: "none",
                             padding: "8px",
                             display: "block",
+                            fontSize: 16,
                           }}
                           className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
@@ -1654,6 +1661,7 @@ const HistoricalMessage = forwardRef(
                                   height: 18,
                                   accentColor: "#2563eb",
                                   display: "block",
+                                  fontSize: 16,
                                 }}
                               />
                               <span>{label}</span>
@@ -1672,6 +1680,7 @@ const HistoricalMessage = forwardRef(
                             outline: "none",
                             padding: "8px",
                             display: "block",
+                            fontSize: 16,
                           }}
                           className="allm-p-2 allm-mt-[8px] "
                           placeholder={

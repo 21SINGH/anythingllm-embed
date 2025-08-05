@@ -335,7 +335,8 @@ export default function ChatContainer({
     videoFile,
     selectedProductIssue,
     selectedProducts,
-    products
+    products,
+    issueDiscription
   ) => {
     if (
       !imageFile ||
@@ -402,7 +403,8 @@ export default function ChatContainer({
         `Issues with these products:\n${selectedProductDetails}\n\n\n` +
         `Media Uploaded\n` +
         `Uploaded image: \n${imageUploadResult.url}\n\n` +
-        `Uploaded video: \n${videoUploadResult.url}`;
+        `Uploaded video: \n${videoUploadResult.url}\n\n` +
+        `Product issues description: \n${issueDiscription}\n\n`;
 
       const userEntry = {
         content: userMessage,
