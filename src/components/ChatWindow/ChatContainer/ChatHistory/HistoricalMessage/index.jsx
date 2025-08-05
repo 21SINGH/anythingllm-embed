@@ -670,7 +670,7 @@ const HistoricalMessage = forwardRef(
                         }
                       }}
                     >
-                      <span className="allm-text-white">Track Order</span>
+                      <span className="allm-text-white allm-text-[16px]">Track Order</span>
                     </button>
                   </div>
                 ))}
@@ -753,6 +753,7 @@ const HistoricalMessage = forwardRef(
                             padding: "8px",
                             display: "block",
                             fontSize: 16,
+                            height:15
                           }}
                           className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
@@ -886,6 +887,7 @@ const HistoricalMessage = forwardRef(
                               padding: "8px",
                               display: "block",
                               fontSize: 16,
+                              height:15
                             }}
                             className="allm-p-2 allm-mt-[8px] allm-w-[90%]"
                           />
@@ -1216,6 +1218,7 @@ const HistoricalMessage = forwardRef(
                       padding: "8px",
                       display: "block",
                       fontSize: 16,
+                      height:15
                     }}
                     className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter order phone no "}
@@ -1239,6 +1242,7 @@ const HistoricalMessage = forwardRef(
                       padding: "8px",
                       display: "block",
                       fontSize: 16,
+                      height:15
                     }}
                     className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter order id ( #RM123456 )"}
@@ -1321,6 +1325,7 @@ const HistoricalMessage = forwardRef(
                       padding: "8px",
                       display: "block",
                       fontSize: 16,
+                      height:15
                     }}
                     className="allm-p-2 allm-mt-[8px] "
                     placeholder={"Enter mobile no"}
@@ -1500,6 +1505,7 @@ const HistoricalMessage = forwardRef(
                             padding: "8px",
                             display: "block",
                             fontSize: 16,
+                            height:15
                           }}
                           className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
@@ -1681,6 +1687,7 @@ const HistoricalMessage = forwardRef(
                             padding: "8px",
                             display: "block",
                             fontSize: 16,
+                            height:15
                           }}
                           className="allm-p-2 allm-mt-[8px] "
                           placeholder={
