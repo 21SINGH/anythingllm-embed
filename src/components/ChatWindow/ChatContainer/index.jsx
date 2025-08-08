@@ -2982,7 +2982,7 @@ export default function ChatContainer({
                     )}
                     {settings.emailToggle && (
                       <button
-                        className="allm-flex-1 allm-rounded-[12px] allm-max-w-[121px] allm-py-3 allm-text-center allm-appearance-none allm-border-none allm-outline-none allm-bg-transparent allm-flex allm-items-center allm-justify-center"
+                        className="allm-flex-1 allm-rounded-[12px] allm-max-w-[121px] allm-py-3 allm-text-center allm-appearance-none allm-border-none allm-outline-none allm-bg-transparent allm-flex allm-items-center allm-justify-center allm-mb-[16px]"
                         style={{
                           backgroundColor: settings.userBgColor,
                           color: settings.userTextColor,

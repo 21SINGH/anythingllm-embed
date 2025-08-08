@@ -755,7 +755,7 @@ const HistoricalMessage = forwardRef(
                             fontSize: 16,
                             height:15
                           }}
-                          className="allm-p-2 allm-mt-[8px] "
+                          className="allm-p-2 allm-mb-[8px] "
                           placeholder={field.placeholder}
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
@@ -889,7 +889,7 @@ const HistoricalMessage = forwardRef(
                               fontSize: 16,
                               height:15
                             }}
-                            className="allm-p-2 allm-mt-[8px] allm-w-[90%]"
+                            className="allm-p-2 allm-mb-[8px] allm-w-[90%]"
                           />
                         </div>
                       ))}
@@ -1220,7 +1220,7 @@ const HistoricalMessage = forwardRef(
                       fontSize: 16,
                       height:15
                     }}
-                    className="allm-p-2 allm-mt-[8px] "
+                    className="allm-p-2 allm-mb-[8px] "
                     placeholder={"Enter order phone no "}
                     value={updateDetailsPhoneNo}
                     onChange={(e) => {
@@ -1244,7 +1244,7 @@ const HistoricalMessage = forwardRef(
                       fontSize: 16,
                       height:15
                     }}
-                    className="allm-p-2 allm-mt-[8px] "
+                    className="allm-p-2 allm-mb-[8px] "
                     placeholder={"Enter order id ( #RM123456 )"}
                     value={updateDetailsOrderId}
                     onChange={(e) => {
@@ -1327,7 +1327,7 @@ const HistoricalMessage = forwardRef(
                       fontSize: 16,
                       height:15
                     }}
-                    className="allm-p-2 allm-mt-[8px] "
+                    className="allm-p-2 allm-mb-[8px] "
                     placeholder={"Enter mobile no"}
                     value={mobileNo}
                     onChange={(e) => setMobileNo(e.target.value)}
@@ -1507,7 +1507,7 @@ const HistoricalMessage = forwardRef(
                             fontSize: 16,
                             height:15
                           }}
-                          className="allm-p-2 allm-mt-[8px] "
+                          className="allm-p-2 allm-mb-[8px] "
                           placeholder={field.placeholder}
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
@@ -1689,7 +1689,7 @@ const HistoricalMessage = forwardRef(
                             fontSize: 16,
                             height:15
                           }}
-                          className="allm-p-2 allm-mt-[8px] "
+                          className="allm-p-2 allm-mb-[8px] "
                           placeholder={
                             selectedOption === "orderId"
                               ? "Enter Order ID #RM123456"
