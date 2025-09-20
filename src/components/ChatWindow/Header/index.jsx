@@ -49,7 +49,7 @@ export default function ChatWindowHeader({
     >
       <div
         style={{
-          height: isLargeScreen ? "76px" : "65px",
+          height: isLargeScreen ? 76 : 65,
         }}
         className="allm-flex allm-pl-3 allm-items-center allm-w-full "
       >
@@ -57,7 +57,9 @@ export default function ChatWindowHeader({
           style={{
             maxWidth: isLargeScreen ? 48 : 40,
             maxHeight: isLargeScreen ? 48 : 40,
-            borderRadius: 25,
+            width: isLargeScreen ? 48 : 40,
+            height: isLargeScreen ? 48 : 40,
+            borderRadius: 24,
             backgroundColor: settings.logoBackgroundColor,
           }}
           src={settings?.brandImageUrl ?? brandDetails?.logo ?? ShoopieIcon}
