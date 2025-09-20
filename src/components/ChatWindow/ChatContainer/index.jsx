@@ -27,6 +27,9 @@ export default function ChatContainer({
   humanConnect,
   setHumanConnect,
 }) {
+  if (settings?.host === "c2hvcHBpZXB1YmxpYy5teXNob3BpZnkuY29t")
+    console.log("settings", JSON.stringify(settings.shopifyContext));
+
   const PRODUCT_CONTEXT_INDENTIFIER = `allm_${settings.embedId}_product_id`;
   const PAGE_CONTEXT_IDENTIFIER = `allm_${settings.embedId}_page_context`;
   const [replyProduct, setReplyProduct] = useState();
@@ -335,7 +338,8 @@ export default function ChatContainer({
     videoFile,
     selectedProductIssue,
     selectedProducts,
-    products
+    products,
+    issueDiscription
   ) => {
     if (
       !imageFile ||
@@ -402,7 +406,8 @@ export default function ChatContainer({
         `Issues with these products:\n${selectedProductDetails}\n\n\n` +
         `Media Uploaded\n` +
         `Uploaded image: \n${imageUploadResult.url}\n\n` +
-        `Uploaded video: \n${videoUploadResult.url}`;
+        `Uploaded video: \n${videoUploadResult.url}\n\n` +
+        `Product issues description: \n${issueDiscription}\n\n`;
 
       const userEntry = {
         content: userMessage,
@@ -1836,79 +1841,81 @@ export default function ChatContainer({
             const userMessage = orderId;
             const botReply = `Order details:\n${JSON.stringify(extracted, null, 2)}`;
 
-            if (
-              orderId === "RM173493" ||
-              orderId === "RM5562" ||
-              shipment.status.includes("RTO")
-            ) {
-              const intentPayload = {
-                intent: "validation_for_cloning",
-                message: `Please enter your realted mobile no with this order id ${orderId}, for reordering ✨`,
-                order_name: orderId,
-                data: extracted,
-              };
+            // if (
+            //   orderId === "RM173493" ||
+            //   orderId === "RM5562" ||
+            //   shipment.status.includes("RTO")
+            // ) {
+            //   const intentPayload = {
+            //     intent: "validation_for_cloning",
+            //     message: `Please enter your realted mobile no with this order id ${orderId}, for reordering ✨`,
+            //     order_name: orderId,
+            //     data: extracted,
+            //   };
 
-              const rtoReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
+            //   const rtoReply = `@@INTENT START@@${JSON.stringify(intentPayload)}@@INTENT END@@`;
 
-              const updatedChat = [
-                ...chatHistory,
-                {
-                  content: userMessage,
-                  role: "user",
-                  sentAt: Math.floor(Date.now() / 1000),
-                },
-                {
-                  content: botReply,
-                  role: "assistant",
-                  pending: false,
-                  sentAt: Math.floor(Date.now() / 1000),
-                },
-                {
-                  content: rtoReply,
-                  role: "assistant",
-                  pending: false,
-                  sentAt: Math.floor(Date.now() / 1000),
-                },
-              ];
-              setChatHistory(updatedChat);
+            //   const updatedChat = [
+            //     ...chatHistory,
+            //     {
+            //       content: userMessage,
+            //       role: "user",
+            //       sentAt: Math.floor(Date.now() / 1000),
+            //     },
+            //     {
+            //       content: botReply,
+            //       role: "assistant",
+            //       pending: false,
+            //       sentAt: Math.floor(Date.now() / 1000),
+            //     },
+            //     {
+            //       content: rtoReply,
+            //       role: "assistant",
+            //       pending: false,
+            //       sentAt: Math.floor(Date.now() / 1000),
+            //     },
+            //   ];
+            //   setChatHistory(updatedChat);
 
-              try {
-                // Store first message
-                await StoreMessageDB.postMessageInDB(
-                  settings,
-                  userMessage,
-                  botReply
-                );
-                // Store second message only after first is successful
-                await StoreMessageDB.postMessageInDB(settings, "", rtoReply);
-              } catch (err) {
-                console.error("❌ Failed to store message:", err);
-              }
-            } else {
-              const updatedChat = [
-                ...chatHistory,
-                {
-                  content: userMessage,
-                  role: "user",
-                  sentAt: Math.floor(Date.now() / 1000),
-                },
-                {
-                  content: botReply,
-                  role: "assistant",
-                  pending: false,
-                  sentAt: Math.floor(Date.now() / 1000),
-                },
-              ];
-              setChatHistory(updatedChat);
-              StoreMessageDB.postMessageInDB(
-                settings,
-                userMessage,
-                botReply
-              ).catch((err) => {
-                console.error("❌ Failed to store message:", err);
-              });
-            }
+            //   try {
+            //     // Store first message
+            //     await StoreMessageDB.postMessageInDB(
+            //       settings,
+            //       userMessage,
+            //       botReply
+            //     );
+            //     // Store second message only after first is successful
+            //     await StoreMessageDB.postMessageInDB(settings, "", rtoReply);
+            //   } catch (err) {
+            //     console.error("❌ Failed to store message:", err);
+            //   }
+            // }
+            // else {
+
+            const updatedChat = [
+              ...chatHistory,
+              {
+                content: userMessage,
+                role: "user",
+                sentAt: Math.floor(Date.now() / 1000),
+              },
+              {
+                content: botReply,
+                role: "assistant",
+                pending: false,
+                sentAt: Math.floor(Date.now() / 1000),
+              },
+            ];
+            setChatHistory(updatedChat);
+            StoreMessageDB.postMessageInDB(
+              settings,
+              userMessage,
+              botReply
+            ).catch((err) => {
+              console.error("❌ Failed to store message:", err);
+            });
           }
+          // }
         })
         .catch((err) => {
           const botReply = `Could not fetch order details. Please try again later.`;
@@ -2980,7 +2987,7 @@ export default function ChatContainer({
                     )}
                     {settings.emailToggle && (
                       <button
-                        className="allm-flex-1 allm-rounded-[12px] allm-max-w-[121px] allm-py-3 allm-text-center allm-appearance-none allm-border-none allm-outline-none allm-bg-transparent allm-flex allm-items-center allm-justify-center"
+                        className="allm-flex-1 allm-rounded-[12px] allm-max-w-[121px] allm-py-3 allm-text-center allm-appearance-none allm-border-none allm-outline-none allm-bg-transparent allm-flex allm-items-center allm-justify-center allm-mb-[16px]"
                         style={{
                           backgroundColor: settings.userBgColor,
                           color: settings.userTextColor,

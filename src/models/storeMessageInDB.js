@@ -5,7 +5,7 @@ const StoreMessageDB = {
     botReply,
     include // optional param
   ) {
-    const url = `https://shoppie-backend-dev.goshoppie.com/api/anythingllm/`;
+    const url = `https://shoppie-backend.goshoppie.com/api/anythingllm/`;
 
     const bodyPayload = {
       embed_id: `${settings.embedId}`,

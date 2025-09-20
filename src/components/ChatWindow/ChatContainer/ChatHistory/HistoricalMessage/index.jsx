@@ -1,4 +1,11 @@
-import React, { memo, forwardRef, useState, useEffect, Suspense } from "react";
+import React, {
+  memo,
+  forwardRef,
+  useState,
+  useEffect,
+  Suspense,
+  useRef,
+} from "react";
 import { Warning, UploadSimple, XCircle } from "@phosphor-icons/react";
 import { embedderSettings } from "@/main";
 import { v4 } from "uuid";
@@ -235,6 +242,9 @@ const ProductSuggestions = ({
 
 const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
   const [imageError, setImageError] = React.useState(false);
+  const [showVideoOverlay, setShowVideoOverlay] = useState(false);
+  const videoRef = useRef(null);
+  const overlayRef = useRef(null);
 
   const handleButtonClick = (e) => {
     e.stopPropagation();
@@ -263,81 +273,110 @@ const ProductCard = ({ product, setReplyProduct, embedSettings }) => {
       }
   };
 
+  // Click outside video to close overlay
+  useEffect(() => {
+    function handleClick(event) {
+      if (
+        overlayRef.current &&
+        videoRef.current &&
+        !videoRef.current.contains(event.target)
+      ) {
+        setShowVideoOverlay(false);
+      }
+    }
+    if (showVideoOverlay) {
+      document.addEventListener("mousedown", handleClick);
+      return () => document.removeEventListener("mousedown", handleClick);
+    }
+  }, [showVideoOverlay]);
+
   return (
-    <a
-      href={product?.buy_link || product?.purchase_link || product?.handle}
-      rel="noopener noreferrer"
-      className="allm-rounded-[10px] allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[220px] allm-min-w-[220px] "
-      style={{ textDecoration: "none" }}
-      onClick={handleAnchorClick}
-    >
-      <div>
-        {(product?.image_url || product?.images) && !imageError ? (
-          <div className="allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden allm-h-[260px]">
-            <img
-              src={
-                product?.image_url || product?.product_images || product?.images
-              }
-              alt={product?.title || product?.product_name || product?.images}
-              className="allm-h-full allm-w-full allm-object-cover"
-              onError={() => setImageError(true)}
-              loading="lazy"
-            />
-          </div>
-        ) : (
-          <div className="allm-flex allm-justify-center allm-items-center allm-bg-[#1B1B1B] allm-h-[190px]">
-            <span className="allm-text-gray-400 allm-text-xs">
-              Product image
+    <div>
+      <a
+        href={product?.buy_link || product?.purchase_link || product?.handle}
+        rel="noopener noreferrer"
+        className="allm-rounded-[10px] allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[220px] allm-min-w-[220px] "
+        style={{ textDecoration: "none" }}
+        onClick={handleAnchorClick}
+      >
+        <div>
+          {(product?.image_url || product?.images) && !imageError ? (
+            <div
+              className={`allm-flex allm-justify-center allm-bg-[#1B1B1B] allm-overflow-hidden  ${embedSettings?.host === "c2hvcHBpZXB1YmxpYy5teXNob3BpZnkuY29t" ? "allm-h-[200px]" : "allm-h-[260px]"}`}
+            >
+              <img
+                src={
+                  product?.image_url ||
+                  product?.product_images ||
+                  product?.images
+                }
+                alt={product?.title || product?.product_name || product?.images}
+                className="allm-h-full allm-w-full allm-object-cover"
+                onError={() => setImageError(true)}
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div className="allm-flex allm-justify-center allm-items-center allm-bg-[#1B1B1B] allm-h-[190px]">
+              <span className="allm-text-gray-400 allm-text-xs">
+                Product image
+              </span>
+            </div>
+          )}
+        </div>
+        <div
+          style={{ backgroundColor: embedSettings.cardBgColor }}
+          className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2 allm-min-h-[70px]"
+        >
+          <div
+            style={{
+              color: embedSettings.cardTextColor,
+            }}
+            className="allm-font-semiboldallm-w-full allm-text-[13.5px] allm-line-clamp-2 allm-h-[35px] allm-min-h-[35px] allm-max-h-[35px] allm-leading-[16px]"
+          >
+            <span className="allm-line-clamp-2">
+              {product?.title || product?.product_name}
             </span>
           </div>
-        )}
-      </div>
-      <div
-        style={{ backgroundColor: embedSettings.cardBgColor }}
-        className="allm-p-[10px] allm-flex allm-flex-col allm-gap-2 allm-min-h-[70px]"
-      >
-        <div
-          style={{
-            color: embedSettings.cardTextColor,
-          }}
-          className="allm-font-semiboldallm-w-full allm-text-[13.5px] allm-line-clamp-2 allm-h-[35px] allm-min-h-[35px] allm-max-h-[35px] allm-leading-[16px]"
-        >
-          <span className="allm-line-clamp-2">
-            {product?.title || product?.product_name}
-          </span>
-        </div>
-        <div className="allm-flex allm-w-full allm-justify-between allm-items-center allm-min-h-[40px] allm-h-[40px]">
-          <div>
-            <div
-              style={{
-                color: embedSettings.cardTextColor,
-              }}
-              className=" allm-font-bold allm-mr-2 allm-text-[18px] allm-mb-1"
-            >
-              {product?.discounted_price ||
-                product?.price ||
-                product?.product_prices?.Discounted_price}
+          <div className="allm-flex allm-w-full allm-justify-between allm-items-center allm-min-h-[40px] allm-h-[40px]">
+            <div>
+              <div
+                style={{
+                  color: embedSettings.cardTextColor,
+                }}
+                className=" allm-font-bold allm-mr-2 allm-text-[18px] allm-mb-1"
+              >
+                {product?.discounted_price ||
+                  product?.price ||
+                  product?.product_prices?.Discounted_price}
+              </div>
+              <div
+                style={{
+                  color: embedSettings.cardTextSubColour,
+                }}
+                className="allm-line-through allm-font-medium allm-mr-2 allm-text-[12px]"
+              >
+                {product?.original_price ||
+                  product?.compare_at_price ||
+                  product?.product_prices?.Original_price}
+              </div>
             </div>
             <div
-              style={{
-                color: embedSettings.cardTextSubColour,
-              }}
-              className="allm-line-through allm-font-medium allm-mr-2 allm-text-[12px]"
+              onClick={handleButtonClick} // Handle button click separately
+              className="allm-w-[30px] allm-h-[30px] allm-rounded-lg allm-bg-white allm-flex allm-items-center allm-justify-center"
             >
-              {product?.original_price ||
-                product?.compare_at_price ||
-                product?.product_prices?.Original_price}
+              <ChatTeardropDots size={20} color="black" />
             </div>
           </div>
-          <div
-            onClick={handleButtonClick} // Handle button click separately
-            className="allm-w-[30px] allm-z-50 allm-h-[30px] allm-rounded-lg allm-bg-white allm-flex allm-items-center allm-justify-center"
-          >
-            <ChatTeardropDots size={20} color="black" />
-          </div>
         </div>
-      </div>
-    </a>
+      </a>
+      {product?.media_url && (
+        <OptimizedVideoPlayer
+          embedSettings={embedSettings}
+          mediaLink={product?.media_url}
+        />
+      )}
+    </div>
   );
 };
 
@@ -432,9 +471,6 @@ const HistoricalMessage = forwardRef(
       const [formValue, setFormValue] = useState("");
 
       const [selectedProductIssue, setSelectedProductIssue] = useState("");
-      const [productIssueOrderId, setProductIssueOrderId] = useState("");
-      const [productIssueUrl, setProductIssueUrl] = useState("");
-
       const [updateDetailsOrderId, setUpdateDetailsOrderId] = useState("");
       const [updateDetailsPhoneNo, setUpdateDetailsPhoneNo] = useState("");
 
@@ -673,7 +709,9 @@ const HistoricalMessage = forwardRef(
                         }
                       }}
                     >
-                      <span className="allm-text-white">Track Order</span>
+                      <span className="allm-text-white allm-text-[16px]">
+                        Track Order
+                      </span>
                     </button>
                   </div>
                 ))}
@@ -729,9 +767,16 @@ const HistoricalMessage = forwardRef(
                         <textarea
                           key={index}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12 }}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
+                            display: "block",
+                          }}
+                          className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
-                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
                           rows={field.rows}
@@ -741,9 +786,18 @@ const HistoricalMessage = forwardRef(
                           key={index}
                           type={field.type}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12, display: "block" }}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
+                            display: "block",
+                            fontSize: 16,
+                            height: 15,
+                          }}
+                          className="allm-p-2 allm-mb-[8px] "
                           placeholder={field.placeholder}
-                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
                         />
@@ -873,8 +927,10 @@ const HistoricalMessage = forwardRef(
                               outline: "none",
                               padding: "8px",
                               display: "block",
+                              fontSize: 16,
+                              height: 15,
                             }}
-                            className="allm-p-2 allm-mt-[8px] allm-w-[90%]"
+                            className="allm-p-2 allm-mb-[8px] allm-w-[90%]"
                           />
                         </div>
                       ))}
@@ -911,6 +967,7 @@ const HistoricalMessage = forwardRef(
           );
         } else if (intent?.intent === "product_issue_details") {
           const [selectedProducts, setSelectedProducts] = useState([]);
+          const [issueDiscription, setIssueDescription] = useState("");
 
           const handleCheckboxChange = (index) => {
             setSelectedProducts(
@@ -1086,6 +1143,28 @@ const HistoricalMessage = forwardRef(
                     ))}
                   </div>
 
+                  <p className="allm-m-0 allm-text-[13px]">
+                    Please outline the issues :
+                  </p>
+
+                  <textarea
+                    type="text"
+                    disabled={!isLastMessage}
+                    rows={4}
+                    placeholder={"Issue Description"}
+                    value={issueDiscription}
+                    onChange={(e) => setIssueDescription(e.target.value)}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid #ccc",
+                      backgroundColor: "white",
+                      outline: "none",
+                      padding: "8px",
+                      display: "block",
+                    }}
+                    className="allm-p-2 allm-mt-[8px] allm-w-[90%]"
+                  />
+
                   {MediaUploadComponent(
                     imageFile,
                     setImageFile,
@@ -1132,7 +1211,8 @@ const HistoricalMessage = forwardRef(
                         videoFile,
                         selectedProductIssue,
                         selectedProducts,
-                        intent.products
+                        intent.products,
+                        issueDiscription
                       );
                     }}
                   >
@@ -1178,9 +1258,11 @@ const HistoricalMessage = forwardRef(
                       outline: "none",
                       padding: "8px",
                       display: "block",
+                      fontSize: 16,
+                      height: 15,
                     }}
+                    className="allm-p-2 allm-mb-[8px] "
                     placeholder={"Enter order phone no "}
-                    className="allm-p-2 allm-mb-[8px]"
                     value={updateDetailsPhoneNo}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -1200,9 +1282,11 @@ const HistoricalMessage = forwardRef(
                       outline: "none",
                       padding: "8px",
                       display: "block",
+                      fontSize: 16,
+                      height: 15,
                     }}
+                    className="allm-p-2 allm-mb-[8px] "
                     placeholder={"Enter order id ( #RM123456 )"}
-                    className="allm-p-2 allm-mb-[8px]"
                     value={updateDetailsOrderId}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -1274,9 +1358,18 @@ const HistoricalMessage = forwardRef(
                   <input
                     key={"mobile for cloning"}
                     disabled={!isLastMessage}
-                    style={{ borderRadius: 12, display: "block" }}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid #ccc",
+                      backgroundColor: "white",
+                      outline: "none",
+                      padding: "8px",
+                      display: "block",
+                      fontSize: 16,
+                      height: 15,
+                    }}
+                    className="allm-p-2 allm-mb-[8px] "
                     placeholder={"Enter mobile no"}
-                    className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                     value={mobileNo}
                     onChange={(e) => setMobileNo(e.target.value)}
                   />
@@ -1426,9 +1519,16 @@ const HistoricalMessage = forwardRef(
                         <textarea
                           key={index}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12 }}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
+                            display: "block",
+                          }}
+                          className="allm-p-2 allm-mt-[8px] "
                           placeholder={field.placeholder}
-                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
                           rows={field.rows}
@@ -1438,9 +1538,18 @@ const HistoricalMessage = forwardRef(
                           key={index}
                           type={field.type}
                           disabled={!isLastMessage}
-                          style={{ borderRadius: 12, display: "block" }}
+                          style={{
+                            borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
+                            display: "block",
+                            fontSize: 16,
+                            height: 15,
+                          }}
+                          className="allm-p-2 allm-mb-[8px] "
                           placeholder={field.placeholder}
-                          className="allm-p-2 allm-border allm-rounded allm-mb-[8px]"
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
                         />
@@ -1599,6 +1708,7 @@ const HistoricalMessage = forwardRef(
                                   height: 18,
                                   accentColor: "#2563eb",
                                   display: "block",
+                                  fontSize: 16,
                                 }}
                               />
                               <span>{label}</span>
@@ -1612,8 +1722,15 @@ const HistoricalMessage = forwardRef(
                           disabled={!isLastMessage}
                           style={{
                             borderRadius: 12,
+                            border: "1px solid #ccc",
+                            backgroundColor: "white",
+                            outline: "none",
+                            padding: "8px",
                             display: "block",
+                            fontSize: 16,
+                            height: 15,
                           }}
+                          className="allm-p-2 allm-mb-[8px] "
                           placeholder={
                             selectedOption === "orderId"
                               ? "Enter Order ID #RM123456"
@@ -1621,7 +1738,6 @@ const HistoricalMessage = forwardRef(
                                 ? "Enter Phone Number "
                                 : "Enter Email"
                           }
-                          className="allm-p-2 allm-border allm-rounded"
                           value={formValue}
                           onChange={(e) => {
                             let val = e.target.value;
@@ -1940,7 +2056,7 @@ const HistoricalMessage = forwardRef(
                   <div
                     key={index}
                     style={{
-                      border: `1px solid ${settings.userBgColor}`,
+                      // border: `1px solid ${settings.userBgColor}`,
                       backgroundColor: lightenAndDullColor(
                         settings.userBgColor,
                         70,
@@ -1985,10 +2101,12 @@ const followUpQuestions = (settings, handlePrompt, faqs = [], disabled) => {
         <div
           key={index}
           style={{
-            border: `1px solid ${!disabled ? settings.assistantBgColor : settings.userBgColor}`,
-            backgroundColor: !disabled
-              ? lightenAndDullColor(settings.assistantBgColor, 70, 0.8)
-              : lightenAndDullColor(settings.userBgColor, 70, 0.9),
+            // border: `1px solid ${!disabled ? settings.assistantBgColor : settings.userBgColor}`,
+            backgroundColor:
+              // !disabled
+              //   ? lightenAndDullColor(settings.assistantBgColor, 70, 0.8)
+              //   :
+              lightenAndDullColor(settings.userBgColor, 70, 0.9),
             maxWidth: "80%",
             color: settings.userTextColor,
           }}
@@ -2325,3 +2443,205 @@ function MediaUploadComponent(
     </div>
   );
 }
+// const OptimizedVideoPlayer = ({ embedSettings, mediaLink }) => {
+//   const videoRef = useRef(null);
+//   const [isPlaying, setIsPlaying] = useState(false);
+
+//   // Update play state on video play/pause events
+//   useEffect(() => {
+//     const video = videoRef.current;
+//     if (!video) return;
+
+//     const onPlay = () => setIsPlaying(true);
+//     const onPause = () => setIsPlaying(false);
+
+//     video.addEventListener("play", onPlay);
+//     video.addEventListener("pause", onPause);
+
+//     return () => {
+//       video.removeEventListener("play", onPlay);
+//       video.removeEventListener("pause", onPause);
+//     };
+//   }, []);
+
+//   // Play video handler
+//   const handlePlayClick = () => {
+//     if (videoRef.current) {
+//       videoRef.current.play();
+//     }
+//   };
+
+//   if (embedSettings?.host !== "c2hvcHBpZXB1YmxpYy5teXNob3BpZnkuY29t")
+//     return null;
+
+//   return (
+//     <div
+//       className="allm-rounded-[10px] allm-mt-[10px] allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[220px] allm-min-w-[220px] allm-h-[280px] allm-relative"
+//       style={{ position: "relative" }}
+//     >
+//       <video
+//         ref={videoRef}
+//         src={mediaLink}
+//         style={{ width: "100%", height: "100%", objectFit: "cover" }}
+//         controls={isPlaying}
+//         muted
+//       />
+
+//       {!isPlaying && (
+//         <div
+//           onClick={handlePlayClick}
+//           style={{
+//             position: "absolute",
+//             inset: 0,
+//             backgroundColor: "rgba(0,0,0,0.5)",
+//             display: "flex",
+//             alignItems: "center",
+//             justifyContent: "center",
+//             cursor: "pointer",
+//             zIndex: 10,
+//             userSelect: "none",
+//           }}
+//           aria-label="Play video"
+//           role="button"
+//           tabIndex={0}
+//           onKeyPress={(e) => {
+//             if (e.key === "Enter" || e.key === " ") {
+//               handlePlayClick();
+//             }
+//           }}
+//         >
+//           <div
+//             style={{
+//               width: 60,
+//               height: 60,
+//               backgroundColor: "rgba(0,0,0,0.7)",
+//               borderRadius: "50%",
+//               display: "flex",
+//               alignItems: "center",
+//               justifyContent: "center",
+//             }}
+//           >
+//             <svg
+//               width="32"
+//               height="32"
+//               viewBox="0 0 32 32"
+//               fill="white"
+//               aria-hidden="true"
+//               focusable="false"
+//             >
+//               <polygon points="10,7 26,16 10,25" />
+//             </svg>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+
+const OptimizedVideoPlayer = ({ embedSettings, mediaLink }) => {
+  const videoRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Autoplay muted on mount
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Try to autoplay muted video on first render
+    video.muted = true;
+    video.play().then(() => {
+      setIsPlaying(true);
+    }).catch(() => {
+      // Autoplay might be blocked, user interaction required
+      setIsPlaying(false);
+    });
+
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+
+    return () => {
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+    };
+  }, []);
+
+  // When user explicitly clicks play overlay, unmute so controls can be used properly
+  const handlePlayClick = () => {
+    const video = videoRef.current;
+    if (video) {
+      video.muted = false; // Unmute on user interaction
+      video.play();
+    }
+  };
+
+  if (embedSettings?.host !== "c2hvcHBpZXB1YmxpYy5teXNob3BpZnkuY29t")
+    return null;
+
+  return (
+    <div
+      className="allm-rounded-[10px] allm-mt-[10px] allm-cursor-pointer allm-overflow-hidden allm-flex allm-flex-col allm-max-w-[220px] allm-min-w-[220px] allm-h-[280px] allm-relative"
+      style={{ position: "relative" }}
+    >
+      <video
+        ref={videoRef}
+        src={mediaLink}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        controls={isPlaying}
+        muted={!isPlaying} // mute when not playing, unmute on play
+        playsInline
+        preload="auto"
+      />
+      {!isPlaying && (
+        <div
+          onClick={handlePlayClick}
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 10,
+            userSelect: "none",
+          }}
+          aria-label="Play video"
+          role="button"
+          tabIndex={0}
+          onKeyPress={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              handlePlayClick();
+            }
+          }}
+        >
+          <div
+            style={{
+              width: 60,
+              height: 60,
+              backgroundColor: "rgba(0,0,0,0.7)",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 32 32"
+              fill="white"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <polygon points="10,7 26,16 10,25" />
+            </svg>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
